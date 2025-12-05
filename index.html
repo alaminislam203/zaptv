@@ -1,0 +1,521 @@
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Oswald:wght@500&display=swap');
+
+/* ================= STYLES ================= */
+.zap-tv-container {
+    --zap-primary: #00d2ff;
+    --zap-bg: #0b0c15;
+    --zap-card: rgba(255, 255, 255, 0.05);
+    --zap-text: #e2e8f0;
+    
+    font-family: 'Inter', sans-serif;
+    background: var(--zap-bg);
+    color: var(--zap-text);
+    width: 100%;
+    border-radius: 12px;
+    padding: 15px;
+    border: 1px solid rgba(255,255,255,0.08);
+    box-sizing: border-box;
+}
+.zap-tv-container * { box-sizing: border-box; }
+
+/* HEADER */
+.zap-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;
+}
+.zap-logo {
+    font-family: 'Oswald', sans-serif; font-size: 20px;
+    background: linear-gradient(90deg, var(--zap-primary), #fff);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.zap-live-badge {
+    font-size: 10px; background: #ef4444; color: #fff; padding: 3px 8px;
+    border-radius: 4px; font-weight: bold; animation: pulse 2s infinite;
+}
+
+/* PLAYER */
+.zap-player-box {
+    position: relative; width: 100%; aspect-ratio: 16/9;
+    background: #000; border-radius: 10px; overflow: hidden;
+    margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.1);
+    box-shadow: 0 0 20px rgba(0, 210, 255, 0.2);
+}
+video.zap-video { width: 100%; height: 100%; object-fit: contain; }
+
+/* CONTROLS */
+.zap-overlay { position: absolute; top: 10px; right: 10px; z-index: 5; }
+.zap-quality-select {
+    background: rgba(0,0,0,0.8); color: #fff; border: 1px solid rgba(255,255,255,0.3);
+    padding: 4px; font-size: 11px; border-radius: 4px; cursor: pointer;
+}
+
+/* INFO AREA */
+.zap-info-container {
+    background: var(--zap-card); padding: 12px; border-radius: 8px; margin-bottom: 20px;
+}
+.zap-info-header { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+.zap-channel-logo {
+    width: 45px; height: 45px; border-radius: 50%; border: 2px solid var(--zap-primary);
+    padding: 2px; background: rgba(0,0,0,0.3);
+}
+.zap-info-text h3 { margin: 0; font-size: 16px; color: #fff; }
+.zap-info-text p { margin: 2px 0 0; font-size: 11px; color: #a0aec0; }
+
+/* SOURCE BUTTONS */
+.zap-sources { display: flex; gap: 8px; flex-wrap: wrap; }
+.zap-source-btn {
+    background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.1);
+    color: #ccc; padding: 4px 10px; border-radius: 4px; font-size: 11px; cursor: pointer;
+}
+.zap-source-btn.active-src {
+    background: var(--zap-primary); color: #000; font-weight: bold;
+}
+
+/* GRID */
+.zap-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+    gap: 10px; max-height: 300px; overflow-y: auto;
+}
+.zap-card {
+    background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 8px; padding: 10px; text-align: center; cursor: pointer;
+    transition: 0.2s;
+}
+.zap-card:hover, .zap-card.active {
+    background: rgba(255,255,255,0.1); border-color: var(--zap-primary);
+}
+.zap-card.active { box-shadow: 0 0 10px rgba(0, 210, 255, 0.2); }
+.zap-card img { width: 35px; height: 35px; object-fit: contain; margin-bottom: 5px; }
+.zap-card span { display: block; font-size: 10px; color: #cbd5e1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+@keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+</style>
+
+<div class="zap-tv-container">
+    <div class="zap-header">
+        <div class="zap-logo">▶ ZapStream</div>
+        <div class="zap-live-badge">● LIVE</div>
+    </div>
+
+    <div class="zap-player-box">
+        <div class="zap-overlay">
+            <select id="zapQuality" class="zap-quality-select" style="display:none;"></select>
+        </div>
+        <video id="zapVideo" class="zap-video" controls="true" autoplay="true" playsinline poster="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgVp0J__NbqkDaI4JNZUeX2ASe8s-7yGClutfXS_NXWIwSe_TJtDAdBzxwYna2KzFz4TmbGxQgdOyYtD6vd3voJZHlsVVZpEx0BMsuLCNMogX5TotYtS6jhUMfPKKfexhIQSRg0tMqhThq5c6ci4GOZwsF0eg7-zntbXklo5eQjbg39vcCibVZkgF0NOmnj/s320/1200x1200.gif"></video>
+    </div>
+
+    <div class="zap-info-container">
+        <div class="zap-info-header">
+            <img id="zapMainLogo" class="zap-channel-logo" src="https://i.imgur.com/3Yp7XlS.png">
+            <div class="zap-info-text">
+                <h3 id="zapMainTitle">Select Channel</h3>
+                <p id="zapMainStatus">Ready</p>
+            </div>
+        </div>
+        <div id="zapSourceList" class="zap-sources"></div>
+    </div>
+
+    <div style="font-size:12px;color:#64748b;margin-bottom:10px;font-weight:600;">CHANNELS</div>
+    <div id="zapChannelGrid" class="zap-grid"></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.3.6/shaka-player.compiled.js"></script>
+
+<script>
+(function() {
+    // ==========================================
+    // ⚠️ চ্যানেল লিস্ট (ClearKey DRM সহ)
+    // ==========================================
+    const channels = [
+        {
+            name: "Premier Sports 1",
+            logo: "https://iili.io/KWnBoiB.png",
+            sources: [
+                { 
+                    label: "HD (DASH)", 
+                    url: "https://abizzcbaaaaaaaamlniubkrls2bb7.otte.live.cf.ww.aiv-cdn.net/fra-nitro/live/dash/enc/vwq77hfgzw/out/v1/b858e0b845c64cec953887bd4269e4ea/cenc.mpd",
+                    drm: { 
+                        "1444f4235529f183f0a5a486befe9cdb": "e5e3fec67a1bb3472a2089c8a0a2557f"
+                    }
+                }
+            ]
+        },
+      {
+    name: "WWE HD",
+    logo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ1CLvFQlH72RrIbEgS5AcM-mf_owdM8HXCmz0O2jRMvvRKS8TMR1Rbg4g&s=10",
+    sources: [
+        {
+            label: "HD (DASH)",
+            url: "https://cors-everywhere-wc8b4.ondigitalocean.app/https://fsly.stream.peacocktv.com/Content/CMAF_CTR-4s/Live/channel(vc106wh3yw)/master.mpd",
+            drm: {
+                "00208c93f4358213b52220898b962385": "8ae6063167228e350dd132d4a1573102"
+            }
+        }
+    ]
+},
+{
+    name: "Willow Cricket",
+    logo: "https://i.postimg.cc/qgfrNjFH/20250529_123654.png",
+    sources: [
+        {
+            label: "HD (DASH)",
+            url: "https://a170aivottlinear-a.akamaihd.net:443/OTTB/bom-nitro/live/dash/enc/f60kqesunw/out/v1/a435ed7a00f947deb4369b46d8f2fb70/cenc.mpd",
+            drm: {
+                "1779C27B9D077A3BA0C9CC1BB9A94B9F": "CC5CF3B7928FB9E0A1EE6A8B566F0A8E"
+            }
+        }
+    ]
+},
+{
+    name: "TNT Sports 1",
+    logo: "https://iili.io/3DPQBC7.png",
+    sources: [
+        {
+            label: "HD (DASH)",
+            url: "https://ottb.live.cf.ww.aiv-cdn.net/lhr-nitro/live/dash/enc/wf8usag51e/out/v1/bd3b0c314fff4bb1ab4693358f3cd2d3/cenc.mpd",
+            drm: {
+                "d0f2e5c39e70c18f29bf77768a1ad89a": "d6853c51fcf37a18905f0609972395d7"
+            }
+        }
+    ]
+},
+{
+    name: "TNT Sports 2",
+    logo: "https://iili.io/3OKhGKg.png",
+    sources: [
+        {
+            label: "HD (DASH)",
+            url: "https://ottb.live.cf.ww.aiv-cdn.net/lhr-nitro/live/dash/enc/f0qvkrra8j/out/v1/f8fa17f087564f51aa4d5c700be43ec4/cenc.mpd",
+            drm: {
+                "9f51f3dc6313ac8bc668e2d9d1c04dfa": "74bc63e5a193454a91ca494975db33f9"
+            }
+        }
+    ]
+},
+{
+    name: "TNT Sports 3",
+    logo: "https://iili.io/3DPQCG9.png",
+    sources: [
+        {
+            label: "HD (DASH)",
+            url: "https://ottb.live.cf.ww.aiv-cdn.net/lhr-nitro/live/dash/enc/lsdasbvglv/out/v1/bb548a3626cd4708afbb94a58d71dce9/cenc.mpd",
+            drm: {
+                "a93c1cbfdccd23233bac13540c693e7f": "2f6ab2e6693eb847eff3c9da8f9d01fc"
+            }
+        }
+    ]
+},
+{
+    name: "TNT Sports 4",
+    logo: "https://iili.io/3DPQfQS.png",
+    sources: [
+        {
+            label: "HD (DASH)",
+            url: "https://ottb.live.cf.ww.aiv-cdn.net/lhr-nitro/live/dash/enc/i2pcjr4pe5/out/v1/912e9db56d75403b8a9ac0a719110f36/cenc.mpd",
+            drm: {
+                "192b1115da041585c77200128549efa1": "634e10efe4abbb14be400a3ccbac0258"
+            }
+        }
+    ]
+},
+{
+    name: "Ten Cricket Peo",
+    logo: "https://img-cdn.publive.online/fit-in/640x430/filters:format(webp)/afaqs/media/post_attachments/84882a51b6c9326e4499dedbb089ca95bd82663084027217207edb964a9a89ad.jpg",
+    sources: [
+        {
+            label: "HD (DASH)",
+            url: "https://edge4-moblive.yuppcdn.net/drm2/smil:tencricketdrm1.smil/manifest.mpd",
+            drm: {
+                "9872e439f21f4a299cab249c6554daa3": "0cdfcfe0d0f1fbe100554ce3ef4c4665"
+            }
+        }
+    ]
+},
+{
+    name: "Cricket Gold New",
+    logo: "https://i.ytimg.com/vi/CeAgx48qQ3M/maxresdefault.jpg",
+    sources: [
+        {
+            label: "HD (HLS)",
+            url: "https://cc-bpss9asqfihqh.akamaized.net/v1/master/3722c60a815c199d9c0ef36c5b73da68a62b09d1/cc-bpss9asqfihqh/scheduler/scheduleMaster/453.m3u8"
+        }
+    ]
+},
+{
+    name: "Cricket Gold Old",
+    logo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTXj3nUdWfOIC7pHLCa-AbYGrnZemlUk8AbOTxXHSJtRRbRZTLWP77saldJgNA&s",
+    sources: [
+        {
+            label: "HD (HLS)",
+            url: "https://dltcbyrjz4q6b.cloudfront.net/scheduler/scheduleMaster/418.m3u8"
+        }
+    ]
+},
+{
+    name: "PEO SPORTS 1 SD",
+    logo: "https://www.slt.lk/sites/default/files/channel_images/150-PEO%20SPORTS%201.png",
+    sources: [
+        {
+            label: "HD (DASH)",
+            url: "https://edge4-moblive.yuppcdn.net/drm/smil:peosports1drm.smil/manifest.mpd",
+            drm: {
+                "9872e439f21f4a299cab249c6554daa3": "0cdfcfe0d0f1fbe100554ce3ef4c4665"
+            }
+        }
+    ]
+},
+{
+    name: "PEO SPORTS 2 SD",
+    logo: "https://www.slt.lk/sites/default/files/channel_images/151-PEO%20Sports2_0.jpg",
+    sources: [
+        {
+            label: "HD (DASH)",
+            url: "https://edge4-moblive.yuppcdn.net/drm1/smil:peosports2drm.smil/manifest.mpd",
+            drm: {
+                "9872e439f21f4a299cab249c6554daa3": "0cdfcfe0d0f1fbe100554ce3ef4c4665"
+            }
+        }
+    ]
+},
+{
+    name: "PEO SPORTS 3 SD",
+    logo: "https://www.slt.lk/sites/default/files/channel_images/152-PEO%20SPORTS%203_0.png",
+    sources: [
+        {
+            label: "HD (DASH)",
+            url: "https://edge4-moblive.yuppcdn.net/drm1/smil:peosports3drm.smil/manifest.mpd",
+            drm: {
+                "9872e439f21f4a299cab249c6554daa3": "0cdfcfe0d0f1fbe100554ce3ef4c4665"
+            }
+        }
+    ]
+},
+{
+    name: "Sky Sports NZ 4K",
+    logo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQJ9z-5YyWXgoLa8l-pwJ2LXgGH8itbPBDYpMMTL6HW&s=10",
+    sources: [
+        {
+            label: "4K (DASH)",
+            url: "https://dice-live-oc.akamaized.net/hdntl=exp=1764979214~acl=%2f*~id=6b8d0cb1-d519-4164-8980-b840e5184dbb~data=hdntl,dWlkPTU3MjQwMXxkY2Uuc2t5bnomaXA9MTIyLjU5LjI3LjIzOCZleHA9MTc2NDk3OTI0MyZlaWQ9MjE5MDI2JmNpZD1kY2Uuc2t5bnomb2lkPTMxOCZ0eXBlPUxJVkU~hmac=d2028373810fe1b534c7e5d054c7bdc783ad3bab89d395a31aba09caa0394aa1/dash/live/2093671/294921-311597/manifest-d.mpd",
+            drm: {
+                "aefc2c8d1c8840f1b6981f856c9269ba": "cf8ea114c45b4d6596b2748258ab74d6"
+            }
+        }
+    ]
+},
+
+      {
+            name: "Premier Sports 2",
+            logo: "https://iili.io/KWnCF1I.png",
+            sources: [
+                { 
+                    label: "HD (DASH)", 
+                    url: "https://abizzcbaaaaaaaaml3dau5ew7oiof.otte.live.cf.ww.aiv-cdn.net/fra-nitro/live/dash/enc/w34nznx0bz/out/v1/1c6639b9af994c75847def2249302066/cenc.mpd",
+                    drm: {
+                        "1a5df53609ebc9857898c490f4724918": "77f62980d582ec541280796acf8b2d19"
+                    }
+                }
+            ]
+        },
+        {
+            name: "Prime TV",
+            logo: "https://iili.io/FfrCHqN.png",
+            sources: [
+                { 
+                    label: "HD (DASH)", 
+                    url: "https://cors-proxy.rdpsell01.workers.dev/https://ottb.live.cf.ww.aiv-cdn.net/lhr-nitro/live/dash/enc/lqj6tdomna/out/v1/817aa485206f4456ad594bbf61c1016c/cenc.mpd",
+                    drm: {
+                        "680a24e3d3785ea8b3a33a56928ea128": "3f07a7f94f0ac7ee96057224b6a4163d"
+                    }
+                }
+            ]
+        },
+        {
+            name: "Fox Sports 1",
+            logo: "https://iili.io/KYJqv0G.png",
+            sources: [
+                { 
+                    label: "HD (DASH)", 
+                    url: "https://cors-proxy.rdpsell01.workers.dev/https://ottb.live.cf.ww.aiv-cdn.net/lhr-nitro/live/clients/dash/enc/fsu3wl2rwb/out/v1/be61206c04e643349d53fb22301f3b50/cenc.mpd",
+                    drm: {
+                        "5466ebd70704bdeb657f0abf3c5ca4ef": "bdd79b72d8e48ed483aa623cc38a8a16"
+                    }
+                }
+            ]
+        },
+        {
+            name: "Somoy TV (HLS Test)",
+            logo: "https://i.imgur.com/Myf82w3.png",
+            sources: [
+                { label: "Live", url: "https://live-cdn.somoynews.tv/hls/stream_720p/index.m3u8" }
+            ]
+        },{
+            name: "T-Sports",
+            logo: "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjf3p9HPXP_bNJMfPGfED_Ba3ovjtCy_9MazCyycegeJZKMnD6kYhM0t3LUMw7vnzmK38hB9MqTPqz6y6A-zCfEBzBvU7sY9HTHH8BVb_1NBNBraJDtvDBCk-V7XBlSKcfhypl2r53JQmQ/s16000-rw/T-Sports-Bangladesh-Logo.png",
+            sources: [
+                { label: "Server 1 (HD)", url: "https://tvsen1.aynaott.com/YNMn5kZz8aLm/index.m3u8" },
+                { label: "Server 2 (Backup)", url: "http://51.83.129.17/tsports/index.m3u8" }
+            ]
+        },
+        {
+            name: "Fox Sports English",
+            logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0c/FOX_Sports_logo.svg/1200px-FOX_Sports_logo.svg.png",
+            sources: [
+                { label: "Main Server", url: "https://d1jzu95oc8fgt3.cloudfront.net:443/FOX_Sports.m3u8" }
+            ]
+        },
+        {
+            name: "Al Jazeera",
+            logo: "https://upload.wikimedia.org/wikipedia/en/thumb/f/f2/Al_Jazeera_English.svg/1200px-Al_Jazeera_English.svg.png",
+            sources: [
+                { label: "1080p", url: "https://cors-everywhere-wc8b4.ondigitalocean.app/http://175.107.244.52:4456/play/a06z" },
+                { label: "Low Data", url: "https://live-hls-web-aje.getaj.net/AJE/01.m3u8" }
+            ]
+        },
+        {
+            name: "Cricket Gold",
+            logo: "https://i.ytimg.com/vi/CeAgx48qQ3M/maxresdefault.jpg",
+            sources: [
+                { label: "New", url: "https://cc-bpss9asqfihqh.akamaized.net/v1/master/3722c60a815c199d9c0ef36c5b73da68a62b09d1/cc-bpss9asqfihqh/scheduler/scheduleMaster/453.m3u8" },
+                { label: "OLD", url: "https://dltcbyrjz4q6b.cloudfront.net/scheduler/scheduleMaster/418.m3u8" }
+            ]
+        },
+        {
+            name: "Tata Play",
+            logo: "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEg6faXzWBvr9VdrR55j7eaAHqoPInmrgKj8NPSzUokZBb65DjCKid5Rk81sTJs1O33iFEM2p1ecyzqf3JoPtHihHotYuUwVaqR6tXeCyDU7HDQbE_s3OmSwhOe-JpII11hi8j4ObAsB9HyyKfBlaEPgze1o6lgpjb7iiXMBYfvQb1MbkdV0DCYCuZlglb23/s1600/channels4_profile.jpg",
+            sources: [
+                { label: "Auto", url: "https://tplay.live/originals/deewana/index.m3u8" }
+            ]
+        },
+        {
+            name: "Jio HotStar",
+            logo: "https://www.livemint.com/lm-img/img/2025/02/14/1600x900/Screenshot_2025-02-14_065533_1739496378365_1739496385668.png",
+            sources: [
+                { label: "Server 1 (HD)", url: "https://live-en.aisports.cc/moviebox/device01/playlist.m3u8" }
+            ]
+        }
+      
+
+    ];
+
+    const video = document.getElementById('zapVideo');
+    const grid = document.getElementById('zapChannelGrid');
+    const title = document.getElementById('zapMainTitle');
+    const status = document.getElementById('zapMainStatus');
+    const mainLogo = document.getElementById('zapMainLogo');
+    const sourceList = document.getElementById('zapSourceList');
+    const qualitySelect = document.getElementById('zapQuality');
+    
+    let player = null;
+
+    // 1. Initialize Shaka Player
+    async function initApp() {
+        shaka.polyfill.installAll();
+        if (shaka.Player.isBrowserSupported()) {
+            player = new shaka.Player(video);
+            player.addEventListener('error', onError);
+            renderGrid();
+        } else {
+            console.error('Browser not supported!');
+        }
+    }
+
+    function renderGrid() {
+        grid.innerHTML = "";
+        channels.forEach((ch, idx) => {
+            const div = document.createElement('div');
+            div.className = 'zap-card';
+            div.id = `ch-${idx}`;
+            div.innerHTML = `<img src="${ch.logo}"><span>${ch.name}</span>`;
+            div.onclick = () => loadChannel(ch, idx);
+            grid.appendChild(div);
+        });
+    }
+
+    function loadChannel(ch, idx) {
+        document.querySelectorAll('.zap-card').forEach(c => c.classList.remove('active'));
+        document.getElementById(`ch-${idx}`).classList.add('active');
+        
+        title.innerText = ch.name;
+        mainLogo.src = ch.logo;
+        status.innerHTML = '<span style="color:#00d2ff">Connecting...</span>';
+        
+        sourceList.innerHTML = "";
+        
+        if (ch.sources.length > 0) {
+            ch.sources.forEach((src, i) => {
+                const btn = document.createElement('button');
+                btn.className = 'zap-source-btn';
+                btn.innerText = src.label;
+                btn.onclick = () => playSource(src, btn);
+                sourceList.appendChild(btn);
+                if (i === 0) btn.click();
+            });
+        }
+    }
+
+    async function playSource(src, btn) {
+        document.querySelectorAll('.zap-source-btn').forEach(b => b.classList.remove('active-src'));
+        if(btn) btn.classList.add('active-src');
+
+        try {
+            // Configure DRM if keys exist
+            if (src.drm) {
+                player.configure({
+                    drm: {
+                        clearKeys: src.drm
+                    }
+                });
+            } else {
+                player.configure({ drm: {} }); // Reset DRM
+            }
+
+            await player.load(src.url);
+            status.innerHTML = '<span style="color:#2ecc71">● Playing Live</span>';
+            setupQuality();
+        } catch (e) {
+            onError(e);
+        }
+    }
+
+    function setupQuality() {
+        const tracks = player.getVariantTracks();
+        qualitySelect.innerHTML = '<option value="-1">Auto</option>';
+        
+        if (tracks.length > 0) {
+            qualitySelect.style.display = 'block';
+            // Filter unique heights to avoid duplicates
+            const seen = new Set();
+            tracks.sort((a, b) => b.height - a.height).forEach(track => {
+                if (!seen.has(track.height) && track.height) {
+                    seen.add(track.height);
+                    let opt = document.createElement('option');
+                    opt.value = track.id;
+                    opt.text = `${track.height}p`;
+                    qualitySelect.appendChild(opt);
+                }
+            });
+            
+            qualitySelect.onchange = (e) => {
+                if (e.target.value == -1) {
+                    player.configure({ abr: { enabled: true } });
+                } else {
+                    player.configure({ abr: { enabled: false } });
+                    const track = tracks.find(t => t.id == e.target.value);
+                    if (track) player.selectVariantTrack(track, true);
+                }
+            };
+        } else {
+            qualitySelect.style.display = 'none';
+        }
+    }
+
+    function onError(error) {
+        console.error('Error code', error.code, 'object', error);
+        status.innerHTML = '<span style="color:#ef4444">Stream Error / Offline</span>';
+    }
+
+    document.addEventListener('DOMContentLoaded', initApp);
+})();
+</script>
