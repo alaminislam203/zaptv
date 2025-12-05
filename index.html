@@ -158,6 +158,41 @@
         letter-spacing: 1px;
     }
     .zap-stat-icon { font-size: 18px; margin-bottom: 5px; display: block; }
+
+
+    .zap-news-ticker {
+        width: 100%;
+        background: rgba(0, 210, 255, 0.1); /* হালকা নীল ব্যাকগ্রাউন্ড */
+        border: 1px solid rgba(0, 210, 255, 0.2);
+        border-radius: 6px;
+        overflow: hidden;
+        white-space: nowrap;
+        margin-bottom: 15px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        position: relative;
+    }
+    .zap-news-content {
+        display: inline-block;
+        padding-left: 100%;
+        animation: zap-scroll 20s linear infinite; /* স্পিড কন্ট্রোল (20s) */
+        color: #e2e8f0;
+        font-size: 13px;
+        font-weight: 500;
+        font-family: 'Inter', sans-serif;
+    }
+    .zap-news-content span { color: #ffd700; margin: 0 5px; } /* হাইলাইট কালার */
+    .zap-news-content a {
+        color: #00d2ff;
+        text-decoration: none;
+        font-weight: bold;
+        border-bottom: 1px dashed #00d2ff;
+    }
+    @keyframes zap-scroll {
+        0% { transform: translateX(0); }
+        100% { transform: translateX(-100%); }
+    }
     </style>
 </head>
 <body>
@@ -170,6 +205,15 @@
 <div style="text-align: center; margin-bottom: 10px;">
            <p style="color: gray; font-size: 10px;">Advertisement</p>
         </div>
+    
+
+<div class="zap-news-ticker">
+    <div class="zap-news-content">
+        ⚠️ চ্যানেল চালু হতে <span>২০ সেকেন্ড থেকে ১ মিনিট</span> সময় লাগতে পারে। 
+        🔴 প্রতিদিনের লাইভ খেলা দেখতে আমাদের সাথেই থাকুন। 
+        📺 আইপিটিভি প্লে-লিস্ট পেতে ভিজিট করুন: <a href="https://toffeelivetoday.online" target="_blank">toffeelivetoday.online</a> । ধন্যবাদ।
+    </div>
+</div>
         <div class="zap-player-box">
             <div class="zap-overlay">
                 <select id="zapQuality" class="zap-quality-select" style="display:none;"></select>
