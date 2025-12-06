@@ -286,8 +286,9 @@
 
         
         <div style="font-size:12px;color:#64748b;margin-bottom:10px;font-weight:600;">CHANNELS</div>
-        <div id="zapChannelGrid" class="zap-grid"></div>
-        <div id="zapTotalViews" class="zap-stat-number">Loading...</div>
+        <div id="zapChannelGrid" class="zap-grid"></div><center>
+         <script defer type='text/javascript' src='https://www.freevisitorcounters.com/auth.php?id=b511898a3866fc6fdd293736143a255fa80da066'></script>
+<script defer type="text/javascript" src="https://www.freevisitorcounters.com/en/home/counter/1454765/t/5"></script></center>
     </div>
 
 
@@ -299,30 +300,6 @@
  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/mux.js/6.3.0/mux.min.js"></script>
     <script defer src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.3.6/shaka-player.compiled.js"></script>
     
-<script>
-    // 1. API থেকে রিয়েল টোটাল ভিউ আনা
-    // এটি আপনার সাইটের নামে একটি ইউনিক কাউন্টার তৈরি করবে
-    const namespace = 'toffeetvlive'; 
-    const key = 'total-hits';
-
-    fetch(`https://api.counterapi.dev/v1/${namespace}/${key}/up`)
-        .then(response => response.json())
-        .then(data => {
-            document.getElementById('zapTotalViews').innerText = data.count;
-        })
-        .catch(err => {
-            document.getElementById('zapTotalViews').innerText = "1.2k"; // ব্যাকআপ ডাটা
-        });
-
-    // 2. লাইভ ইউজার (একটু ফেক ইফেক্ট যা দেখতে রিয়েল লাগে)
-    // এটি রেন্ডমলি ৩৫ থেকে ৮০ এর মধ্যে দেখাবে
-    function updateLiveUsers() {
-        const randomUsers = Math.floor(Math.random() * (85 - 35 + 1)) + 35;
-        document.getElementById('zapLiveUsers').innerText = randomUsers;
-    }
-    updateLiveUsers();
-    setInterval(updateLiveUsers, 5000); // প্রতি ৫ সেকেন্ডে আপডেট হবে
-</script>
 
     <script>
           (function() {
