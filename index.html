@@ -245,7 +245,7 @@
     
 </div>
 
-
+ <script src="https://cdnjs.cloudflare.com/ajax/libs/mux.js/6.3.0/mux.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.3.6/shaka-player.compiled.js"></script>
     
 <script>
@@ -2708,6 +2708,18 @@
             shaka.polyfill.installAll();
             if (shaka.Player.isBrowserSupported()) {
                 player = new shaka.Player(video);
+                player.configure({
+    streaming: {
+        bufferingGoal: 30, // ৩০ সেকেন্ডের বাফার জমা রাখবে (স্মুথ চলার জন্য)
+        rebufferingGoal: 10, // বাফারিং হলে ১০ সেকেন্ড অপেক্ষা করে আবার চালু হবে
+        retryParameters: {
+            maxAttempts: 5, // কানেকশন লস্ট হলে ৫ বার চেষ্টা করবে
+            baseDelay: 1000, // ১ সেকেন্ড পরপর চেষ্টা করবে
+            backoffFactor: 2,
+            fuzzFactor: 0.5,
+        }
+    }
+});
                 player.addEventListener('error', onError);
                 renderGrid();
             } else {
@@ -2765,6 +2777,14 @@
                     player.configure({ drm: {} }); // Reset DRM
                 }
 
+                player.getNetworkingEngine().registerRequestFilter(function(type, request) {
+    // সার্ভারকে বোঝানো যে আমরা ব্রাউজার থেকে দেখছি না
+    request.headers['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36';
+    
+    // কিছু চ্যানেলের জন্য রেফারার লাগে (যেমন টফি বা অন্য সাইট)
+    // request.headers['Referer'] = 'https://toffeelive.com/'; 
+});
+
                 await player.load(src.url);
                 status.innerHTML = '<span style="color:#2ecc71">● Playing Live</span>';
                 setupQuality();
@@ -2809,6 +2829,21 @@
             console.error('Error code', error.code, 'object', error);
             status.innerHTML = '<span style="color:#ef4444">Stream Error / Offline</span>';
         }
+
+        // Keyboard Shortcuts
+document.addEventListener('keydown', (e) => {
+    if (e.code === 'Space') {
+        e.preventDefault(); // পেজ স্ক্রল বন্ধ করা
+        video.paused ? video.play() : video.pause();
+    }
+    if (e.code === 'KeyF') {
+        if (!document.fullscreenElement) {
+            video.requestFullscreen();
+        } else {
+            document.exitFullscreen();
+        }
+    }
+});
 
         document.addEventListener('DOMContentLoaded', initApp);
     })();
