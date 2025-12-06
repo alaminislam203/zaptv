@@ -2325,9 +2325,70 @@ function renderGrid(filterText = "") {
             }
         }
 
-        function setupQuality() { /* ... আগের কোড ... */ }
-        function onError(e) { /* ... */ }
+        // 5. Quality Selector Logic
+        function setupQuality() {
+            const tracks = player.getVariantTracks();
+            qualitySelect.innerHTML = '<option value="-1">Auto (Best)</option>';
+            
+            if (tracks.length > 1) {
+                qualitySelect.style.display = 'block';
+                const seen = new Set();
+                
+                // Sort by resolution (High to Low)
+                tracks.sort((a, b) => b.height - a.height).forEach(track => {
+                    if (!seen.has(track.height) && track.height) {
+                        seen.add(track.height);
+                        let opt = document.createElement('option');
+                        opt.value = track.id;
+                        opt.text = `${track.height}p`; // Example: 1080p
+                        qualitySelect.appendChild(opt);
+                    }
+                });
+                
+                qualitySelect.onchange = (e) => {
+                    if (e.target.value == -1) {
+                        player.configure({ abr: { enabled: true } }); // Auto
+                    } else {
+                        player.configure({ abr: { enabled: false } }); // Manual
+                        const track = tracks.find(t => t.id == e.target.value);
+                        if (track) player.selectVariantTrack(track, true);
+                    }
+                };
+            } else {
+                qualitySelect.style.display = 'none';
+            }
+        }
 
+        // 6. Error Handling
+        function onError(error) {
+            console.error('Error code', error.code, 'object', error);
+            
+            // ব্যবহারকারীকে সুন্দর মেসেজ দেখানো
+            if(error.code === 1001) {
+                 status.innerHTML = '<span style="color:#f39c12">Network Error. Retrying...</span>';
+            } else if (error.code === 6007) {
+                 status.innerHTML = '<span style="color:#ef4444">DRM License Failed</span>';
+            } else {
+                 status.innerHTML = '<span style="color:#ef4444">Stream Offline / Link Broken</span>';
+            }
+        }
+
+        // 7. Keyboard Shortcuts (UX Boost)
+        document.addEventListener('keydown', (e) => {
+            // Spacebar to Pause/Play
+            if (e.code === 'Space') {
+                e.preventDefault();
+                video.paused ? video.play() : video.pause();
+            }
+            // 'F' for Fullscreen
+            if (e.code === 'KeyF') {
+                if (!document.fullscreenElement) {
+                    video.requestFullscreen().catch(err => console.log(err));
+                } else {
+                    document.exitFullscreen();
+                }
+            }
+        });
         // 🔍 সার্চ ইভেন্ট লিসেনার
         const searchInput = document.getElementById('zapSearch');
         if(searchInput) {
