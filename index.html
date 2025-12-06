@@ -2693,6 +2693,12 @@
 
         ];
 
+ 
+        // ==========================================
+        // ⚠️ চ্যানেল ডাটা (channels array) উপরে থাকতে হবে
+        // ==========================================
+        
+        // DOM Elements
         const video = document.getElementById('zapVideo');
         const grid = document.getElementById('zapChannelGrid');
         const title = document.getElementById('zapMainTitle');
@@ -2703,119 +2709,152 @@
         
         let player = null;
 
-        // 1. Initialize Shaka Player
+        // 1. Initialize Shaka Player with Advanced Config
         async function initApp() {
+            // Mux.js সাপোর্ট চেক (HLS এর জন্য জরুরি)
+            if (!window.muxjs) {
+                console.warn('Mux.js not found! HLS streams might fail.');
+            }
+
             shaka.polyfill.installAll();
+
             if (shaka.Player.isBrowserSupported()) {
                 player = new shaka.Player(video);
+
+                // 🔥 ADVANCED CONFIGURATION 🔥
                 player.configure({
-    streaming: {
-        bufferingGoal: 30, // ৩০ সেকেন্ডের বাফার জমা রাখবে (স্মুথ চলার জন্য)
-        rebufferingGoal: 10, // বাফারিং হলে ১০ সেকেন্ড অপেক্ষা করে আবার চালু হবে
-        retryParameters: {
-            maxAttempts: 5, // কানেকশন লস্ট হলে ৫ বার চেষ্টা করবে
-            baseDelay: 1000, // ১ সেকেন্ড পরপর চেষ্টা করবে
-            backoffFactor: 2,
-            fuzzFactor: 0.5,
-        }
-    }
-});
+                    streaming: {
+                        bufferingGoal: 30,    // ৩০ সেকেন্ড বাফার জমা রাখবে
+                        rebufferingGoal: 5,   // বাফারিং হলে ৫ সেকেন্ড লোড করে আবার চলবে
+                        lowLatencyMode: true, // লাইভ খেলার জন্য লো-লেটেন্সি মোড
+                        retryParameters: {
+                            maxAttempts: 5,   // কানেকশন লস্ট হলে ৫ বার চেষ্টা করবে
+                            baseDelay: 1000,  // ১ সেকেন্ড পরপর রি-ট্রাই
+                            backoffFactor: 2,
+                            fuzzFactor: 0.5,
+                        }
+                    },
+                    manifest: {
+                        dash: { ignoreMinBufferTime: true } // কিছু চ্যানেলের ল্যাগ ফিক্স
+                    }
+                });
+
                 player.addEventListener('error', onError);
                 renderGrid();
             } else {
                 console.error('Browser not supported!');
+                status.innerHTML = 'Browser Not Supported';
             }
         }
 
+        // 2. Render Channel Grid
         function renderGrid() {
             grid.innerHTML = "";
-            channels.forEach((ch, idx) => {
-                const div = document.createElement('div');
-                div.className = 'zap-card';
-                div.id = `ch-${idx}`;
-                div.innerHTML = `<img src="${ch.logo}"><span>${ch.name}</span>`;
-                div.onclick = () => loadChannel(ch, idx);
-                grid.appendChild(div);
-            });
-        }
-
-        function loadChannel(ch, idx) {
-            document.querySelectorAll('.zap-card').forEach(c => c.classList.remove('active'));
-            document.getElementById(`ch-${idx}`).classList.add('active');
-            
-            title.innerText = ch.name;
-            mainLogo.src = ch.logo;
-            status.innerHTML = '<span style="color:#00d2ff">Connecting...</span>';
-            
-            sourceList.innerHTML = "";
-            
-            if (ch.sources.length > 0) {
-                ch.sources.forEach((src, i) => {
-                    const btn = document.createElement('button');
-                    btn.className = 'zap-source-btn';
-                    btn.innerText = src.label;
-                    btn.onclick = () => playSource(src, btn);
-                    sourceList.appendChild(btn);
-                    if (i === 0) btn.click();
+            if(typeof channels !== 'undefined') {
+                channels.forEach((ch, idx) => {
+                    const div = document.createElement('div');
+                    div.className = 'zap-card';
+                    div.id = `ch-${idx}`;
+                    div.innerHTML = `<img src="${ch.logo}" onerror="this.src='https://via.placeholder.com/50'"><span>${ch.name}</span>`;
+                    div.onclick = () => loadChannel(ch, idx);
+                    grid.appendChild(div);
                 });
             }
         }
 
+        // 3. Load Channel UI
+        function loadChannel(ch, idx) {
+            // UI Update
+            document.querySelectorAll('.zap-card').forEach(c => c.classList.remove('active'));
+            const activeCard = document.getElementById(`ch-${idx}`);
+            if(activeCard) activeCard.classList.add('active');
+            
+            title.innerText = ch.name;
+            mainLogo.src = ch.logo;
+            status.innerHTML = '<span style="color:#00d2ff; animation: pulse 1s infinite;">Connecting...</span>';
+            
+            sourceList.innerHTML = "";
+            
+            // Source Buttons Generation
+            if (ch.sources && ch.sources.length > 0) {
+                ch.sources.forEach((src, i) => {
+                    const btn = document.createElement('button');
+                    btn.className = 'zap-source-btn';
+                    btn.innerText = src.label || `Server ${i+1}`;
+                    btn.onclick = () => playSource(src, btn);
+                    sourceList.appendChild(btn);
+                    
+                    // Auto-play first source
+                    if (i === 0) btn.click();
+                });
+            } else {
+                status.innerHTML = '<span style="color:red">No Source Available</span>';
+            }
+        }
+
+        // 4. Play Video Logic (Most Important Part)
         async function playSource(src, btn) {
+            // Active Button UI
             document.querySelectorAll('.zap-source-btn').forEach(b => b.classList.remove('active-src'));
             if(btn) btn.classList.add('active-src');
 
             try {
-                // Configure DRM if keys exist
+                // ✅ Reset Networking Filters (আগের চ্যানেলের হেডার ক্লিয়ার করা)
+                player.getNetworkingEngine().clearAllRequestFilters();
+
+                // ✅ Register New Headers (সার্ভার বাইপাস করার জন্য)
+                player.getNetworkingEngine().registerRequestFilter(function(type, request) {
+                    request.headers['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36';
+                    // প্রয়োজন হলে নিচের লাইনটি আনকমেন্ট করুন
+                    // request.headers['Referer'] = 'https://toffeelive.com/'; 
+                });
+
+                // ✅ Configure DRM (ClearKey / Widevine)
                 if (src.drm) {
                     player.configure({
-                        drm: {
-                            clearKeys: src.drm
-                        }
+                        drm: { clearKeys: src.drm }
                     });
                 } else {
-                    player.configure({ drm: {} }); // Reset DRM
+                    player.configure({ drm: {} }); // DRM রিসেট
                 }
 
-                player.getNetworkingEngine().registerRequestFilter(function(type, request) {
-    // সার্ভারকে বোঝানো যে আমরা ব্রাউজার থেকে দেখছি না
-    request.headers['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36';
-    
-    // কিছু চ্যানেলের জন্য রেফারার লাগে (যেমন টফি বা অন্য সাইট)
-    // request.headers['Referer'] = 'https://toffeelive.com/'; 
-});
-
+                // Load URL
                 await player.load(src.url);
-                status.innerHTML = '<span style="color:#2ecc71">● Playing Live</span>';
+                
+                // Success Status
+                status.innerHTML = '<span style="color:#2ecc71; font-weight:bold;">● Playing Live</span>';
                 setupQuality();
+
             } catch (e) {
                 onError(e);
             }
         }
 
+        // 5. Quality Selector Logic
         function setupQuality() {
             const tracks = player.getVariantTracks();
-            qualitySelect.innerHTML = '<option value="-1">Auto</option>';
+            qualitySelect.innerHTML = '<option value="-1">Auto (Best)</option>';
             
-            if (tracks.length > 0) {
+            if (tracks.length > 1) {
                 qualitySelect.style.display = 'block';
-                // Filter unique heights to avoid duplicates
                 const seen = new Set();
+                
+                // Sort by resolution (High to Low)
                 tracks.sort((a, b) => b.height - a.height).forEach(track => {
                     if (!seen.has(track.height) && track.height) {
                         seen.add(track.height);
                         let opt = document.createElement('option');
                         opt.value = track.id;
-                        opt.text = `${track.height}p`;
+                        opt.text = `${track.height}p`; // Example: 1080p
                         qualitySelect.appendChild(opt);
                     }
                 });
                 
                 qualitySelect.onchange = (e) => {
                     if (e.target.value == -1) {
-                        player.configure({ abr: { enabled: true } });
+                        player.configure({ abr: { enabled: true } }); // Auto
                     } else {
-                        player.configure({ abr: { enabled: false } });
+                        player.configure({ abr: { enabled: false } }); // Manual
                         const track = tracks.find(t => t.id == e.target.value);
                         if (track) player.selectVariantTrack(track, true);
                     }
@@ -2825,26 +2864,38 @@
             }
         }
 
+        // 6. Error Handling
         function onError(error) {
             console.error('Error code', error.code, 'object', error);
-            status.innerHTML = '<span style="color:#ef4444">Stream Error / Offline</span>';
+            
+            // ব্যবহারকারীকে সুন্দর মেসেজ দেখানো
+            if(error.code === 1001) {
+                 status.innerHTML = '<span style="color:#f39c12">Network Error. Retrying...</span>';
+            } else if (error.code === 6007) {
+                 status.innerHTML = '<span style="color:#ef4444">DRM License Failed</span>';
+            } else {
+                 status.innerHTML = '<span style="color:#ef4444">Stream Offline / Link Broken</span>';
+            }
         }
 
-        // Keyboard Shortcuts
-document.addEventListener('keydown', (e) => {
-    if (e.code === 'Space') {
-        e.preventDefault(); // পেজ স্ক্রল বন্ধ করা
-        video.paused ? video.play() : video.pause();
-    }
-    if (e.code === 'KeyF') {
-        if (!document.fullscreenElement) {
-            video.requestFullscreen();
-        } else {
-            document.exitFullscreen();
-        }
-    }
-});
+        // 7. Keyboard Shortcuts (UX Boost)
+        document.addEventListener('keydown', (e) => {
+            // Spacebar to Pause/Play
+            if (e.code === 'Space') {
+                e.preventDefault();
+                video.paused ? video.play() : video.pause();
+            }
+            // 'F' for Fullscreen
+            if (e.code === 'KeyF') {
+                if (!document.fullscreenElement) {
+                    video.requestFullscreen().catch(err => console.log(err));
+                } else {
+                    document.exitFullscreen();
+                }
+            }
+        });
 
+        // Start App
         document.addEventListener('DOMContentLoaded', initApp);
     })();
     </script>
