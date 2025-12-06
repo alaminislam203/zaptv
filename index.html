@@ -2320,36 +2320,57 @@
         console.error('Error code', error.code, 'object', error);
     }
 
-    // Quality Setup
-    function setupQuality() {
-        const tracks = player.getVariantTracks();
-        qualitySelect.innerHTML = '<option value="-1">Auto (Best)</option>';
-        if (tracks.length > 1) {
+   // 5. Quality Selector Logic (Updated)
+        function setupQuality() {
+            const tracks = player.getVariantTracks();
+            qualitySelect.innerHTML = ''; // আগের অপশন ক্লিয়ার করা
+
+            // ডিবাগ করার জন্য কনসোলে চেক করুন কতগুলো ট্র্যাক পাওয়া গেছে
+            console.log("Found tracks:", tracks.length); 
+
+            // যদি কোনো ট্র্যাক না পাওয়া যায়, তবুও বাটন দেখাবে না
+            if (tracks.length === 0) {
+                qualitySelect.style.display = 'none';
+                return;
+            }
+
+            // বাটন দৃশ্যমান করা (আগে >1 ছিল, এখন সবসময় দেখাবে)
             qualitySelect.style.display = 'block';
+
+            // ১. অটো অপশন যোগ করা
+            let autoOpt = document.createElement('option');
+            autoOpt.value = -1;
+            autoOpt.text = (tracks.length > 1) ? 'Auto (Best)' : 'Default Quality';
+            qualitySelect.appendChild(autoOpt);
+
+            // ২. বাকি রেজুলেশনগুলো যোগ করা
             const seen = new Set();
+            
             tracks.sort((a, b) => b.height - a.height).forEach(track => {
+                // শুধুমাত্র ভিডিও ট্র্যাক এবং ডুপ্লিকেট বাদ দিয়ে
                 if (!seen.has(track.height) && track.height) {
                     seen.add(track.height);
                     let opt = document.createElement('option');
                     opt.value = track.id;
-                    opt.text = `${track.height}p`;
+                    opt.text = `${track.height}p`; // যেমন: 1080p
                     qualitySelect.appendChild(opt);
                 }
             });
+
+            // ৩. ইভেন্ট লিসেনার (চেঞ্জ করলে কী হবে)
             qualitySelect.onchange = (e) => {
                 if (e.target.value == -1) {
-                    player.configure({ abr: { enabled: true } });
+                    player.configure({ abr: { enabled: true } }); // Auto Mode
                 } else {
-                    player.configure({ abr: { enabled: false } });
+                    player.configure({ abr: { enabled: false } }); // Manual Mode
                     const track = tracks.find(t => t.id == e.target.value);
-                    if (track) player.selectVariantTrack(track, true);
+                    if (track) {
+                        player.selectVariantTrack(track, true);
+                        console.log("Switched to:", track.height);
+                    }
                 }
             };
-        } else {
-            qualitySelect.style.display = 'none';
         }
-    }
-
     // Keyboard & Search
     document.addEventListener('keydown', (e) => {
         if (e.code === 'Space') {
