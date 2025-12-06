@@ -13,6 +13,10 @@
 <meta property="og:type" content="website">
 <meta name="theme-color" content="#0b0c15">
 <meta name="monetag" content="01eeb784f71504d62bd8c8e5269f5b62">
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+<link rel="preconnect" href="https://i.imgur.com">
+<link rel="preconnect" href="https://blogger.googleusercontent.com">
+<link rel="dns-prefetch" href="https://cdnjs.cloudflare.com">
     <link rel="icon" type="image/x-icon" href="https://raw.githubusercontent.com/alaminislam203/zaptv/refs/heads/main/favicon.ico">
       <title>Toffee Tv Live</title>
     <style>
@@ -292,8 +296,8 @@
     
 </div>
 
- <script src="https://cdnjs.cloudflare.com/ajax/libs/mux.js/6.3.0/mux.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.3.6/shaka-player.compiled.js"></script>
+ <script defer src="https://cdnjs.cloudflare.com/ajax/libs/mux.js/6.3.0/mux.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.3.6/shaka-player.compiled.js"></script>
     
 <script>
     // 1. API থেকে রিয়েল টোটাল ভিউ আনা
@@ -2252,20 +2256,36 @@
         }
 
         // 4. 🔍 Render Grid with Search Logic
-        function renderGrid(filterText = "") {
-            grid.innerHTML = "";
-            channels.forEach((ch, idx) => {
-                // সার্চ ফিল্টার: নাম মিললে তবেই দেখাবে
-                if (ch.name.toLowerCase().includes(filterText.toLowerCase())) {
-                    const div = document.createElement('div');
-                    div.className = 'zap-card';
-                    div.id = `ch-${idx}`;
-                    div.innerHTML = `<img src="${ch.logo}" onerror="this.src='https://via.placeholder.com/50'"><span>${ch.name}</span>`;
-                    div.onclick = () => loadChannel(ch, idx);
-                    grid.appendChild(div);
-                }
-            });
+        // এই ফাংশনটি আপডেট করুন
+function renderGrid(filterText = "") {
+    const grid = document.getElementById('zapChannelGrid');
+    grid.innerHTML = "";
+    
+    channels.forEach((ch, idx) => {
+        if (ch.name.toLowerCase().includes(filterText.toLowerCase())) {
+            const div = document.createElement('div');
+            div.className = 'zap-card';
+            div.id = `ch-${idx}`;
+            
+            // 👇 পরিবর্তন এখানে: loading="lazy" এবং decoding="async" যুক্ত করা হয়েছে
+            div.innerHTML = `
+                <img 
+                    src="${ch.logo}" 
+                    loading="lazy" 
+                    decoding="async" 
+                    width="35" 
+                    height="35" 
+                    alt="${ch.name}"
+                    onerror="this.src='https://via.placeholder.com/35'"
+                >
+                <span>${ch.name}</span>
+            `;
+            
+            div.onclick = () => loadChannel(ch, idx);
+            grid.appendChild(div);
         }
+    });
+}
 
         // 5. Load Channel & Play Logic
         function loadChannel(ch, idx) {
