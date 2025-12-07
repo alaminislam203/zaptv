@@ -19,6 +19,88 @@
 <link rel="preconnect" href="https://blogger.googleusercontent.com">
 <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com">
     <link rel="icon" type="image/x-icon" href="https://raw.githubusercontent.com/alaminislam203/zaptv/refs/heads/main/favicon.ico">
+
+<script>
+(function() {
+    const warningText = "আপনার ব্রাউজারে অ্যাড ব্লকার চালু আছে! আমাদের সাইটটি ফ্রি রাখতে অনুগ্রহ করে এটি বন্ধ করুন।";
+    const modalID = 'ab-warning-modal';
+
+    // ১. মডাল দেখানোর ফাংশন (আপনার স্টাইল ঠিক রাখা হয়েছে)
+    function showModal() {
+        if (document.getElementById(modalID)) return;
+        const modal = document.createElement('div');
+        modal.id = modalID;
+        modal.style.cssText = `
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95); z-index: 9999999;
+            display: flex; justify-content: center; align-items: center;
+            flex-direction: column; backdrop-filter: blur(5px);
+        `;
+        modal.innerHTML = `
+            <div style="background:#1a1a1a; color:#fff; padding:30px; border-radius:12px; text-align:center; max-width:90%; width:400px; border: 1px solid #333; box-shadow: 0 0 25px rgba(255,0,0,0.2);">
+                <div style="font-size: 50px; margin-bottom: 10px;">🛡️</div>
+                <h2 style="color:#ef4444; margin:0 0 10px 0; font-family: sans-serif;">Adblock Detected</h2>
+                <p style="font-size:15px; color:#cbd5e1; line-height: 1.5; margin-bottom: 20px;">${warningText}</p>
+                <button onclick="location.reload()" style="background:#ef4444; color:white; border:none; padding:12px 25px; border-radius:6px; font-weight:bold; cursor:pointer; font-size:14px; transition: 0.2s;">
+                    রিফ্রেশ করুন
+                </button>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        document.body.style.overflow = 'hidden';
+    }
+
+    // ২. মেইন ডিটেকশন ফাংশন (Network + CSS)
+    async function detectAdBlock() {
+        let adBlockEnabled = false;
+
+        // পদ্ধতি ১: গুগল অ্যাডসেস স্ক্রিপ্ট লোড করার চেষ্টা (Network Check)
+        // এটি সবচেয়ে কার্যকরী উপায়। অ্যাড ব্লকার থাকলে এই রিকোয়েস্ট ফেইল করবে।
+        try {
+            await fetch(new Request("https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js", { method: 'HEAD', mode: 'no-cors' }));
+        } catch (e) {
+            adBlockEnabled = true;
+        }
+
+        // পদ্ধতি ২: এইচটিএমএল এলিমেন্ট চেক (CSS Bait - আপনার আগের পদ্ধতি)
+        if (!adBlockEnabled) {
+            const bait = document.createElement('div');
+            bait.innerHTML = '&nbsp;';
+            bait.className = 'adsbox ad-banner adsbygoogle pub_300x250';
+            bait.style.cssText = 'position:absolute; top:-1000px; left:-1000px; width:1px; height:1px;';
+            document.body.appendChild(bait);
+            
+            // একটু সময় দিয়ে চেক করা
+            await new Promise(r => setTimeout(r, 100));
+
+            if (
+                window.document.body.getAttribute('abp') !== null || 
+                bait.offsetParent === null || 
+                bait.offsetHeight === 0 || 
+                bait.offsetLeft === 0 || 
+                window.getComputedStyle(bait).getPropertyValue('display') === 'none' ||
+                window.getComputedStyle(bait).getPropertyValue('visibility') === 'hidden'
+            ) {
+                adBlockEnabled = true;
+            }
+            try { bait.remove(); } catch(e){}
+        }
+
+        // যদি অ্যাড ব্লকার পাওয়া যায়, মডাল দেখাও
+        if (adBlockEnabled) {
+            showModal();
+        }
+    }
+
+    // পেজ লোড হওয়ার ১ সেকেন্ড পর চেক শুরু করবে
+    window.addEventListener('load', () => {
+        setTimeout(detectAdBlock, 1000);
+    });
+})();
+</script>
+
+
+    
       <title>Toffee Tv Live</title>
     <style>
         /* Basic Page Reset */
@@ -2849,62 +2931,6 @@
 </script>
 
 
-<script>
-(function() {
-    const warningText = "আপনার ব্রাউজারে অ্যাড ব্লকার চালু আছে! আমাদের সাইটটি ফ্রি রাখতে অনুগ্রহ করে এটি বন্ধ করুন।";
-    const modalID = 'ab-warning-modal';
-
-    function showModal() {
-        if (document.getElementById(modalID)) return;
-        const modal = document.createElement('div');
-        modal.id = modalID;
-        modal.style.cssText = `
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.95); z-index: 9999999;
-            display: flex; justify-content: center; align-items: center;
-            flex-direction: column; backdrop-filter: blur(5px);
-        `;
-        modal.innerHTML = `
-            <div style="background:#1a1a1a; color:#fff; padding:30px; border-radius:12px; text-align:center; max-width:90%; width:400px; border: 1px solid #333; box-shadow: 0 0 25px rgba(255,0,0,0.2);">
-                <div style="font-size: 50px; margin-bottom: 10px;">🛡️</div>
-                <h2 style="color:#ef4444; margin:0 0 10px 0; font-family: sans-serif;">Adblock Detected</h2>
-                <p style="font-size:15px; color:#cbd5e1; line-height: 1.5; margin-bottom: 20px;">${warningText}</p>
-                <button onclick="location.reload()" style="background:#ef4444; color:white; border:none; padding:12px 25px; border-radius:6px; font-weight:bold; cursor:pointer; font-size:14px; transition: 0.2s;">
-                    রিফ্রেশ করুন
-                </button>
-            </div>
-        `;
-        document.body.appendChild(modal);
-        document.body.style.overflow = 'hidden';
-    }
-
-    function detectAdBlock() {
-        const bait = document.createElement('div');
-        bait.innerHTML = '&nbsp;';
-        bait.className = 'adsbox ad-banner adsbygoogle pub_300x250';
-        bait.style.cssText = 'position:absolute; top:-1000px; left:-1000px; width:1px; height:1px;';
-        document.body.appendChild(bait);
-
-        setTimeout(function() {
-            if (
-                window.document.body.getAttribute('abp') !== null ||
-                bait.offsetParent === null || 
-                bait.offsetHeight === 0 || 
-                bait.offsetLeft === 0 || 
-                window.getComputedStyle(bait).getPropertyValue('display') === 'none' ||
-                window.getComputedStyle(bait).getPropertyValue('visibility') === 'hidden'
-            ) {
-                showModal();
-            }
-            try { document.body.removeChild(bait); } catch(e){}
-        }, 100);
-    }
-
-    window.addEventListener('load', () => {
-        setTimeout(detectAdBlock, 2000);
-    });
-})();
-</script>
 
 
 </body>
