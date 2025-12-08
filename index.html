@@ -2673,38 +2673,6 @@
                     }
                         // ... আগের অংশ ...
 
-// LOGIC 2: HLS (Uses Hls.js for stability)
-else if (isHLS) {
-    if (Hls.isSupported()) {
-        activePlayerType = 'hls';
-        
-        // হেডার কনফিগারেশন যুক্ত করা হলো
-        const hlsConfig = {};
-        if (src.headers) {
-            hlsConfig.xhrSetup = function(xhr, url) {
-                for (const [key, value] of Object.entries(src.headers)) {
-                    // ব্রাউজার User-Agent পরিবর্তন করতে দেবে না, তাই ট্রাই-ক্যাচ ব্লক
-                    try {
-                        xhr.setRequestHeader(key, value);
-                    } catch (e) {
-                        console.warn(`Cannot set header: ${key}`, e);
-                    }
-                }
-            };
-        }
-
-        hlsPlayer = new Hls(hlsConfig); // কনফিগারেশন পাস করা হলো
-        hlsPlayer.loadSource(url);
-        hlsPlayer.attachMedia(video);
-        
-        hlsPlayer.on(Hls.Events.MANIFEST_PARSED, function() {
-            video.play();
-            status.innerHTML = '<span style="color:#2ecc71; font-weight:bold;">● Playing Live (HLS)</span>';
-            setupQualityHls();
-        });
-
-        // ... বাকি অংশ একই থাকবে ...
-
 
 
                         
