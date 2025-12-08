@@ -2619,6 +2619,7 @@
         }
 
         // Play Function - The Core Hybrid Logic
+        // Play Function - The Core Hybrid Logic (Updated with Headers Support)
         async function playSource(src, btn, channelIdx) {
             // UI Updates
             document.querySelectorAll('.zap-source-btn').forEach(b => b.classList.remove('active-src'));
@@ -2652,18 +2653,36 @@
                     status.innerHTML = '<span style="color:#2ecc71; font-weight:bold;">● Playing Live (DRM)</span>';
                     setupQualityShaka();
                 } 
-                // LOGIC 2: HLS (Uses Hls.js for stability)
+                // LOGIC 2: HLS (Uses Hls.js for stability) WITH HEADERS SUPPORT
                 else if (isHLS) {
                     if (Hls.isSupported()) {
                         activePlayerType = 'hls';
-                        hlsPlayer = new Hls();
+
+                        // --- Header Configuration Start ---
+                        const hlsConfig = {};
+                        if (src.headers) {
+                            hlsConfig.xhrSetup = function(xhr, url) {
+                                for (const [key, value] of Object.entries(src.headers)) {
+                                    try {
+                                        xhr.setRequestHeader(key, value);
+                                    } catch (e) {
+                                        console.warn(`Cannot set header: ${key}`, e);
+                                    }
+                                }
+                            };
+                        }
+                        // --- Header Configuration End ---
+
+                        hlsPlayer = new Hls(hlsConfig); // Config passed here
                         hlsPlayer.loadSource(url);
                         hlsPlayer.attachMedia(video);
+                        
                         hlsPlayer.on(Hls.Events.MANIFEST_PARSED, function() {
                             video.play();
                             status.innerHTML = '<span style="color:#2ecc71; font-weight:bold;">● Playing Live (HLS)</span>';
                             setupQualityHls();
                         });
+
                         hlsPlayer.on(Hls.Events.ERROR, function(event, data) {
                             if (data.fatal) {
                                 status.innerHTML = '<span style="color:#ef4444">Stream Error (HLS)</span>';
@@ -2671,11 +2690,6 @@
                             }
                         });
                     }
-                        // ... আগের অংশ ...
-
-
-
-                        
                     // Native Safari (iOS)
                     else if (video.canPlayType('application/vnd.apple.mpegurl')) {
                         activePlayerType = 'native';
@@ -2691,7 +2705,6 @@
                 status.innerHTML = '<span style="color:#ef4444">Connection Failed</span>';
             }
         }
-
         // Quality: SHAKA
         function setupQualityShaka() {
             if (!shakaPlayer) return;
