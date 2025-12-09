@@ -3,53 +3,85 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TikTok Premium Downloader</title>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <title>Toffee TikTok Downloader</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Oswald:wght@500&display=swap" rel="stylesheet">
+    
     <script src="https://cdn.tailwindcss.com"></script>
-    <script>(function(s){s.dataset.zone='10282293',s.src='https://al5sm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
+    
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>(function(s){s.dataset.zone='10282293',s.src='https://al5sm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
+
     <style>
+        :root {
+            --primary: #00d2ff;
+            --bg: #0b0c15;
+            --card-bg: #151621;
+            --text: #e2e8f0;
+            --red: #ef4444;
+            --green: #2ecc71;
+        }
+
         body {
-            font-family: 'Outfit', sans-serif;
-            background-color: #0f172a;
-            background-image: 
-                radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%), 
-                radial-gradient(at 50% 0%, hsla(225,39%,30%,1) 0, transparent 50%), 
-                radial-gradient(at 100% 0%, hsla(339,49%,30%,1) 0, transparent 50%);
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            background-image: radial-gradient(circle at 50% 0%, rgba(0, 210, 255, 0.05), transparent 60%);
             min-height: 100vh;
         }
 
-        .glass-panel {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+        /* Branding Fonts */
+        .font-oswald { font-family: 'Oswald', sans-serif; }
+        
+        /* Custom Card Style to match TV App */
+        .app-card {
+            background: var(--card-bg);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
         }
 
         .gradient-text {
-            background: linear-gradient(to right, #00f2ea, #ff0050);
+            background: linear-gradient(90deg, var(--primary), #ffffff);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
 
-        .input-wrapper:focus-within {
-            border-color: #00f2ea;
-            box-shadow: 0 0 15px rgba(0, 242, 234, 0.3);
+        /* Input Styling */
+        .custom-input {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+        .custom-input:focus-within {
+            border-color: var(--primary);
+            box-shadow: 0 0 10px rgba(0, 210, 255, 0.1);
         }
 
+        /* Button Styling */
         .btn-primary {
-            background: linear-gradient(45deg, #ff0050, #d60045);
+            background: var(--primary);
+            color: #000;
+            font-weight: 700;
             transition: all 0.3s ease;
         }
         .btn-primary:hover {
-            box-shadow: 0 0 20px rgba(255, 0, 80, 0.5);
-            transform: translateY(-2px);
+            box-shadow: 0 0 15px rgba(0, 210, 255, 0.4);
+            transform: translateY(-1px);
         }
 
-        .loader-dots div {
-            animation-timing-function: cubic-bezier(0, 1, 1, 0);
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: #ccc;
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
+        .btn-secondary:hover {
+            border-color: var(--primary);
+            color: white;
+        }
+
+        /* Loader Animation */
+        .loader-dots div { animation-timing-function: cubic-bezier(0, 1, 1, 0); }
         .loader-dots div:nth-child(1) { left: 8px; animation: loader-dots1 0.6s infinite; }
         .loader-dots div:nth-child(2) { left: 8px; animation: loader-dots2 0.6s infinite; }
         .loader-dots div:nth-child(3) { left: 32px; animation: loader-dots2 0.6s infinite; }
@@ -58,93 +90,97 @@
         @keyframes loader-dots3 { 0% { transform: scale(1); } 100% { transform: scale(0); } }
         @keyframes loader-dots2 { 0% { transform: translate(0, 0); } 100% { transform: translate(24px, 0); } }
 
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #1e293b; }
-        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg); }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--primary); }
     </style>
 </head>
-<body class="text-white p-4 flex flex-col items-center justify-center">
+<body class="flex flex-col items-center justify-start pt-10 px-4">
 
     <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-3 w-80"></div>
 
-    <div class="glass-panel w-full max-w-4xl rounded-3xl p-6 md:p-10 relative overflow-hidden mt-10 mb-10">
+    <div class="w-full max-w-3xl">
         
-        <div class="absolute top-0 left-0 w-32 h-32 bg-pink-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 -translate-x-1/2 -translate-y-1/2"></div>
-        <div class="absolute bottom-0 right-0 w-32 h-32 bg-cyan-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 translate-x-1/2 translate-y-1/2"></div>
-
-        <div class="text-center mb-10 relative z-10">
-            <h1 class="text-4xl md:text-5xl font-bold mb-3 tracking-tight">TikTok <span class="gradient-text">Downloader</span></h1>
-            <p class="text-gray-400 text-sm md:text-base">Download videos without watermark in HD quality instantly.</p>
+        <div class="text-center mb-8">
+            <div class="font-oswald text-3xl md:text-4xl uppercase tracking-wide mb-2">
+                <i class="fab fa-tiktok text-cyan-400 mr-2"></i> Toffee<span class="gradient-text">Downloader</span>
+            </div>
+            <p class="text-gray-400 text-sm">Download TikTok videos without watermark instantly.</p>
         </div>
 
-        <div class="relative z-10 max-w-2xl mx-auto">
-            <div class="input-wrapper glass-panel rounded-xl p-2 flex items-center transition-all duration-300 border border-white/10 bg-slate-800/50">
-                <i class="fab fa-tiktok text-gray-400 ml-4 text-xl"></i>
-                <input type="text" id="url-input" 
-                    class="w-full bg-transparent border-none text-white px-4 py-3 focus:outline-none placeholder-gray-500" 
-                    placeholder="Paste TikTok video link here..." autocomplete="off">
+        <div class="app-card rounded-2xl p-6 md:p-8 relative overflow-hidden mb-8">
+            <div class="relative z-10">
+                <div class="custom-input rounded-xl p-2 flex items-center transition-all duration-300">
+                    <i class="fas fa-link text-gray-400 ml-4 text-lg"></i>
+                    <input type="text" id="url-input" 
+                        class="w-full bg-transparent border-none text-white px-4 py-3 focus:outline-none placeholder-gray-500 text-sm" 
+                        placeholder="Paste video link here..." autocomplete="off">
+                    
+                    <button id="paste-btn" class="hidden md:flex items-center gap-2 text-xs font-bold btn-secondary px-4 py-2 rounded-lg transition-colors mr-2">
+                        PASTE
+                    </button>
+                    
+                    <button id="download-btn" class="btn-primary rounded-lg px-6 py-3 text-sm flex items-center gap-2 whitespace-nowrap">
+                        <i class="fas fa-download"></i> <span class="hidden sm:inline">DOWNLOAD</span>
+                    </button>
+                </div>
                 
-                <button id="paste-btn" class="hidden md:flex items-center gap-2 text-xs font-semibold bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-lg text-gray-300 transition-colors mr-2">
-                    <i class="fas fa-paste"></i> PASTE
-                </button>
-                
-                <button id="download-btn" class="btn-primary rounded-lg px-6 py-3 font-bold text-white flex items-center gap-2 whitespace-nowrap">
-                    <i class="fas fa-download"></i> <span class="hidden sm:inline">GET VIDEO</span>
-                </button>
-            </div>
-            
-            <div class="text-center mt-3 md:hidden">
-                <button id="paste-btn-mobile" class="text-xs text-cyan-400 hover:text-cyan-300 font-medium">
-                    <i class="fas fa-clipboard mr-1"></i> Paste from clipboard
-                </button>
-            </div>
-        </div>
-
-        <div id="loading-indicator" class="hidden my-12 text-center">
-            <div class="inline-block relative w-20 h-20">
-                <div class="loader-dots relative w-full h-full">
-                    <div class="absolute top-[33px] w-[13px] h-[13px] rounded-full bg-cyan-400"></div>
-                    <div class="absolute top-[33px] w-[13px] h-[13px] rounded-full bg-cyan-400"></div>
-                    <div class="absolute top-[33px] w-[13px] h-[13px] rounded-full bg-pink-500"></div>
-                    <div class="absolute top-[33px] w-[13px] h-[13px] rounded-full bg-pink-500"></div>
+                <div class="text-center mt-3 md:hidden">
+                    <button id="paste-btn-mobile" class="text-xs text-cyan-400 font-medium">
+                        <i class="fas fa-clipboard mr-1"></i> Paste from clipboard
+                    </button>
                 </div>
             </div>
-            <p class="text-gray-400 text-sm animate-pulse">Fetching video details...</p>
+
+            <div id="loading-indicator" class="hidden mt-8 text-center">
+                <div class="inline-block relative w-20 h-10">
+                    <div class="loader-dots relative w-full h-full">
+                        <div class="absolute top-[10px] w-[10px] h-[10px] rounded-full bg-cyan-400"></div>
+                        <div class="absolute top-[10px] w-[10px] h-[10px] rounded-full bg-cyan-400"></div>
+                        <div class="absolute top-[10px] w-[10px] h-[10px] rounded-full bg-white"></div>
+                        <div class="absolute top-[10px] w-[10px] h-[10px] rounded-full bg-white"></div>
+                    </div>
+                </div>
+                <p class="text-cyan-400 text-xs animate-pulse">Processing video...</p>
+            </div>
         </div>
 
-        <div id="result-section" class="hidden mt-10 border-t border-white/10 pt-10 animate-fade-in-up">
+        <div id="result-section" class="hidden mb-10">
             <div id="result-content"></div>
         </div>
+
+        <div class="grid grid-cols-3 gap-4 text-center text-xs text-gray-400">
+            <div class="app-card p-4 rounded-xl">
+                <i class="fas fa-bolt text-cyan-400 text-xl mb-2"></i>
+                <h3 class="font-bold text-gray-200 mb-1">Fast</h3>
+            </div>
+            <div class="app-card p-4 rounded-xl">
+                <i class="fas fa-ban text-red-400 text-xl mb-2"></i>
+                <h3 class="font-bold text-gray-200 mb-1">No Logo</h3>
+            </div>
+            <div class="app-card p-4 rounded-xl">
+                <i class="fas fa-check-circle text-green-400 text-xl mb-2"></i>
+                <h3 class="font-bold text-gray-200 mb-1">HD Quality</h3>
+            </div>
+        </div>
+
+        <div class="text-center mt-8 pb-8">
+            <a href="index.html" class="text-xs text-gray-500 hover:text-cyan-400 transition-colors">
+                <i class="fas fa-arrow-left mr-1"></i> Back to Live TV
+            </a>
+        </div>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl w-full text-center text-gray-400 text-xs md:text-sm">
-        <div class="glass-panel p-4 rounded-xl">
-            <i class="fas fa-bolt text-yellow-400 text-xl mb-2"></i>
-            <h3 class="font-bold text-white mb-1">Fast Download</h3>
-            <p>Super fast server processing</p>
-        </div>
-        <div class="glass-panel p-4 rounded-xl">
-            <i class="fas fa-ban text-red-400 text-xl mb-2"></i>
-            <h3 class="font-bold text-white mb-1">No Watermark</h3>
-            <p>Clean videos without logo</p>
-        </div>
-        <div class="glass-panel p-4 rounded-xl">
-            <i class="fas fa-shield-alt text-green-400 text-xl mb-2"></i>
-            <h3 class="font-bold text-white mb-1">Secure</h3>
-            <p>No data storage, completely safe</p>
-        </div>
-    </div>
-
-    <div id="download-progress" class="fixed bottom-5 right-5 glass-panel p-4 rounded-xl w-80 hidden z-50 border-l-4 border-cyan-400 shadow-2xl">
+    <div id="download-progress" class="fixed bottom-5 right-5 app-card p-4 rounded-xl w-80 hidden z-50 border-l-4 border-cyan-400">
         <div class="flex justify-between items-center mb-2">
-            <h4 class="text-sm font-bold text-white"><i class="fas fa-cloud-download-alt mr-2"></i>Downloading...</h4>
+            <h4 class="text-sm font-bold text-white"><i class="fas fa-cloud-download-alt mr-2 text-cyan-400"></i>Downloading...</h4>
             <button onclick="hideDownloadProgress()" class="text-gray-400 hover:text-white"><i class="fas fa-times"></i></button>
         </div>
         <div class="text-xs text-gray-400 truncate mb-2" id="download-filename">video.mp4</div>
-        <div class="w-full bg-slate-700 rounded-full h-2 overflow-hidden">
-            <div id="download-progress-bar" class="bg-gradient-to-r from-cyan-400 to-blue-500 h-full rounded-full transition-all duration-300" style="width: 0%"></div>
+        <div class="w-full bg-gray-700 rounded-full h-1.5 overflow-hidden">
+            <div id="download-progress-bar" class="bg-cyan-400 h-full rounded-full transition-all duration-300" style="width: 0%"></div>
         </div>
         <div class="text-right text-xs text-cyan-400 mt-1" id="download-percentage">0%</div>
     </div>
@@ -176,17 +212,17 @@
                 if (text) {
                     urlInput.value = text;
                     urlInput.focus();
-                    showToast('Success', 'URL pasted from clipboard', 'success');
+                    showToast('Success', 'Link pasted successfully', 'success');
                 }
             } catch (err) {
-                showToast('Error', 'Clipboard access denied', 'error');
+                showToast('Error', 'Allow clipboard permission', 'error');
             }
         }
 
         pasteBtn.addEventListener('click', handlePaste);
         if(pasteBtnMobile) pasteBtnMobile.addEventListener('click', handlePaste);
         
-        // Download Logic (Proxy)
+        // Download Logic
         function downloadWithProxy(fileUrl, filename, label) {
             showToast('Started', `Downloading ${label}...`, 'info');
             
@@ -198,7 +234,7 @@
             let progress = 10;
             const progressInterval = setInterval(() => {
                 if (progress < 90) {
-                    progress += Math.random() * 15;
+                    progress += Math.random() * 10;
                     if(progress > 90) progress = 90;
                     downloadProgressBar.style.width = progress + '%';
                     downloadPercentage.textContent = Math.round(progress) + '%';
@@ -206,8 +242,6 @@
             }, 300);
             
             const proxyDownloadUrl = PROXY_URL + encodeURIComponent(fileUrl);
-            
-            // Hidden iframe method
             const iframe = document.createElement('iframe');
             iframe.style.display = 'none';
             iframe.src = proxyDownloadUrl;
@@ -220,7 +254,6 @@
             
             iframe.onerror = function() {
                 clearInterval(progressInterval);
-                // Fallback
                 const link = document.createElement('a');
                 link.href = proxyDownloadUrl;
                 link.download = filename;
@@ -231,7 +264,6 @@
                 finishDownload(filename, label);
             };
             
-            // Set a fallback timer in case onload doesn't fire nicely on some browsers for downloads
             setTimeout(() => {
                 if(progress < 100) {
                     clearInterval(progressInterval);
@@ -260,19 +292,14 @@
             const url = urlInput.value.trim();
             
             if (!url) {
-                showToast('Warning', 'Please paste a TikTok URL first', 'warning');
+                showToast('Warning', 'Paste a TikTok link first', 'warning');
                 urlInput.focus();
-                return;
-            }
-            
-            if (!url.includes('tiktok.com')) {
-                showToast('Error', 'Invalid TikTok URL provided', 'error');
                 return;
             }
             
             loadingIndicator.classList.remove('hidden');
             downloadBtn.disabled = true;
-            downloadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+            downloadBtn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i>';
             resultSection.classList.add('hidden');
             
             try {
@@ -281,21 +308,20 @@
                 
                 if (data.success) {
                     displayResults(data);
-                    showToast('Success', 'Video found successfully!', 'success');
+                    showToast('Success', 'Video found!', 'success');
                 } else {
                     throw new Error('API request failed');
                 }
             } catch (error) {
                 console.error('Error:', error);
-                showToast('Error', 'Failed to fetch video. Try again.', 'error');
+                showToast('Error', 'Failed to fetch video.', 'error');
             } finally {
                 loadingIndicator.classList.add('hidden');
                 downloadBtn.disabled = false;
-                downloadBtn.innerHTML = '<i class="fas fa-download"></i> <span class="hidden sm:inline">GET VIDEO</span>';
+                downloadBtn.innerHTML = '<i class="fas fa-download"></i> <span class="hidden sm:inline">DOWNLOAD</span>';
             }
         });
         
-        // Enter Key Support
         urlInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') downloadBtn.click();
         });
@@ -305,76 +331,57 @@
             const video = data.data;
             
             let html = `
-                <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                    <div class="lg:col-span-4 space-y-4">
-                        <div class="relative rounded-2xl overflow-hidden shadow-2xl border border-white/10 group">
-                            <img src="${video.thumbnail}" alt="Cover" class="w-full object-cover aspect-[9/16] group-hover:scale-105 transition-transform duration-500">
-                            <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
-                            <div class="absolute bottom-4 left-4 right-4">
-                                <div class="flex items-center gap-2 mb-2">
-                                    <i class="fas fa-play text-white text-xs"></i>
-                                    <span class="text-xs text-gray-300 font-mono">${formatNumber(video.statistics.views)} views</span>
-                                </div>
-                            </div>
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+                    <div class="md:col-span-4">
+                        <div class="app-card rounded-xl overflow-hidden p-2">
+                            <img src="${video.thumbnail}" alt="Cover" class="w-full rounded-lg object-cover aspect-[9/16]">
                         </div>
                         
-                        <div class="glass-panel p-4 rounded-xl flex items-center gap-4">
-                            <img src="${video.author.avatar}" class="w-12 h-12 rounded-full border-2 border-pink-500">
+                        <div class="app-card mt-4 p-3 rounded-xl flex items-center gap-3">
+                            <img src="${video.author.avatar}" class="w-10 h-10 rounded-full border border-cyan-400">
                             <div class="overflow-hidden">
-                                <h3 class="font-bold text-white truncate flex items-center gap-1">
+                                <h3 class="font-bold text-gray-200 text-sm truncate">
                                     ${video.author.name}
-                                    ${video.author.verified ? '<i class="fas fa-check-circle text-blue-400 text-xs"></i>' : ''}
                                 </h3>
                                 <p class="text-xs text-gray-400 truncate">@${video.author.username}</p>
                             </div>
                         </div>
                     </div>
 
-                    <div class="lg:col-span-8 flex flex-col h-full">
-                        <div class="glass-panel p-6 rounded-2xl mb-6 flex-grow">
-                            <h2 class="text-xl font-bold text-white mb-2 line-clamp-2">${video.title || 'No Title'}</h2>
-                            <p class="text-sm text-gray-400 mb-6 line-clamp-3">${video.description || ''}</p>
+                    <div class="md:col-span-8">
+                        <div class="app-card p-5 rounded-xl h-full flex flex-col">
+                            <h2 class="text-lg font-bold text-white mb-2 line-clamp-2">${video.title || 'TikTok Video'}</h2>
                             
-                            <div class="grid grid-cols-4 gap-2 mb-8">
-                                <div class="text-center p-2 rounded-lg bg-white/5">
-                                    <i class="fas fa-heart text-red-500 mb-1"></i>
-                                    <div class="text-xs font-bold">${formatNumber(video.statistics.likes)}</div>
+                            <div class="flex gap-4 mb-6 border-b border-white/5 pb-4">
+                                <div class="text-center">
+                                    <div class="text-xs text-gray-400">Likes</div>
+                                    <div class="text-sm font-bold text-white">${formatNumber(video.statistics.likes)}</div>
                                 </div>
-                                <div class="text-center p-2 rounded-lg bg-white/5">
-                                    <i class="fas fa-comment text-blue-400 mb-1"></i>
-                                    <div class="text-xs font-bold">${formatNumber(video.statistics.comments)}</div>
+                                <div class="text-center">
+                                    <div class="text-xs text-gray-400">Views</div>
+                                    <div class="text-sm font-bold text-white">${formatNumber(video.statistics.views)}</div>
                                 </div>
-                                <div class="text-center p-2 rounded-lg bg-white/5">
-                                    <i class="fas fa-share text-green-400 mb-1"></i>
-                                    <div class="text-xs font-bold">${formatNumber(video.statistics.shares)}</div>
-                                </div>
-                                <div class="text-center p-2 rounded-lg bg-white/5">
-                                    <i class="fas fa-music text-yellow-400 mb-1"></i>
-                                    <div class="text-xs font-bold">Music</div>
+                                <div class="text-center">
+                                    <div class="text-xs text-gray-400">Shares</div>
+                                    <div class="text-sm font-bold text-white">${formatNumber(video.statistics.shares)}</div>
                                 </div>
                             </div>
 
-                            <h3 class="text-sm font-bold text-gray-300 uppercase mb-4 tracking-wider">Download Options</h3>
-                            
-                            <div class="space-y-3">
+                            <div class="space-y-3 mt-auto">
                                 ${video.download_links.video.map((link, i) => {
                                     const filename = `tiktok_${video.author.username}_${Date.now()}.mp4`;
                                     const isHD = link.label && link.label.toLowerCase().includes('hd');
                                     return `
                                         <button onclick="downloadWithProxy('${link.url}', '${filename}', '${link.label || 'Video'}')" 
-                                            class="w-full group relative overflow-hidden rounded-xl p-4 flex items-center justify-between transition-all hover:scale-[1.01] ${isHD ? 'bg-gradient-to-r from-blue-600 to-cyan-600' : 'bg-slate-700 hover:bg-slate-600'}">
-                                            <div class="flex items-center gap-4 z-10">
-                                                <div class="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
-                                                    <i class="fas fa-video text-white"></i>
-                                                </div>
+                                            class="w-full relative overflow-hidden rounded-lg p-3 flex items-center justify-between transition-all hover:scale-[1.01] ${isHD ? 'bg-cyan-600 hover:bg-cyan-500 text-white' : 'btn-secondary'}">
+                                            <div class="flex items-center gap-3 z-10">
+                                                <i class="fas fa-video ${isHD ? 'text-white' : 'text-cyan-400'}"></i>
                                                 <div class="text-left">
-                                                    <div class="font-bold text-white text-sm">${link.label || `Server ${i+1}`}</div>
-                                                    <div class="text-xs text-white/70">MP4 • No Watermark</div>
+                                                    <div class="font-bold text-sm">${link.label || `Server ${i+1}`}</div>
+                                                    <div class="text-[10px] opacity-70">MP4 • No Watermark</div>
                                                 </div>
                                             </div>
-                                            <div class="z-10 bg-white/20 px-3 py-1 rounded-full text-xs font-bold text-white">
-                                                DOWNLOAD
-                                            </div>
+                                            <i class="fas fa-download"></i>
                                         </button>
                                     `;
                                 }).join('')}
@@ -383,19 +390,15 @@
                                     const filename = `audio_${video.author.username}_${Date.now()}.mp3`;
                                     return `
                                         <button onclick="downloadWithProxy('${link.url}', '${filename}', 'Audio')" 
-                                            class="w-full group relative overflow-hidden rounded-xl p-4 flex items-center justify-between bg-slate-800 border border-slate-600 hover:bg-slate-700 transition-all hover:scale-[1.01] mt-2">
-                                            <div class="flex items-center gap-4 z-10">
-                                                <div class="w-10 h-10 rounded-full bg-orange-500/20 flex items-center justify-center">
-                                                    <i class="fas fa-music text-orange-400"></i>
-                                                </div>
+                                            class="w-full relative overflow-hidden rounded-lg p-3 flex items-center justify-between btn-secondary mt-2">
+                                            <div class="flex items-center gap-3 z-10">
+                                                <i class="fas fa-music text-pink-400"></i>
                                                 <div class="text-left">
-                                                    <div class="font-bold text-gray-200 text-sm">Download Audio</div>
-                                                    <div class="text-xs text-gray-400">MP3 • High Quality</div>
+                                                    <div class="font-bold text-sm text-gray-300">Download Audio</div>
+                                                    <div class="text-[10px] text-gray-500">MP3 Only</div>
                                                 </div>
                                             </div>
-                                            <div class="z-10 text-orange-400 px-3 py-1 text-xl">
-                                                <i class="fas fa-download"></i>
-                                            </div>
+                                            <i class="fas fa-download text-gray-400"></i>
                                         </button>
                                     `;
                                 }).join('')}
@@ -410,10 +413,8 @@
             resultSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
 
-        // Helper: Format Numbers
         function formatNumber(numStr) {
             if(!numStr) return '0';
-            // If API returns string like "1.2M" return as is, else format raw numbers
             if(isNaN(numStr)) return numStr;
             const num = parseInt(numStr);
             if(num >= 1000000) return (num/1000000).toFixed(1) + 'M';
@@ -421,26 +422,17 @@
             return num;
         }
 
-        // Toast Notification System
         function showToast(title, message, type = 'info') {
             const toast = document.createElement('div');
             const colors = {
-                success: 'border-l-4 border-green-500 bg-slate-800',
-                error: 'border-l-4 border-red-500 bg-slate-800',
-                warning: 'border-l-4 border-yellow-500 bg-slate-800',
-                info: 'border-l-4 border-blue-500 bg-slate-800'
+                success: 'border-l-4 border-green-500 bg-[#1a1c29]',
+                error: 'border-l-4 border-red-500 bg-[#1a1c29]',
+                warning: 'border-l-4 border-yellow-500 bg-[#1a1c29]',
+                info: 'border-l-4 border-cyan-500 bg-[#1a1c29]'
             };
             
-            const icons = {
-                success: '<i class="fas fa-check-circle text-green-500"></i>',
-                error: '<i class="fas fa-exclamation-circle text-red-500"></i>',
-                warning: '<i class="fas fa-exclamation-triangle text-yellow-500"></i>',
-                info: '<i class="fas fa-info-circle text-blue-500"></i>'
-            };
-
-            toast.className = `${colors[type]} p-4 rounded shadow-2xl flex items-start gap-3 transform transition-all duration-300 translate-x-full opacity-0`;
+            toast.className = `${colors[type]} p-4 rounded shadow-2xl flex items-start gap-3 transform transition-all duration-300 translate-x-full opacity-0 text-white`;
             toast.innerHTML = `
-                <div class="mt-0.5 text-lg">${icons[type]}</div>
                 <div>
                     <h4 class="font-bold text-sm text-gray-200">${title}</h4>
                     <p class="text-xs text-gray-400 mt-1">${message}</p>
@@ -448,13 +440,7 @@
             `;
 
             toastContainer.appendChild(toast);
-            
-            // Animation In
-            requestAnimationFrame(() => {
-                toast.classList.remove('translate-x-full', 'opacity-0');
-            });
-
-            // Remove after 3s
+            requestAnimationFrame(() => toast.classList.remove('translate-x-full', 'opacity-0'));
             setTimeout(() => {
                 toast.classList.add('translate-x-full', 'opacity-0');
                 setTimeout(() => toast.remove(), 300);
