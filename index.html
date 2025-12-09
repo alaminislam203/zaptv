@@ -74,6 +74,13 @@
     .search-box { width: 100%; padding: 12px 15px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.2); color: #fff; margin-bottom: 15px; outline: none; }
     .search-box:focus { border-color: var(--primary); }
 
+
+    /* HOT MATCHES SCROLL */
+    .hot-scroll { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 10px; margin-bottom: 15px; scrollbar-width: none; }
+    .match-card { min-width: 140px; background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(0,0,0,0.5)); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 10px; cursor: pointer; position: relative; }
+    .match-time { position: absolute; top: 5px; right: 5px; font-size: 9px; background: var(--red); padding: 2px 5px; border-radius: 4px; font-weight: bold; }
+    .match-teams { font-size: 11px; font-weight: bold; margin-top: 15px; line-height: 1.4; }
+
     /* ANIMATION */
     @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
     
