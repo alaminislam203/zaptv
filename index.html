@@ -124,13 +124,8 @@
         <div id="sourceContainer" class="source-list"></div>
     </div>
 
-    <div style="margin-top:20px; margin-bottom:10px; display:flex; align-items:center; gap:5px;">
-        <span style="color:#ef4444; font-size:18px;">🔥</span> 
-        <span style="font-weight:bold; font-size:14px;">HOT MATCHES</span>
-    </div>
-    
-    <div id="hotMatchesContainer" class="cat-scroll"></div>
-
+    <div style="margin-bottom: 10px; font-weight: 600; font-size: 14px; color: #fff;">🔥 HOT MATCHES</div>
+    <div id="hotMatchesContainer" class="hot-scroll"></div>
     <input type="text" id="searchInput" class="search-box" placeholder="🔍 চ্যানেল খুঁজুন (e.g. Sports, Sony)...">
 
     <div class="cat-scroll" id="catContainer">
@@ -3650,6 +3645,7 @@
     const logo = document.getElementById('mainLogo');
     const status = document.getElementById('mainStatus');
     const srcContainer = document.getElementById('sourceContainer');
+    const hotMatchContainer = document.getElementById('hotMatchesContainer');
 
     // ================= INIT =================
     function init() {
@@ -3662,6 +3658,30 @@
         // Search Listener
         search.addEventListener('input', (e) => {
             renderChannels(e.target.value);
+        });
+    }
+
+    // Render Hot Matches
+    function renderHotMatches() {
+        hotMatchContainer.innerHTML = "";
+        hotMatches.forEach(match => {
+            const div = document.createElement('div');
+            div.className = 'match-card';
+            div.innerHTML = `
+                <div class="match-time">${match.time}</div>
+                <div class="match-teams">${match.team1} <br> <span style="color:#999;font-weight:normal">vs</span> <br> ${match.team2}</div>
+                <div style="font-size:10px; color:#aaa; margin-top:5px;">${match.info}</div>
+            `;
+            div.onclick = () => {
+                // Find channel by name
+                const targetIdx = channels.findIndex(ch => ch.name === match.channelName);
+                if(targetIdx !== -1) {
+                    loadChannel(targetIdx);
+                } else {
+                    showToast("Channel not found!");
+                }
+            };
+            hotMatchContainer.appendChild(div);
         });
     }
 
