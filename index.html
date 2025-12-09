@@ -55,6 +55,19 @@
     .match-card { min-width: 140px; background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(0,0,0,0.5)); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 10px; cursor: pointer; position: relative; }
     .match-time { position: absolute; top: 5px; right: 5px; font-size: 9px; background: var(--red); padding: 2px 5px; border-radius: 4px; font-weight: bold; }
     .match-teams { font-size: 11px; font-weight: bold; margin-top: 15px; line-height: 1.4; }
+    /* Match Timer Style */
+    .match-time { 
+        position: absolute; top: 5px; right: 5px; 
+        font-size: 10px; font-weight: bold; 
+        background: rgba(0,0,0,0.6); color: #fff; 
+        padding: 3px 6px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.2);
+    }
+    
+    /* যখন LIVE হবে তখন এই স্টাইল পাবে */
+    .match-time.is-live { 
+        background: #ef4444; border-color: #ef4444; 
+        animation: pulse 1s infinite; 
+    }
 
     /* GRID & CARDS */
     .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; }
@@ -138,11 +151,15 @@
         { 
             team1: "South Africa", team2: "India", 
             info: "1st T20 • Live", time: "LIVE", 
+            // খেলার সময় নিচে দিন (উদাহরণ: ২০২৫ সালের ৯ ডিসেম্বর, রাত ৮টা)
+            matchTime: "2025-12-09T19:30:00",
             channelName: "T Sports" // Must match exact channel Name
         },
         { 
             team1: "Real Madrid", team2: "Barca", 
-            info: "La Liga", time: "2:00 AM", 
+            info: "La Liga", time: "2:00 AM",
+            // খেলার সময় নিচে দিন (উদাহরণ: ২০২৫ সালের ৯ ডিসেম্বর, রাত ৮টা)
+            matchTime: "2025-12-09T20:00:00",
             channelName: "Sony Ten 1" 
         }
     ];
@@ -3604,12 +3621,13 @@
 }
     ];
 
-    // ================= STATE =================
+   / ================= STATE =================
     let favorites = JSON.parse(localStorage.getItem('zapFavorites')) || [];
-    let activePlayer = null; // 'shaka', 'hls'
+    let activePlayer = null; 
     let shakaInstance = null;
     let hlsInstance = null;
     let currentChannelIdx = -1;
+    let timerInterval = null; // টাইমার ভেরিয়েবল
 
     // ================= DOM ELEMENTS =================
     const video = document.getElementById('videoPlayer');
@@ -3637,21 +3655,50 @@
         });
     }
 
+    // ================= TIMER LOGIC =================
+    function startCountdown() {
+        if(timerInterval) clearInterval(timerInterval);
+        
+        // প্রতি ১ সেকেন্ডে আপডেট হবে
+        timerInterval = setInterval(() => {
+            const timeBadges = document.querySelectorAll('.match-time');
+            const now = new Date().getTime();
+
+            timeBadges.forEach(badge => {
+                const targetTime = new Date(badge.dataset.time).getTime();
+                const diff = targetTime - now;
+
+                if (diff > 0) {
+                    // সময় বাকি আছে
+                    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                    const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+                    
+                    // সুন্দর ফরম্যাট: 02h 10m 05s
+                    badge.innerText = `${hours}h ${minutes}m ${seconds}s`;
+                    badge.classList.remove('is-live');
+                } else {
+                    // সময় শেষ = খেলা শুরু
+                    badge.innerText = "LIVE";
+                    badge.classList.add('is-live');
+                }
+            });
+        }, 1000);
+    }
+
     // ================= RENDER LOGIC =================
-    
-    // Render Hot Matches
     function renderHotMatches() {
         hotMatchContainer.innerHTML = "";
         hotMatches.forEach(match => {
             const div = document.createElement('div');
             div.className = 'match-card';
+            // data-time এট্রিবিউট দিয়ে সময় সেভ করা হচ্ছে
             div.innerHTML = `
-                <div class="match-time">${match.time}</div>
+                <div class="match-time" data-time="${match.matchTime}">Loading...</div>
                 <div class="match-teams">${match.team1} <br> <span style="color:#999;font-weight:normal">vs</span> <br> ${match.team2}</div>
                 <div style="font-size:10px; color:#aaa; margin-top:5px;">${match.info}</div>
             `;
             div.onclick = () => {
-                // Find channel by name
                 const targetIdx = channels.findIndex(ch => ch.name === match.channelName);
                 if(targetIdx !== -1) {
                     loadChannel(targetIdx);
@@ -3660,6 +3707,38 @@
                 }
             };
             hotMatchContainer.appendChild(div);
+        });
+    }
+
+    function renderChannels(query = "") {
+        grid.innerHTML = "";
+        const filtered = channels.filter((ch) => {
+            return ch.name.toLowerCase().includes(query.toLowerCase());
+        });
+
+        if(filtered.length === 0) {
+            grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:20px;color:#666;">No channels found</div>`;
+            return;
+        }
+
+        filtered.forEach(ch => {
+            const originalIdx = channels.indexOf(ch);
+            const isFav = favorites.includes(originalIdx);
+
+            const div = document.createElement('div');
+            div.className = `card ${currentChannelIdx === originalIdx ? 'active' : ''}`;
+            div.onclick = (e) => {
+                if(!e.target.classList.contains('fav-icon')) {
+                    loadChannel(originalIdx);
+                }
+            };
+
+            div.innerHTML = `
+                <i class="fas fa-heart fav-icon ${isFav ? 'is-fav' : ''}" onclick="toggleFav(${originalIdx}, this)"></i>
+                <img src="${ch.logo}" onerror="this.src='https://via.placeholder.com/40'">
+                <div class="card-title">${ch.name}</div>
+            `;
+            grid.appendChild(div);
         });
     }
 
