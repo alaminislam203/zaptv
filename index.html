@@ -2,419 +2,420 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="ToffeeTvLive - Watch Live TV, Cricket, Football and Entertainment channels for free in HD quality.">
-<title>Toffee Tv Live</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0b0c15">
+<meta name="description" content="ToffeeTvLive - Premium Live TV Streaming">
+<title>Toffee Tv Live Pro</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Oswald:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<link rel="manifest" href="manifest.json">
+
 <style>
-    /* Basic Page Reset */
-    body { margin: 0; padding: 20px; background-color: #0b0c15; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; font-family: sans-serif; }
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Oswald:wght@500&display=swap');
-    
-    .zap-tv-container {
-        --zap-primary: #00d2ff; --zap-bg: #0b0c15; --zap-card: rgba(255, 255, 255, 0.05); --zap-text: #e2e8f0;
-        font-family: 'Inter', sans-serif; background: var(--zap-bg); color: var(--zap-text); width: 100%; max-width: 800px; border-radius: 12px; padding: 15px; border: 1px solid rgba(255,255,255,0.08); box-sizing: border-box;
+    :root {
+        --primary: #00d2ff;
+        --bg: #0b0c15;
+        --card-bg: #151621;
+        --text: #e2e8f0;
+        --red: #ef4444;
+        --green: #2ecc71;
     }
-    .zap-tv-container * { box-sizing: border-box; }
+
+    body { margin: 0; padding: 10px; background-color: var(--bg); font-family: 'Inter', sans-serif; color: var(--text); -webkit-tap-highlight-color: transparent; }
     
+    .app-container { max-width: 900px; margin: 0 auto; padding-bottom: 50px; }
+
     /* HEADER */
-    .zap-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; }
-    .zap-logo { font-family: 'Oswald', sans-serif; font-size: 20px; background: linear-gradient(90deg, var(--zap-primary), #fff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-    .zap-live-badge { font-size: 10px; background: #ef4444; color: #fff; padding: 3px 8px; border-radius: 4px; font-weight: bold; animation: pulse 2s infinite; }
+    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .logo { font-family: 'Oswald', sans-serif; font-size: 22px; background: linear-gradient(90deg, var(--primary), #fff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .live-badge { font-size: 10px; background: var(--red); color: #fff; padding: 4px 8px; border-radius: 4px; font-weight: bold; animation: pulse 1.5s infinite; }
+
+    /* PLAYER AREA */
+    .player-wrapper { position: relative; width: 100%; aspect-ratio: 16/9; background: #000; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px rgba(0, 210, 255, 0.15); margin-bottom: 10px; }
+    video { width: 100%; height: 100%; object-fit: contain; }
+    iframe { width: 100%; height: 100%; border: none; position: absolute; top: 0; left: 0; }
     
-    /* PLAYER & IFRAME */
-    .zap-player-box { position: relative; width: 100%; aspect-ratio: 16/9; background: #000; border-radius: 10px; overflow: hidden; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 0 20px rgba(0, 210, 255, 0.2); }
-    video.zap-video { width: 100%; height: 100%; object-fit: contain; display: block; }
-    .zap-iframe { width: 100%; height: 100%; position: absolute; top: 0; left: 0; border: none; z-index: 10; background: #000; }
+    /* Player Controls Bar */
+    .player-controls { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
+    .ctrl-btn { flex: 1; background: var(--card-bg); border: 1px solid rgba(255,255,255,0.1); color: #fff; padding: 8px; border-radius: 6px; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; transition: 0.2s; }
+    .ctrl-btn:active { transform: scale(0.95); }
+    .ctrl-btn:hover { border-color: var(--primary); color: var(--primary); }
+
+    /* INFO CARD */
+    .info-card { background: var(--card-bg); padding: 15px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 20px; }
+    .info-header { display: flex; align-items: center; gap: 15px; margin-bottom: 12px; }
+    .ch-logo-lg { width: 50px; height: 50px; border-radius: 50%; border: 2px solid var(--primary); padding: 2px; object-fit: contain; background: #000; }
+    .status-text { font-size: 11px; color: var(--green); margin-top: 2px; }
     
-    /* CONTROLS */
-    .zap-overlay { position: absolute; top: 10px; right: 10px; z-index: 5; }
-    .zap-quality-select { background: rgba(0,0,0,0.8); color: #fff; border: 1px solid rgba(255,255,255,0.3); padding: 4px; font-size: 11px; border-radius: 4px; cursor: pointer; }
+    .source-list { display: flex; gap: 8px; flex-wrap: wrap; }
+    .src-btn { background: rgba(255,255,255,0.08); border: none; color: #ccc; padding: 6px 12px; border-radius: 20px; font-size: 11px; cursor: pointer; }
+    .src-btn.active { background: var(--primary); color: #000; font-weight: bold; }
+
+    /* CATEGORIES */
+    .cat-scroll { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 10px; margin-bottom: 10px; scrollbar-width: none; }
+    .cat-btn { white-space: nowrap; padding: 8px 16px; border-radius: 20px; background: var(--card-bg); border: 1px solid rgba(255,255,255,0.1); color: #ccc; font-size: 12px; cursor: pointer; transition: 0.3s; }
+    .cat-btn.active { background: var(--primary); color: #000; border-color: var(--primary); font-weight: 600; }
+
+    /* GRID & CARDS */
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; }
+    .card { background: var(--card-bg); border-radius: 8px; padding: 10px; text-align: center; cursor: pointer; position: relative; border: 1px solid rgba(255,255,255,0.05); transition: 0.2s; }
+    .card:hover { border-color: var(--primary); transform: translateY(-2px); }
+    .card.active { border-color: var(--primary); box-shadow: 0 0 10px rgba(0,210,255,0.2); }
     
-    /* INFO AREA */
-    .zap-info-container { background: var(--zap-card); padding: 12px; border-radius: 8px; margin-bottom: 20px; }
-    .zap-info-header { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
-    .zap-channel-logo { width: 45px; height: 45px; border-radius: 50%; border: 2px solid var(--zap-primary); padding: 2px; background: rgba(0,0,0,0.3); }
-    .zap-info-text h3 { margin: 0; font-size: 16px; color: #fff; }
-    .zap-info-text p { margin: 2px 0 0; font-size: 11px; color: #a0aec0; }
+    .card img { width: 40px; height: 40px; object-fit: contain; margin-bottom: 8px; }
+    .card-title { font-size: 11px; color: #ccc; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     
-    /* SOURCE BUTTONS */
-    .zap-sources { display: flex; gap: 8px; flex-wrap: wrap; }
-    .zap-source-btn { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.1); color: #ccc; padding: 4px 10px; border-radius: 4px; font-size: 11px; cursor: pointer; }
-    .zap-source-btn.active-src { background: var(--zap-primary); color: #000; font-weight: bold; }
-    
-    /* GRID */
-    .zap-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 10px; max-height: 300px; overflow-y: auto; }
-    .zap-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 10px; text-align: center; cursor: pointer; transition: 0.2s; }
-    .zap-card:hover, .zap-card.active { background: rgba(255,255,255,0.1); border-color: var(--zap-primary); }
-    .zap-card.active { box-shadow: 0 0 10px rgba(0, 210, 255, 0.2); }
-    .zap-card img { width: 35px; height: 35px; object-fit: contain; margin-bottom: 5px; }
-    .zap-card span { display: block; font-size: 10px; color: #cbd5e1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    /* Favorite Heart */
+    .fav-icon { position: absolute; top: 5px; right: 5px; font-size: 14px; color: rgba(255,255,255,0.2); z-index: 2; transition: 0.2s; }
+    .fav-icon.is-fav { color: var(--red); transform: scale(1.2); }
+
+    /* SEARCH */
+    .search-box { width: 100%; padding: 12px 15px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.2); color: #fff; margin-bottom: 15px; outline: none; }
+    .search-box:focus { border-color: var(--primary); }
+
+    /* ANIMATION */
     @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
     
-    /* News Ticker */
-    .zap-news-ticker { width: 100%; background: rgba(0, 210, 255, 0.1); border: 1px solid rgba(0, 210, 255, 0.2); border-radius: 6px; overflow: hidden; white-space: nowrap; margin-bottom: 15px; height: 32px; display: flex; align-items: center; position: relative; }
-    .zap-news-content { display: inline-block; padding-left: 100%; animation: zap-scroll 35s linear infinite; color: #e2e8f0; font-size: 13px; font-weight: 500; font-family: 'Inter', sans-serif; }
-    .zap-news-content span { color: #ffd700; margin: 0 5px; }
-    .zap-news-content a { color: #00d2ff; text-decoration: none; font-weight: bold; border-bottom: 1px dashed #00d2ff; }
-    @keyframes zap-scroll { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
-
-    /* HOT MATCHES */
-    .zap-section-title { font-size: 14px; font-weight: 600; color: #fff; margin: 15px 0 10px; display: flex; align-items: center; gap: 8px; }
-    .zap-hot-scroll { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 10px; scroll-behavior: smooth; }
-    .zap-hot-scroll::-webkit-scrollbar { height: 4px; }
-    .zap-hot-scroll::-webkit-scrollbar-thumb { background: var(--zap-primary); border-radius: 4px; }
-    .zap-match-card { min-width: 160px; background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(0,0,0,0.5)); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 10px; cursor: pointer; position: relative; overflow: hidden; }
-    .zap-match-card:hover { border-color: var(--zap-primary); }
-    .zap-match-time { font-size: 9px; background: #ef4444; color: #fff; padding: 2px 6px; border-radius: 4px; position: absolute; top: 5px; right: 5px; }
-    .zap-teams { font-size: 12px; font-weight: bold; margin-top: 15px; line-height: 1.4; }
-    .zap-match-info { font-size: 10px; color: #94a3b8; margin-top: 4px; }
-
-    /* SEARCH BOX */
-    .zap-search-container { margin: 15px 0; position: relative; }
-    .zap-search-input { width: 100%; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); padding: 12px 15px 12px 40px; border-radius: 8px; color: #fff; outline: none; font-family: 'Inter', sans-serif; }
-    .zap-search-input:focus { border-color: var(--zap-primary); box-shadow: 0 0 10px rgba(0, 210, 255, 0.1); }
-    .zap-search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #64748b; }
+    /* Notification */
+    .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #333; color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 12px; opacity: 0; transition: 0.3s; pointer-events: none; z-index: 100; }
+    .toast.show { opacity: 1; bottom: 40px; }
 </style>
 </head>
 <body>
 
-    <div class="zap-tv-container">
-        <div class="zap-header">
-            <div class="zap-logo">▶ ToffeeTvLive</div>
-            <div class="zap-live-badge">● LIVE</div>
-        </div>
-        
-        <div class="zap-news-ticker">
-            <div class="zap-news-content">
-                ⚠️ চ্যানেল চালু হতে <span>২০ সেকেন্ড থেকে ১ মিনিট</span> পর্যন্ত সময় লাগতে পারে। 
-                🔴 প্রতিদিনের লাইভ খেলা দেখতে আমাদের সাথেই থাকুন। 
-                📺 আইপিটিভি প্লে-লিস্ট পেতে ভিজিট করুন: <a href="https://toffeelivetoday.online" target="_blank">toffeelivetoday.online</a> । ধন্যবাদ।
-            </div>
-        </div>
-
-        <div class="zap-player-box">
-            <div class="zap-overlay">
-                <select id="zapQuality" class="zap-quality-select" style="display:none;"></select>
-            </div>
-            
-            <video id="zapVideo" class="zap-video" controls autoplay playsinline poster="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgVp0J__NbqkDaI4JNZUeX2ASe8s-7yGClutfXS_NXWIwSe_TJtDAdBzxwYna2KzFz4TmbGxQgdOyYtD6vd3voJZHlsVVZpEx0BMsuLCNMogX5TotYtS6jhUMfPKKfexhIQSRg0tMqhThq5c6ci4GOZwsF0eg7-zntbXklo5eQjbg39vcCibVZkgF0NOmnj/s320/1200x1200.gif"></video>
-            
-            <iframe id="zapIframe" class="zap-iframe" style="display:none;" frameborder="0" allow="encrypted-media; autoplay; fullscreen" allowfullscreen></iframe>
-        </div>
-
-        <div class="zap-info-container">
-            <div class="zap-info-header">
-                <img id="zapMainLogo" class="zap-channel-logo" src="https://i.imgur.com/3Yp7XlS.png">
-                <div class="zap-info-text">
-                    <h3 id="zapMainTitle">Select Channel</h3>
-                    <p id="zapMainStatus">Ready</p>
-                </div>
-            </div>
-            <div id="zapSourceList" class="zap-sources"></div>
-        </div>
-
-        <div class="zap-section-title"><span style="color:#ef4444">🔥</span> HOT MATCHES</div>
-        <div id="zapHotMatches" class="zap-hot-scroll"></div>
-
-        <div class="zap-search-container">
-            <span class="zap-search-icon">🔍</span>
-            <input type="text" id="zapSearch" class="zap-search-input" placeholder="Search channels (e.g. Sports, News)...">
-        </div>
-        
-        <div style="font-size:12px;color:#64748b;margin-bottom:10px;font-weight:600;">CHANNELS</div>
-        <div id="zapChannelGrid" class="zap-grid"></div>
-        
-        <center>
-            <br><a href='http://www.freevisitorcounters.com'>at freevisitorcounters.com</a> 
-            <script type='text/javascript' src='https://www.freevisitorcounters.com/auth.php?id=b511898a3866fc6fdd293736143a255fa80da066'></script>
-            <script type="text/javascript" src="https://www.freevisitorcounters.com/en/home/counter/1454765/t/5"></script>
-        </center>
+<div class="app-container">
+    <div class="header">
+        <div class="logo"><i class="fas fa-play-circle"></i> ToffeePro</div>
+        <div class="live-badge">● LIVE</div>
     </div>
 
-    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/mux.js/6.3.0/mux.min.js"></script>
-    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.3.6/shaka-player.compiled.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/hls.js@1"></script>
+    <div style="background: rgba(0,210,255,0.1); border-left: 3px solid var(--primary); padding: 8px; font-size: 12px; margin-bottom: 15px; border-radius: 4px;">
+        <marquee>⚠️ চ্যানেল লোড হতে সমস্যা হলে 'Report' বাটনে ক্লিক করুন। নতুন নতুন চ্যানেল পেতে আমাদের টেলিগ্রামে যুক্ত হোন।</marquee>
+    </div>
 
-    <script>
-    (function() {
-        // 1. DATA
-        const hotMatches = [
-            { team1: "South Africa", team2: "India", info: "T20 Series • Live", time: "LIVE", channelName: "T Sports" },
-            { team1: "Real Madrid", team2: "Barca", info: "La Liga", time: "12:00 AM", channelName: "Premier Sports 1" }
-        ];
+    <div class="player-wrapper">
+        <video id="videoPlayer" controls autoplay playsinline poster="https://i.imgur.com/3Yp7XlS.png"></video>
+        <iframe id="iframePlayer" style="display:none;" allowfullscreen allow="encrypted-media; autoplay"></iframe>
+    </div>
 
-        const channels = [
-            {
-                name: "Ten Cricket",
-                logo: "https://i.postimg.cc/fWV00yP8/20250529_123315.png",
-                sources: [
-                    {
-                        label: "HD (Embed)",
-                        url: "https://bongoflixbd.top/?watch=212f6ccc690a978b72b758522a82d9b4",
-                        isEmbed: true
-                    }
-                ]
-            }
-        ];
+    <div class="player-controls">
+        <button class="ctrl-btn" onclick="togglePiP()"><i class="fas fa-compress-arrows-alt"></i> PiP Mode</button>
+        <button class="ctrl-btn" onclick="toggleAspect()"><i class="fas fa-expand"></i> Zoom/Fit</button>
+        <button class="ctrl-btn" onclick="toggleFavoriteCurrent()"><i class="fas fa-heart"></i> Favorite</button>
+        <button class="ctrl-btn" onclick="reportIssue()" style="border-color: var(--red); color: var(--red);"><i class="fas fa-exclamation-triangle"></i> Report</button>
+    </div>
 
-    // ==========================================
-    // 2. APP LOGIC
-    // ==========================================
-    const video = document.getElementById('zapVideo');
-    const iframe = document.getElementById('zapIframe');
-    const grid = document.getElementById('zapChannelGrid');
-    const title = document.getElementById('zapMainTitle');
-    const status = document.getElementById('zapMainStatus');
-    const mainLogo = document.getElementById('zapMainLogo');
-    const sourceList = document.getElementById('zapSourceList');
-    const qualitySelect = document.getElementById('zapQuality');
-    
-    // Players
-    let shakaPlayer = null;
-    let hlsPlayer = null;
-    let activePlayerType = 'none'; // 'shaka', 'hls', 'native'
+    <div class="info-card">
+        <div class="info-header">
+            <img id="mainLogo" class="ch-logo-lg" src="https://via.placeholder.com/50">
+            <div>
+                <h3 id="mainTitle" style="margin:0; font-size:16px;">Select a Channel</h3>
+                <div id="mainStatus" class="status-text">Ready to watch</div>
+            </div>
+        </div>
+        <div id="sourceContainer" class="source-list"></div>
+    </div>
 
-    // Init
-    async function initApp() {
-        // Init Shaka
-        shaka.polyfill.installAll();
-        if (shaka.Player.isBrowserSupported()) {
-            shakaPlayer = new shaka.Player(video);
-            shakaPlayer.addEventListener('error', onError);
+    <input type="text" id="searchInput" class="search-box" placeholder="🔍 চ্যানেল খুঁজুন (e.g. Sports, Sony)...">
+
+    <div class="cat-scroll" id="catContainer">
+        <button class="cat-btn active" onclick="filterCat('all')">All</button>
+        <button class="cat-btn" onclick="filterCat('fav')">❤️ Favorites</button>
+        <button class="cat-btn" onclick="filterCat('Sports')">🏏 Sports</button>
+        <button class="cat-btn" onclick="filterCat('Entertainment')">🎬 Entertainment</button>
+        <button class="cat-btn" onclick="filterCat('News')">📰 News</button>
+    </div>
+
+    <div id="channelGrid" class="grid"></div>
+
+    <div id="toast" class="toast">Action Successful</div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mux.js/6.3.0/mux.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.3.6/shaka-player.compiled.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1"></script>
+
+<script>
+    // ================= DATA =================
+    // category অবশ্যই থাকতে হবে: 'Sports', 'Entertainment', 'News'
+    const channels = [
+        {
+            name: "T Sports HD",
+            logo: "https://i.ibb.co/Dr3R4jc/tsports.png",
+            category: "Sports",
+            sources: [
+                { label: "Server 1", url: "https://live-cdn.tsports.com/live-01/master.m3u8" } // Demo link
+            ]
+        },
+        {
+            name: "Ten Cricket",
+            logo: "https://i.postimg.cc/fWV00yP8/20250529_123315.png",
+            category: "Sports",
+            sources: [
+                { label: "Server 1", url: "https://bongoflixbd.top/?watch=212f6ccc690a978b72b758522a82d9b4", isEmbed: true }
+            ]
+        },
+        {
+            name: "Sony Ten 1",
+            logo: "https://upload.wikimedia.org/wikipedia/commons/9/93/Sony_Sports_Ten_1_logo.png",
+            category: "Sports",
+            sources: [
+                { label: "HD Link", url: "https://example.com/stream.m3u8" }
+            ]
+        },
+        {
+            name: "Somoy TV",
+            logo: "https://upload.wikimedia.org/wikipedia/en/c/c2/Somoy_TV_Logo.jpg",
+            category: "News",
+            sources: [
+                { label: "YouTube", url: "https://www.youtube.com/embed/P6p72v5Vz_k?autoplay=1", isEmbed: true }
+            ]
         }
+    ];
+
+    // ================= STATE =================
+    let currentCategory = 'all';
+    let favorites = JSON.parse(localStorage.getItem('zapFavorites')) || [];
+    let activePlayer = null; // 'shaka', 'hls'
+    let shakaInstance = null;
+    let hlsInstance = null;
+    let currentChannelIdx = -1;
+
+    // ================= DOM ELEMENTS =================
+    const video = document.getElementById('videoPlayer');
+    const iframe = document.getElementById('iframePlayer');
+    const grid = document.getElementById('channelGrid');
+    const search = document.getElementById('searchInput');
+    const title = document.getElementById('mainTitle');
+    const logo = document.getElementById('mainLogo');
+    const status = document.getElementById('mainStatus');
+    const srcContainer = document.getElementById('sourceContainer');
+
+    // ================= INIT =================
+    function init() {
+        shaka.polyfill.installAll();
+        if(shaka.Player.isBrowserSupported()) {
+            shakaInstance = new shaka.Player(video);
+        }
+        renderChannels();
         
-        renderHotMatches();
-        renderGrid();
+        // Search Listener
+        search.addEventListener('input', (e) => {
+            renderChannels(e.target.value);
+        });
     }
 
-    // 3. Play Function - Hybrid (DASH + HLS + IFRAME)
-    async function playSource(src, btn, channelIdx) {
-        // UI Updates
-        document.querySelectorAll('.zap-source-btn').forEach(b => b.classList.remove('active-src'));
-        if(btn) btn.classList.add('active-src');
-        status.innerHTML = '<span style="color:#00d2ff">Connecting...</span>';
-        qualitySelect.style.display = 'none';
+    // ================= RENDER LOGIC =================
+    function renderChannels(query = "") {
+        grid.innerHTML = "";
+        
+        const filtered = channels.filter((ch, idx) => {
+            // Category Filter
+            let catMatch = false;
+            if (currentCategory === 'all') catMatch = true;
+            else if (currentCategory === 'fav') catMatch = favorites.includes(idx);
+            else catMatch = ch.category === currentCategory;
+
+            // Search Filter
+            let searchMatch = ch.name.toLowerCase().includes(query.toLowerCase());
+
+            return catMatch && searchMatch;
+        });
+
+        if(filtered.length === 0) {
+            grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:20px;color:#666;">No channels found</div>`;
+            return;
+        }
+
+        filtered.forEach(ch => {
+            // Find original index for favorite logic
+            const originalIdx = channels.indexOf(ch);
+            const isFav = favorites.includes(originalIdx);
+
+            const div = document.createElement('div');
+            div.className = `card ${currentChannelIdx === originalIdx ? 'active' : ''}`;
+            div.onclick = (e) => {
+                if(!e.target.classList.contains('fav-icon')) {
+                    loadChannel(originalIdx);
+                }
+            };
+
+            div.innerHTML = `
+                <i class="fas fa-heart fav-icon ${isFav ? 'is-fav' : ''}" onclick="toggleFav(${originalIdx}, this)"></i>
+                <img src="${ch.logo}" onerror="this.src='https://via.placeholder.com/40'">
+                <div class="card-title">${ch.name}</div>
+            `;
+            grid.appendChild(div);
+        });
+    }
+
+    function filterCat(cat) {
+        currentCategory = cat;
+        // Update Buttons UI
+        document.querySelectorAll('.cat-btn').forEach(btn => {
+            if(btn.innerText.toLowerCase().includes(cat.toLowerCase()) || (cat === 'all' && btn.innerText === 'All')) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        });
+        renderChannels(search.value);
+    }
+
+    // ================= FAVORITES =================
+    function toggleFav(idx, iconElem) {
+        if (favorites.includes(idx)) {
+            favorites = favorites.filter(id => id !== idx);
+            if(iconElem) iconElem.classList.remove('is-fav');
+            showToast("Removed from Favorites");
+        } else {
+            favorites.push(idx);
+            if(iconElem) iconElem.classList.add('is-fav');
+            showToast("Added to Favorites ❤️");
+        }
+        localStorage.setItem('zapFavorites', JSON.stringify(favorites));
+        
+        // If currently on Fav tab, refresh
+        if(currentCategory === 'fav') renderChannels();
+    }
+
+    function toggleFavoriteCurrent() {
+        if(currentChannelIdx !== -1) {
+            toggleFav(currentChannelIdx, null);
+            renderChannels(); // Refresh icons
+        } else {
+            showToast("Select a channel first");
+        }
+    }
+
+    // ================= PLAYBACK LOGIC =================
+    function loadChannel(idx) {
+        currentChannelIdx = idx;
+        const ch = channels[idx];
+        
+        // UI Update
+        title.innerText = ch.name;
+        logo.src = ch.logo;
+        status.innerHTML = `<span style="color:#00d2ff">Connecting...</span>`;
+        srcContainer.innerHTML = "";
+        renderChannels(search.value); // to highlight active card
+        
+        // Generate Source Buttons
+        ch.sources.forEach((src, i) => {
+            const btn = document.createElement('button');
+            btn.className = `src-btn ${i===0?'active':''}`;
+            btn.innerText = src.label;
+            btn.onclick = () => playSource(src, btn);
+            srcContainer.appendChild(btn);
+            if(i === 0) playSource(src, btn);
+        });
+        
+        // Scroll to player on mobile
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    async function playSource(src, btnElem) {
+        // UI
+        document.querySelectorAll('.src-btn').forEach(b => b.classList.remove('active'));
+        if(btnElem) btnElem.classList.add('active');
 
         const url = src.url;
-        const isEmbed = src.isEmbed === true; 
-        const isDASH = url.indexOf('.mpd') > -1;
-        const isHLS = url.indexOf('.m3u8') > -1;
+        const isEmbed = src.isEmbed;
+        const isMpd = url.includes('.mpd');
+        const isHls = url.includes('.m3u8');
 
-        try {
-            // --- CLEANUP ---
-            if (activePlayerType === 'hls' && hlsPlayer) {
-                hlsPlayer.destroy();
-                hlsPlayer = null;
-            }
-            if (activePlayerType === 'shaka') {
-                await shakaPlayer.unload();
-            }
-            activePlayerType = 'none';
-
-            // --- DISPLAY LOGIC ---
-            if (isEmbed) {
-                video.style.display = 'none';
-                video.pause();
-                iframe.style.display = 'block';
-                iframe.src = url;
-                status.innerHTML = '<span style="color:#f39c12; font-weight:bold;">● Playing Embed</span>';
-                return;
-            } else {
-                iframe.style.display = 'none';
-                iframe.src = "";
-                video.style.display = 'block';
-            }
-
-            // --- NATIVE PLAYERS LOGIC ---
+        // Cleanup
+        if(hlsInstance) { hlsInstance.destroy(); hlsInstance = null; }
+        if(activePlayer === 'shaka') { await shakaInstance.unload(); }
+        
+        if (isEmbed) {
+            video.style.display = 'none';
+            video.pause();
+            iframe.style.display = 'block';
+            iframe.src = url;
+            status.innerHTML = `<span style="color:orange">Playing Embed</span>`;
+        } else {
+            iframe.style.display = 'none';
+            iframe.src = "";
+            video.style.display = 'block';
             
-            // LOGIC 1: DASH (Shaka)
-            if (isDASH) {
-                activePlayerType = 'shaka';
-                shakaPlayer.configure({ 
-                    drm: { clearKeys: src.drm || {} },
-                    streaming: { bufferingGoal: 30, rebufferingGoal: 5 }
-                });
-                await shakaPlayer.load(url);
-                status.innerHTML = '<span style="color:#2ecc71; font-weight:bold;">● Playing Live (DRM)</span>';
-                setupQualityShaka();
-            } 
-            // LOGIC 2: HLS (Hls.js + Headers + Native IOS Fallback)
-            else if (isHLS) {
-                if (Hls.isSupported()) {
-                    // HLS.JS (PC/Android)
-                    activePlayerType = 'hls';
-                    const hlsConfig = {};
-                    if (src.headers) {
-                        hlsConfig.xhrSetup = function(xhr, url) {
-                            for (const [key, value] of Object.entries(src.headers)) {
-                                try { xhr.setRequestHeader(key, value); } 
-                                catch (e) { console.warn(`Header error: ${key}`, e); }
-                            }
-                        };
-                    }
-                    hlsPlayer = new Hls(hlsConfig);
-                    hlsPlayer.loadSource(url);
-                    hlsPlayer.attachMedia(video);
-                    hlsPlayer.on(Hls.Events.MANIFEST_PARSED, function() {
-                        video.play();
-                        status.innerHTML = '<span style="color:#2ecc71; font-weight:bold;">● Playing Live (HLS)</span>';
-                        setupQualityHls();
-                    });
-                    hlsPlayer.on(Hls.Events.ERROR, function(event, data) {
-                        if (data.fatal) {
-                            console.error("HLS Error:", data);
+            try {
+                if (isMpd) {
+                    activePlayer = 'shaka';
+                    shakaInstance.configure({ drm: { clearKeys: src.drm || {} } });
+                    await shakaInstance.load(url);
+                    status.innerHTML = `<span style="color:#2ecc71">Playing Live (DRM)</span>`;
+                } else if (isHls) {
+                    if(Hls.isSupported()) {
+                        const config = {};
+                        if(src.headers) {
+                             config.xhrSetup = (xhr) => {
+                                for(let key in src.headers) xhr.setRequestHeader(key, src.headers[key]);
+                             }
                         }
-                    });
-                }
-                // Native Safari (iOS) Fallback
-                else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-                    activePlayerType = 'native';
+                        hlsInstance = new Hls(config);
+                        hlsInstance.loadSource(url);
+                        hlsInstance.attachMedia(video);
+                        hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => {
+                            video.play();
+                            status.innerHTML = `<span style="color:#2ecc71">Playing Live (HLS)</span>`;
+                        });
+                        hlsInstance.on(Hls.Events.ERROR, (e, data) => {
+                           if(data.fatal) status.innerHTML = `<span style="color:red">Stream Error</span>`;
+                        });
+                    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                        video.src = url;
+                        video.play();
+                    }
+                } else {
                     video.src = url;
                     video.play();
-                    status.innerHTML = '<span style="color:#2ecc71; font-weight:bold;">● Playing Live (Native)</span>';
-                } else {
-                    status.innerHTML = '<span style="color:#ef4444">Format Not Supported</span>';
                 }
-            } 
-            else {
-                // Direct Video (MP4/Other)
-                video.src = url;
-                video.play();
+            } catch(e) {
+                console.error(e);
+                status.innerHTML = `<span style="color:red">Connection Failed</span>`;
             }
-
-        } catch (e) {
-            console.error("Playback Error:", e);
-            status.innerHTML = '<span style="color:#ef4444">Connection Failed</span>';
         }
     }
 
-    // Quality: SHAKA
-    function setupQualityShaka() {
-        if (!shakaPlayer) return;
-        const tracks = shakaPlayer.getVariantTracks();
-        if (tracks.length === 0) return;
-
-        qualitySelect.innerHTML = '';
-        qualitySelect.style.display = 'block';
-
-        let autoOpt = document.createElement('option');
-        autoOpt.value = -1;
-        autoOpt.text = 'Auto';
-        qualitySelect.appendChild(autoOpt);
-
-        const seen = new Set();
-        tracks.sort((a, b) => b.height - a.height).forEach(track => {
-            if (!seen.has(track.height) && track.height) {
-                seen.add(track.height);
-                let opt = document.createElement('option');
-                opt.value = track.id;
-                opt.text = `${track.height}p`;
-                qualitySelect.appendChild(opt);
-            }
-        });
-
-        qualitySelect.onchange = (e) => {
-            if (e.target.value == -1) {
-                shakaPlayer.configure({ abr: { enabled: true } });
-            } else {
-                shakaPlayer.configure({ abr: { enabled: false } });
-                const track = tracks.find(t => t.id == e.target.value);
-                if (track) shakaPlayer.selectVariantTrack(track, true);
-            }
-        };
-    }
-
-    // Quality: HLS.JS
-    function setupQualityHls() {
-        if (!hlsPlayer || !hlsPlayer.levels || hlsPlayer.levels.length === 0) return;
-        
-        qualitySelect.innerHTML = '';
-        qualitySelect.style.display = 'block';
-
-        let autoOpt = document.createElement('option');
-        autoOpt.value = -1;
-        autoOpt.text = 'Auto';
-        qualitySelect.appendChild(autoOpt);
-
-        hlsPlayer.levels.forEach((level, index) => {
-            let opt = document.createElement('option');
-            opt.value = index;
-            opt.text = level.height ? `${level.height}p` : `Level ${index}`;
-            qualitySelect.appendChild(opt);
-        });
-
-        qualitySelect.onchange = (e) => {
-            hlsPlayer.currentLevel = parseInt(e.target.value);
-        };
-    }
-
-    function onError(error) { console.error('Shaka Error', error); }
-
-    // --- Standard UI Rendering ---
-    function renderHotMatches() {
-        const container = document.getElementById('zapHotMatches');
-        if(!container) return;
-        container.innerHTML = "";
-        hotMatches.forEach(match => {
-            const div = document.createElement('div');
-            div.className = 'zap-match-card';
-            div.innerHTML = `<span class="zap-match-time">${match.time}</span><div class="zap-teams">${match.team1} <br> <span style="color:#64748b">vs</span> <br> ${match.team2}</div><div class="zap-match-info">${match.info}</div>`;
-            div.onclick = () => {
-                const targetChannel = channels.find(ch => ch.name === match.channelName);
-                if (targetChannel) {
-                    const index = channels.indexOf(targetChannel);
-                    loadChannel(targetChannel, index);
-                    document.querySelector('.zap-player-box').scrollIntoView({behavior: 'smooth'});
-                } else { alert(`Channel "${match.channelName}" not found!`); }
-            };
-            container.appendChild(div);
-        });
-    }
-
-    function renderGrid(filterText = "") {
-        const grid = document.getElementById('zapChannelGrid');
-        grid.innerHTML = "";
-        channels.forEach((ch, idx) => {
-            if (ch.name.toLowerCase().includes(filterText.toLowerCase())) {
-                const div = document.createElement('div');
-                div.className = 'zap-card';
-                div.id = `ch-${idx}`;
-                div.innerHTML = `<img src="${ch.logo}" loading="lazy" width="35" height="35" onerror="this.src='https://via.placeholder.com/35'"><span>${ch.name}</span>`;
-                div.onclick = () => loadChannel(ch, idx);
-                grid.appendChild(div);
-            }
-        });
-    }
-
-    function loadChannel(ch, idx) {
-        document.querySelectorAll('.zap-card').forEach(c => c.classList.remove('active'));
-        const activeCard = document.getElementById(`ch-${idx}`);
-        if(activeCard) activeCard.classList.add('active');
-        
-        title.innerText = ch.name;
-        mainLogo.src = ch.logo;
-        status.innerHTML = '<span style="color:#00d2ff">Ready to play</span>';
-        sourceList.innerHTML = "";
-        
-        if (ch.sources && ch.sources.length > 0) {
-            ch.sources.forEach((src, i) => {
-                const btn = document.createElement('button');
-                btn.className = 'zap-source-btn';
-                btn.innerText = src.label || `Link ${i+1}`;
-                btn.onclick = () => playSource(src, btn, idx);
-                sourceList.appendChild(btn);
-                if (i === 0) btn.click();
-            });
+    // ================= ADVANCED CONTROLS =================
+    function togglePiP() {
+        if (document.pictureInPictureElement) {
+            document.exitPictureInPicture();
+        } else if (document.pictureInPictureEnabled && video.style.display !== 'none') {
+            video.requestPictureInPicture();
+        } else {
+            showToast("PiP not supported or Embed playing");
         }
     }
 
-    const searchInput = document.getElementById('zapSearch');
-    if(searchInput) {
-        searchInput.addEventListener('input', (e) => renderGrid(e.target.value));
+    function toggleAspect() {
+        if(video.style.objectFit === 'contain') {
+            video.style.objectFit = 'cover';
+            showToast("Zoom Mode");
+        } else {
+            video.style.objectFit = 'contain';
+            showToast("Fit Mode");
+        }
     }
 
-    document.addEventListener('DOMContentLoaded', initApp);
-})();
-    </script>
+    function reportIssue() {
+        if(currentChannelIdx === -1) return;
+        const chName = channels[currentChannelIdx].name;
+        // টেলিগ্রাম লিংক আপনার ইউজারনেম দিয়ে পাল্টে নিন
+        const text = `Report: Channel ${chName} is not working.`;
+        window.open(`https://t.me/share/url?url=${encodeURIComponent(text)}`, '_blank');
+    }
+
+    function showToast(msg) {
+        const t = document.getElementById('toast');
+        t.innerText = msg;
+        t.classList.add('show');
+        setTimeout(() => t.classList.remove('show'), 3000);
+    }
+
+    document.addEventListener('DOMContentLoaded', init);
+</script>
 </body>
 </html>
