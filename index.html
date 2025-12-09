@@ -3671,272 +3671,268 @@
 
         ];
 
-        // 2. APP LOGIC
-        const video = document.getElementById('zapVideo');
-        const grid = document.getElementById('zapChannelGrid');
-        const title = document.getElementById('zapMainTitle');
-        const status = document.getElementById('zapMainStatus');
-        const mainLogo = document.getElementById('zapMainLogo');
-        const sourceList = document.getElementById('zapSourceList');
-        const qualitySelect = document.getElementById('zapQuality');
-        
-        // Players
-        let shakaPlayer = null;
-        let hlsPlayer = null;
-        let activePlayerType = 'none'; // 'shaka', 'hls', 'native'
 
-        // Init
-        async function initApp() {
-            // Init Shaka
-            shaka.polyfill.installAll();
-            if (shaka.Player.isBrowserSupported()) {
-                shakaPlayer = new shaka.Player(video);
-                shakaPlayer.addEventListener('error', onError);
-            }
-            
-            renderHotMatches();
-            renderGrid();
-        }
-
-       // 3. Play Function - Hybrid (DASH + HLS + IFRAME)
-async function playSource(src, btn, channelIdx) {
-    // UI Updates
-    document.querySelectorAll('.zap-source-btn').forEach(b => b.classList.remove('active-src'));
-    if(btn) btn.classList.add('active-src');
-    status.innerHTML = '<span style="color:#00d2ff">Connecting...</span>';
-    qualitySelect.style.display = 'none';
-
-    // Elements
+    // ==========================================
+    // 2. APP LOGIC
+    // ==========================================
     const video = document.getElementById('zapVideo');
-    const iframe = document.getElementById('zapIframe');
+    const grid = document.getElementById('zapChannelGrid');
+    const title = document.getElementById('zapMainTitle');
+    const status = document.getElementById('zapMainStatus');
+    const mainLogo = document.getElementById('zapMainLogo');
+    const sourceList = document.getElementById('zapSourceList');
+    const qualitySelect = document.getElementById('zapQuality');
+    
+    // Players
+    let shakaPlayer = null;
+    let hlsPlayer = null;
+    let activePlayerType = 'none'; // 'shaka', 'hls', 'native'
 
-    const url = src.url;
-    // চেক করা হচ্ছে এটি আইফ্রেম কি না (isEmbed: true থাকতে হবে ডেটাতে)
-    const isEmbed = src.isEmbed === true; 
-    const isDASH = url.indexOf('.mpd') > -1;
-    const isHLS = url.indexOf('.m3u8') > -1;
-
-    try {
-        // --- CLEANUP ---
-        // ১. আগের প্লেয়ার বন্ধ করা
-        if (activePlayerType === 'hls' && hlsPlayer) {
-            hlsPlayer.destroy();
-            hlsPlayer = null;
+    // Init
+    async function initApp() {
+        // Init Shaka
+        shaka.polyfill.installAll();
+        if (shaka.Player.isBrowserSupported()) {
+            shakaPlayer = new shaka.Player(video);
+            shakaPlayer.addEventListener('error', onError);
         }
-        if (activePlayerType === 'shaka') {
-            await shakaPlayer.unload();
-        }
-        activePlayerType = 'none';
-
-        // ২. ডিসপ্লে লজিক (ভিডিও vs আইফ্রেম)
-        if (isEmbed) {
-            video.style.display = 'none';  // ভিডিও ট্যাগ লুকাও
-            video.pause();                 // ভিডিও থামাও
-            iframe.style.display = 'block';// আইফ্রেম দেখাও
-            iframe.src = url;              // আইফ্রেমে লিংক লোড করো
-            status.innerHTML = '<span style="color:#f39c12; font-weight:bold;">● Playing Embed</span>';
-            return; // আইফ্রেম হলে নিচের কোড আর রান করবে না
-        } else {
-            iframe.style.display = 'none'; // আইফ্রেম লুকাও
-            iframe.src = "";               // আইফ্রেমের অডিও বন্ধ করো
-            video.style.display = 'block'; // ভিডিও ট্যাগ দেখাও
-        }
-
-        // --- NATIVE PLAYERS LOGIC ---
         
-        // LOGIC 1: DASH (Shaka)
-        if (isDASH) {
-            activePlayerType = 'shaka';
-            shakaPlayer.configure({ 
-                drm: { clearKeys: src.drm || {} },
-                streaming: { bufferingGoal: 30, rebufferingGoal: 5 }
-            });
-            await shakaPlayer.load(url);
-            status.innerHTML = '<span style="color:#2ecc71; font-weight:bold;">● Playing Live (DRM)</span>';
-            setupQualityShaka();
-        } 
-        // LOGIC 2: HLS (Hls.js + Headers)
-        else if (isHLS) {
-            if (Hls.isSupported()) {
-                activePlayerType = 'hls';
-                const hlsConfig = {};
-                if (src.headers) {
-                    hlsConfig.xhrSetup = function(xhr, url) {
-                        for (const [key, value] of Object.entries(src.headers)) {
-                            try { xhr.setRequestHeader(key, value); } 
-                            catch (e) { console.warn(`Header error: ${key}`, e); }
-                        }
-                    };
-                }
-                hlsPlayer = new Hls(hlsConfig);
-                hlsPlayer.loadSource(url);
-                hlsPlayer.attachMedia(video);
-                hlsPlayer.on(Hls.Events.MANIFEST_PARSED, function() {
-                    video.play();
-                    status.innerHTML = '<span style="color:#2ecc71; font-weight:bold;">● Playing Live (HLS)</span>';
-                    setupQualityHls();
-                });
+        renderHotMatches();
+        renderGrid();
+    }
+
+    // 3. Play Function - Hybrid (DASH + HLS + IFRAME) - FIXED VERSION
+    async function playSource(src, btn, channelIdx) {
+        // UI Updates
+        document.querySelectorAll('.zap-source-btn').forEach(b => b.classList.remove('active-src'));
+        if(btn) btn.classList.add('active-src');
+        status.innerHTML = '<span style="color:#00d2ff">Connecting...</span>';
+        qualitySelect.style.display = 'none';
+
+        // Elements
+        const video = document.getElementById('zapVideo');
+        const iframe = document.getElementById('zapIframe');
+
+        const url = src.url;
+        const isEmbed = src.isEmbed === true; 
+        const isDASH = url.indexOf('.mpd') > -1;
+        const isHLS = url.indexOf('.m3u8') > -1;
+
+        try {
+            // --- CLEANUP ---
+            if (activePlayerType === 'hls' && hlsPlayer) {
+                hlsPlayer.destroy();
+                hlsPlayer = null;
             }
-            else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-                activePlayerType = 'native';
+            if (activePlayerType === 'shaka') {
+                await shakaPlayer.unload();
+            }
+            activePlayerType = 'none';
+
+            // --- DISPLAY LOGIC ---
+            if (isEmbed) {
+                video.style.display = 'none';
+                video.pause();
+                iframe.style.display = 'block';
+                iframe.src = url;
+                status.innerHTML = '<span style="color:#f39c12; font-weight:bold;">● Playing Embed</span>';
+                return;
+            } else {
+                iframe.style.display = 'none';
+                iframe.src = "";
+                video.style.display = 'block';
+            }
+
+            // --- NATIVE PLAYERS LOGIC ---
+            
+            // LOGIC 1: DASH (Shaka)
+            if (isDASH) {
+                activePlayerType = 'shaka';
+                shakaPlayer.configure({ 
+                    drm: { clearKeys: src.drm || {} },
+                    streaming: { bufferingGoal: 30, rebufferingGoal: 5 }
+                });
+                await shakaPlayer.load(url);
+                status.innerHTML = '<span style="color:#2ecc71; font-weight:bold;">● Playing Live (DRM)</span>';
+                setupQualityShaka();
+            } 
+            // LOGIC 2: HLS (Hls.js + Headers + Native IOS Fallback)
+            else if (isHLS) {
+                if (Hls.isSupported()) {
+                    // HLS.JS (PC/Android)
+                    activePlayerType = 'hls';
+                    const hlsConfig = {};
+                    if (src.headers) {
+                        hlsConfig.xhrSetup = function(xhr, url) {
+                            for (const [key, value] of Object.entries(src.headers)) {
+                                try { xhr.setRequestHeader(key, value); } 
+                                catch (e) { console.warn(`Header error: ${key}`, e); }
+                            }
+                        };
+                    }
+                    hlsPlayer = new Hls(hlsConfig);
+                    hlsPlayer.loadSource(url);
+                    hlsPlayer.attachMedia(video);
+                    hlsPlayer.on(Hls.Events.MANIFEST_PARSED, function() {
+                        video.play();
+                        status.innerHTML = '<span style="color:#2ecc71; font-weight:bold;">● Playing Live (HLS)</span>';
+                        setupQualityHls();
+                    });
+                    hlsPlayer.on(Hls.Events.ERROR, function(event, data) {
+                        if (data.fatal) {
+                            console.error("HLS Error:", data);
+                        }
+                    });
+                }
+                // Native Safari (iOS) Fallback
+                else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                    activePlayerType = 'native';
+                    video.src = url;
+                    video.play();
+                    status.innerHTML = '<span style="color:#2ecc71; font-weight:bold;">● Playing Live (Native)</span>';
+                } else {
+                    status.innerHTML = '<span style="color:#ef4444">Format Not Supported</span>';
+                }
+            } 
+            else {
+                // Direct Video (MP4/Other)
                 video.src = url;
                 video.play();
-                status.innerHTML = '<span style="color:#2ecc71; font-weight:bold;">● Playing Live (Native)</span>';
             }
-        } 
-        else {
-            // যদি mpd বা m3u8 না হয়, তাহলে সরাসরি ভিডিও ট্যাগে চালানোর চেষ্টা (যেমন .mp4)
-            video.src = url;
-            video.play();
-        }
 
-    } catch (e) {
-        console.error("Playback Error:", e);
-        status.innerHTML = '<span style="color:#ef4444">Connection Failed</span>';
+        } catch (e) {
+            console.error("Playback Error:", e);
+            status.innerHTML = '<span style="color:#ef4444">Connection Failed</span>';
+        }
     }
-}
-                    // Native Safari (iOS)
-                    else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-                        activePlayerType = 'native';
-                        video.src = url;
-                        video.play();
-                        status.innerHTML = '<span style="color:#2ecc71; font-weight:bold;">● Playing Live (Native)</span>';
-                    } else {
-                        status.innerHTML = '<span style="color:#ef4444">Format Not Supported</span>';
-                    }
-                }
-            } catch (e) {
-                console.error("Playback Error:", e);
-                status.innerHTML = '<span style="color:#ef4444">Connection Failed</span>';
-            }
-        }
-        // Quality: SHAKA
-        function setupQualityShaka() {
-            if (!shakaPlayer) return;
-            const tracks = shakaPlayer.getVariantTracks();
-            if (tracks.length === 0) return;
 
-            qualitySelect.innerHTML = '';
-            qualitySelect.style.display = 'block';
+    // Quality: SHAKA
+    function setupQualityShaka() {
+        if (!shakaPlayer) return;
+        const tracks = shakaPlayer.getVariantTracks();
+        if (tracks.length === 0) return;
 
-            let autoOpt = document.createElement('option');
-            autoOpt.value = -1;
-            autoOpt.text = 'Auto';
-            qualitySelect.appendChild(autoOpt);
+        qualitySelect.innerHTML = '';
+        qualitySelect.style.display = 'block';
 
-            const seen = new Set();
-            tracks.sort((a, b) => b.height - a.height).forEach(track => {
-                if (!seen.has(track.height) && track.height) {
-                    seen.add(track.height);
-                    let opt = document.createElement('option');
-                    opt.value = track.id;
-                    opt.text = `${track.height}p`;
-                    qualitySelect.appendChild(opt);
-                }
-            });
+        let autoOpt = document.createElement('option');
+        autoOpt.value = -1;
+        autoOpt.text = 'Auto';
+        qualitySelect.appendChild(autoOpt);
 
-            qualitySelect.onchange = (e) => {
-                if (e.target.value == -1) {
-                    shakaPlayer.configure({ abr: { enabled: true } });
-                } else {
-                    shakaPlayer.configure({ abr: { enabled: false } });
-                    const track = tracks.find(t => t.id == e.target.value);
-                    if (track) shakaPlayer.selectVariantTrack(track, true);
-                }
-            };
-        }
-
-        // Quality: HLS.JS
-        function setupQualityHls() {
-            if (!hlsPlayer || !hlsPlayer.levels || hlsPlayer.levels.length === 0) return;
-            
-            qualitySelect.innerHTML = '';
-            qualitySelect.style.display = 'block';
-
-            let autoOpt = document.createElement('option');
-            autoOpt.value = -1;
-            autoOpt.text = 'Auto';
-            qualitySelect.appendChild(autoOpt);
-
-            hlsPlayer.levels.forEach((level, index) => {
+        const seen = new Set();
+        tracks.sort((a, b) => b.height - a.height).forEach(track => {
+            if (!seen.has(track.height) && track.height) {
+                seen.add(track.height);
                 let opt = document.createElement('option');
-                opt.value = index;
-                opt.text = level.height ? `${level.height}p` : `Level ${index}`;
+                opt.value = track.id;
+                opt.text = `${track.height}p`;
                 qualitySelect.appendChild(opt);
-            });
-
-            qualitySelect.onchange = (e) => {
-                hlsPlayer.currentLevel = parseInt(e.target.value);
-            };
-        }
-
-        function onError(error) { console.error('Shaka Error', error); }
-
-        // --- Standard UI Rendering (Same as before) ---
-        function renderHotMatches() {
-            const container = document.getElementById('zapHotMatches');
-            if(!container) return;
-            container.innerHTML = "";
-            hotMatches.forEach(match => {
-                const div = document.createElement('div');
-                div.className = 'zap-match-card';
-                div.innerHTML = `<span class="zap-match-time">${match.time}</span><div class="zap-teams">${match.team1} <br> <span style="color:#64748b">vs</span> <br> ${match.team2}</div><div class="zap-match-info">${match.info}</div>`;
-                div.onclick = () => {
-                    const targetChannel = channels.find(ch => ch.name === match.channelName);
-                    if (targetChannel) {
-                        const index = channels.indexOf(targetChannel);
-                        loadChannel(targetChannel, index);
-                        document.querySelector('.zap-player-box').scrollIntoView({behavior: 'smooth'});
-                    } else { alert(`Channel "${match.channelName}" not found!`); }
-                };
-                container.appendChild(div);
-            });
-        }
-
-        function renderGrid(filterText = "") {
-            const grid = document.getElementById('zapChannelGrid');
-            grid.innerHTML = "";
-            channels.forEach((ch, idx) => {
-                if (ch.name.toLowerCase().includes(filterText.toLowerCase())) {
-                    const div = document.createElement('div');
-                    div.className = 'zap-card';
-                    div.id = `ch-${idx}`;
-                    div.innerHTML = `<img src="${ch.logo}" loading="lazy" width="35" height="35" onerror="this.src='https://via.placeholder.com/35'"><span>${ch.name}</span>`;
-                    div.onclick = () => loadChannel(ch, idx);
-                    grid.appendChild(div);
-                }
-            });
-        }
-
-        function loadChannel(ch, idx) {
-            document.querySelectorAll('.zap-card').forEach(c => c.classList.remove('active'));
-            const activeCard = document.getElementById(`ch-${idx}`);
-            if(activeCard) activeCard.classList.add('active');
-            
-            title.innerText = ch.name;
-            mainLogo.src = ch.logo;
-            status.innerHTML = '<span style="color:#00d2ff">Ready to play</span>';
-            sourceList.innerHTML = "";
-            
-            if (ch.sources && ch.sources.length > 0) {
-                ch.sources.forEach((src, i) => {
-                    const btn = document.createElement('button');
-                    btn.className = 'zap-source-btn';
-                    btn.innerText = src.label || `Link ${i+1}`;
-                    btn.onclick = () => playSource(src, btn, idx);
-                    sourceList.appendChild(btn);
-                    if (i === 0) btn.click();
-                });
             }
-        }
+        });
 
-        const searchInput = document.getElementById('zapSearch');
-        if(searchInput) {
-            searchInput.addEventListener('input', (e) => renderGrid(e.target.value));
-        }
+        qualitySelect.onchange = (e) => {
+            if (e.target.value == -1) {
+                shakaPlayer.configure({ abr: { enabled: true } });
+            } else {
+                shakaPlayer.configure({ abr: { enabled: false } });
+                const track = tracks.find(t => t.id == e.target.value);
+                if (track) shakaPlayer.selectVariantTrack(track, true);
+            }
+        };
+    }
 
-        document.addEventListener('DOMContentLoaded', initApp);
-    })();
+    // Quality: HLS.JS
+    function setupQualityHls() {
+        if (!hlsPlayer || !hlsPlayer.levels || hlsPlayer.levels.length === 0) return;
+        
+        qualitySelect.innerHTML = '';
+        qualitySelect.style.display = 'block';
+
+        let autoOpt = document.createElement('option');
+        autoOpt.value = -1;
+        autoOpt.text = 'Auto';
+        qualitySelect.appendChild(autoOpt);
+
+        hlsPlayer.levels.forEach((level, index) => {
+            let opt = document.createElement('option');
+            opt.value = index;
+            opt.text = level.height ? `${level.height}p` : `Level ${index}`;
+            qualitySelect.appendChild(opt);
+        });
+
+        qualitySelect.onchange = (e) => {
+            hlsPlayer.currentLevel = parseInt(e.target.value);
+        };
+    }
+
+    function onError(error) { console.error('Shaka Error', error); }
+
+    // --- Standard UI Rendering ---
+    function renderHotMatches() {
+        const container = document.getElementById('zapHotMatches');
+        if(!container) return;
+        container.innerHTML = "";
+        hotMatches.forEach(match => {
+            const div = document.createElement('div');
+            div.className = 'zap-match-card';
+            div.innerHTML = `<span class="zap-match-time">${match.time}</span><div class="zap-teams">${match.team1} <br> <span style="color:#64748b">vs</span> <br> ${match.team2}</div><div class="zap-match-info">${match.info}</div>`;
+            div.onclick = () => {
+                const targetChannel = channels.find(ch => ch.name === match.channelName);
+                if (targetChannel) {
+                    const index = channels.indexOf(targetChannel);
+                    loadChannel(targetChannel, index);
+                    document.querySelector('.zap-player-box').scrollIntoView({behavior: 'smooth'});
+                } else { alert(`Channel "${match.channelName}" not found!`); }
+            };
+            container.appendChild(div);
+        });
+    }
+
+    function renderGrid(filterText = "") {
+        const grid = document.getElementById('zapChannelGrid');
+        grid.innerHTML = "";
+        channels.forEach((ch, idx) => {
+            if (ch.name.toLowerCase().includes(filterText.toLowerCase())) {
+                const div = document.createElement('div');
+                div.className = 'zap-card';
+                div.id = `ch-${idx}`;
+                div.innerHTML = `<img src="${ch.logo}" loading="lazy" width="35" height="35" onerror="this.src='https://via.placeholder.com/35'"><span>${ch.name}</span>`;
+                div.onclick = () => loadChannel(ch, idx);
+                grid.appendChild(div);
+            }
+        });
+    }
+
+    function loadChannel(ch, idx) {
+        document.querySelectorAll('.zap-card').forEach(c => c.classList.remove('active'));
+        const activeCard = document.getElementById(`ch-${idx}`);
+        if(activeCard) activeCard.classList.add('active');
+        
+        title.innerText = ch.name;
+        mainLogo.src = ch.logo;
+        status.innerHTML = '<span style="color:#00d2ff">Ready to play</span>';
+        sourceList.innerHTML = "";
+        
+        if (ch.sources && ch.sources.length > 0) {
+            ch.sources.forEach((src, i) => {
+                const btn = document.createElement('button');
+                btn.className = 'zap-source-btn';
+                btn.innerText = src.label || `Link ${i+1}`;
+                btn.onclick = () => playSource(src, btn, idx);
+                sourceList.appendChild(btn);
+                if (i === 0) btn.click();
+            });
+        }
+    }
+
+    const searchInput = document.getElementById('zapSearch');
+    if(searchInput) {
+        searchInput.addEventListener('input', (e) => renderGrid(e.target.value));
+    }
+
+    document.addEventListener('DOMContentLoaded', initApp);
+})();
     </script>
 </body>
 </html>
