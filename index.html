@@ -5,10 +5,45 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="theme-color" content="#0b0c15">
 <meta name="description" content="ToffeeTvLive - Premium Live TV Streaming">
+<meta name="monetag" content="01eeb784f71504d62bd8c8e5269f5b62">
 <title>Toffee Tv Live Pro</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Oswald:wght@500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<script>(function(s){s.dataset.zone='10282293',s.src='https://al5sm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
+
+<script>
+(function() {
+    const warningText = "আপনার ব্রাউজারে অ্যাড ব্লকার চালু আছে! আমাদের সাইটটি ফ্রি রাখতে অনুগ্রহ করে এটি বন্ধ করুন।";
+    const modalID = 'ab-warning-modal';
+    function showModal() {
+        if (document.getElementById(modalID)) return;
+        const modal = document.createElement('div');
+        modal.id = modalID;
+        modal.style.cssText = `position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 9999999; display: flex; justify-content: center; align-items: center; flex-direction: column; backdrop-filter: blur(5px);`;
+        modal.innerHTML = `<div style="background:#1a1a1a; color:#fff; padding:30px; border-radius:12px; text-align:center; max-width:90%; width:400px; border: 1px solid #333; box-shadow: 0 0 25px rgba(255,0,0,0.2);"><div style="font-size: 50px; margin-bottom: 10px;">🛡️</div><h2 style="color:#ef4444; margin:0 0 10px 0; font-family: sans-serif;">Adblock Detected</h2><p style="font-size:15px; color:#cbd5e1; line-height: 1.5; margin-bottom: 20px;">${warningText}</p><button onclick="location.reload()" style="background:#ef4444; color:white; border:none; padding:12px 25px; border-radius:6px; font-weight:bold; cursor:pointer; font-size:14px; transition: 0.2s;">রিফ্রেশ করুন</button></div>`;
+        document.body.appendChild(modal);
+        document.body.style.overflow = 'hidden';
+    }
+    async function detectAdBlock() {
+        let adBlockEnabled = false;
+        try { await fetch(new Request("https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js", { method: 'HEAD', mode: 'no-cors' })); } catch (e) { adBlockEnabled = true; }
+        if (!adBlockEnabled) {
+            const bait = document.createElement('div');
+            bait.innerHTML = '&nbsp;';
+            bait.className = 'adsbox ad-banner adsbygoogle pub_300x250';
+            bait.style.cssText = 'position:absolute; top:-1000px; left:-1000px; width:1px; height:1px;';
+            document.body.appendChild(bait);
+            await new Promise(r => setTimeout(r, 100));
+            if (window.document.body.getAttribute('abp') !== null || bait.offsetParent === null || bait.offsetHeight === 0 || bait.offsetLeft === 0 || window.getComputedStyle(bait).getPropertyValue('display') === 'none' || window.getComputedStyle(bait).getPropertyValue('visibility') === 'hidden') { adBlockEnabled = true; }
+            try { bait.remove(); } catch(e){}
+        }
+        if (adBlockEnabled) { showModal(); }
+    }
+    window.addEventListener('load', () => { setTimeout(detectAdBlock, 1000); });
+})();
+</script>
 
 <style>
     :root {
@@ -28,6 +63,19 @@
     .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
     .logo { font-family: 'Oswald', sans-serif; font-size: 22px; background: linear-gradient(90deg, var(--primary), #fff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
     .live-badge { font-size: 10px; background: var(--red); color: #fff; padding: 4px 8px; border-radius: 4px; font-weight: bold; animation: pulse 1.5s infinite; }
+
+    /* ADVERTISEMENT BOX STYLE */
+    .ad-box {
+        width: 100%;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px dashed rgba(255, 255, 255, 0.1);
+        text-align: center;
+        padding: 10px;
+        margin-bottom: 15px;
+        border-radius: 8px;
+        color: #666;
+        font-size: 12px;
+    }
 
     /* PLAYER AREA */
     .player-wrapper { position: relative; width: 100%; aspect-ratio: 16/9; background: #000; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px rgba(0, 210, 255, 0.15); margin-bottom: 10px; }
@@ -60,36 +108,24 @@
     .search-box { width: 100%; padding: 10px 15px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.2); color: #fff; margin-bottom: 10px; outline: none; font-size: 14px; }
     .search-box:focus { border-color: var(--primary); }
 
-    /* --- SCROLLABLE CHANNEL BOX (Performance Optimized) --- */
+    /* SCROLLABLE CHANNEL BOX */
     .grid-container {
-        /* নির্দিষ্ট হাইট দেওয়া হলো যাতে স্ক্রল হয় */
         max-height: 450px; 
         overflow-y: auto; 
         background: rgba(0,0,0,0.2);
         border-radius: 10px;
         padding: 5px;
         border: 1px solid rgba(255,255,255,0.05);
-        /* স্মুথ স্ক্রলিং এর জন্য */
         -webkit-overflow-scrolling: touch; 
     }
-    
-    /* কাস্টম স্ক্রলবার */
     .grid-container::-webkit-scrollbar { width: 5px; }
     .grid-container::-webkit-scrollbar-track { background: transparent; }
     .grid-container::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
-    .grid-container::-webkit-scrollbar-thumb:hover { background: var(--primary); }
-
-    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 8px; }
     
-    .card { 
-        background: var(--card-bg); border-radius: 8px; padding: 10px; text-align: center; cursor: pointer; position: relative; border: 1px solid rgba(255,255,255,0.05); 
-        /* লেআউট শিফট আটকানোর জন্য */
-        content-visibility: auto; 
-        contain-intrinsic-size: 80px;
-    }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 8px; }
+    .card { background: var(--card-bg); border-radius: 8px; padding: 10px; text-align: center; cursor: pointer; position: relative; border: 1px solid rgba(255,255,255,0.05); content-visibility: auto; contain-intrinsic-size: 80px; }
     .card:hover { border-color: var(--primary); }
     .card.active { border-color: var(--primary); background: rgba(0, 210, 255, 0.05); }
-    
     .card img { width: 35px; height: 35px; object-fit: contain; margin-bottom: 5px; }
     .card-title { font-size: 10px; color: #ccc; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     
@@ -107,6 +143,15 @@
     <div class="header">
         <div class="logo"><i class="fas fa-play-circle"></i> ToffeePro</div>
         <div class="live-badge">● LIVE</div>
+    </div>
+
+    <div style="background: rgba(0,210,255,0.1); border-left: 3px solid var(--primary); padding: 8px; font-size: 12px; margin-bottom: 15px; border-radius: 4px;">
+        <marquee>⚠️ চ্যানেল লোড হতে সমস্যা হলে 'Report' বাটনে ক্লিক করুন। নতুন নতুন চ্যানেল পেতে আমাদের টেলিগ্রামে যুক্ত হোন।</marquee>
+    </div>
+
+    <div class="ad-box">
+        Advertisement Area (Top) <br>
+        <a href="tiktok-downloader.html" style="color:#00d2ff;">TikTok Downloader</a>
     </div>
 
     <div class="player-wrapper">
@@ -132,6 +177,10 @@
         <div id="sourceContainer" class="source-list"></div>
     </div>
 
+    <div class="ad-box">
+        Advertisement Area (Middle)
+    </div>
+
     <div style="margin-bottom: 8px; font-weight: 600; font-size: 13px; color: #fff;">🔥 HOT MATCHES</div>
     <div id="hotMatchesContainer" class="hot-scroll"></div>
 
@@ -139,6 +188,11 @@
 
     <div class="grid-container">
         <div id="channelGrid" class="grid"></div>
+    </div>
+
+    <div class="ad-box" style="margin-top: 20px;">
+        Advertisement Area (Footer) <br>
+        <a href='http://www.freevisitorcounters.com'>Visitor Counter</a>
     </div>
 
     <div id="toast" class="toast">Action Successful</div>
@@ -222,21 +276,19 @@
             shakaInstance = new shaka.Player(video);
         }
         renderHotMatches();
-        renderChannels(); // Initial render
+        renderChannels(); 
         startCountdown();
         
-        // Debounce Search for Performance
         let timeout = null;
         search.addEventListener('input', (e) => {
             clearTimeout(timeout);
             timeout = setTimeout(() => {
                 renderChannels(e.target.value);
-            }, 300); // 300ms delay to stop lag
+            }, 300);
         });
     }
 
     // ================= LOGIC =================
-    
     function startCountdown() {
         if(timerInterval) clearInterval(timerInterval);
         timerInterval = setInterval(() => {
@@ -261,7 +313,6 @@
 
     function renderHotMatches() {
         hotMatchContainer.innerHTML = "";
-        // Use Fragment for Speed
         const fragment = document.createDocumentFragment();
         hotMatches.forEach(match => {
             const div = document.createElement('div');
@@ -290,9 +341,7 @@
             return;
         }
 
-        // PERFORMANCE OPTIMIZATION: DocumentFragment
         const fragment = document.createDocumentFragment();
-        
         filtered.forEach(ch => {
             const originalIdx = channels.indexOf(ch);
             const isFav = favorites.includes(originalIdx);
@@ -303,7 +352,6 @@
                 if(!e.target.classList.contains('fav-icon')) loadChannel(originalIdx);
             };
 
-            // loading="lazy" & decoding="async" for Speed
             div.innerHTML = `
                 <i class="fas fa-heart fav-icon ${isFav ? 'is-fav' : ''}" onclick="toggleFav(${originalIdx}, this)"></i>
                 <img src="${ch.logo}" loading="lazy" decoding="async" onerror="this.src='https://via.placeholder.com/40'">
@@ -311,7 +359,6 @@
             `;
             fragment.appendChild(div);
         });
-        
         grid.appendChild(fragment);
     }
 
