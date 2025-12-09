@@ -113,6 +113,18 @@
     .zap-search-input { width: 100%; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); padding: 12px 15px 12px 40px; border-radius: 8px; color: #fff; outline: none; font-family: 'Inter', sans-serif; }
     .zap-search-input:focus { border-color: var(--zap-primary); box-shadow: 0 0 10px rgba(0, 210, 255, 0.1); }
     .zap-search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #64748b; }
+
+    /* IFRAME STYLE */
+.zap-iframe {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    border: none;
+    z-index: 10;
+    background: #000;
+}
 </style>
 </head>
 <body>
@@ -136,7 +148,15 @@
                 <select id="zapQuality" class="zap-quality-select" style="display:none;"></select>
             </div>
             <video id="zapVideo" class="zap-video" controls autoplay playsinline poster="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgVp0J__NbqkDaI4JNZUeX2ASe8s-7yGClutfXS_NXWIwSe_TJtDAdBzxwYna2KzFz4TmbGxQgdOyYtD6vd3voJZHlsVVZpEx0BMsuLCNMogX5TotYtS6jhUMfPKKfexhIQSRg0tMqhThq5c6ci4GOZwsF0eg7-zntbXklo5eQjbg39vcCibVZkgF0NOmnj/s320/1200x1200.gif"></video>
-        </div>
+        </div><div class="zap-player-box">
+    <div class="zap-overlay">
+        <select id="zapQuality" class="zap-quality-select" style="display:none;"></select>
+    </div>
+    
+    <video id="zapVideo" class="zap-video" controls autoplay playsinline poster="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgVp0J__NbqkDaI4JNZUeX2ASe8s-7yGClutfXS_NXWIwSe_TJtDAdBzxwYna2KzFz4TmbGxQgdOyYtD6vd3voJZHlsVVZpEx0BMsuLCNMogX5TotYtS6jhUMfPKKfexhIQSRg0tMqhThq5c6ci4GOZwsF0eg7-zntbXklo5eQjbg39vcCibVZkgF0NOmnj/s320/1200x1200.gif"></video>
+    
+    <iframe id="zapIframe" class="zap-iframe" style="display:none;" frameborder="0" allow="encrypted-media; autoplay; fullscreen" allowfullscreen></iframe>
+</div>
 
         <div class="zap-info-container">
             <div class="zap-info-header">
@@ -188,6 +208,7 @@
         {
             label: "HD (HLS)",
             url: "https://bongoflixbd.top/?watch=212f6ccc690a978b72b758522a82d9b4"
+            isEmbed: true
         }
     ]
 },
@@ -198,6 +219,7 @@
         {
             label: "HD (HLS)",
             url: "https://bongoflixbd.top/?watch=c228e5c0fa7669e1e113ba3f31dff571"
+            isEmbed: true
         }
     ]
 },
@@ -3676,78 +3698,103 @@
             renderGrid();
         }
 
-        // Play Function - The Core Hybrid Logic
-        // Play Function - The Core Hybrid Logic (Updated with Headers Support)
-        async function playSource(src, btn, channelIdx) {
-            // UI Updates
-            document.querySelectorAll('.zap-source-btn').forEach(b => b.classList.remove('active-src'));
-            if(btn) btn.classList.add('active-src');
-            status.innerHTML = '<span style="color:#00d2ff">Connecting...</span>';
-            qualitySelect.style.display = 'none'; // Hide initially
+       // 3. Play Function - Hybrid (DASH + HLS + IFRAME)
+async function playSource(src, btn, channelIdx) {
+    // UI Updates
+    document.querySelectorAll('.zap-source-btn').forEach(b => b.classList.remove('active-src'));
+    if(btn) btn.classList.add('active-src');
+    status.innerHTML = '<span style="color:#00d2ff">Connecting...</span>';
+    qualitySelect.style.display = 'none';
 
-            const url = src.url;
-            const isDASH = url.indexOf('.mpd') > -1;
-            const isHLS = url.indexOf('.m3u8') > -1;
+    // Elements
+    const video = document.getElementById('zapVideo');
+    const iframe = document.getElementById('zapIframe');
 
-            try {
-                // CLEANUP previous players
-                if (activePlayerType === 'hls' && hlsPlayer) {
-                    hlsPlayer.destroy();
-                    hlsPlayer = null;
-                }
-                if (activePlayerType === 'shaka') {
-                    await shakaPlayer.unload();
-                }
+    const url = src.url;
+    // চেক করা হচ্ছে এটি আইফ্রেম কি না (isEmbed: true থাকতে হবে ডেটাতে)
+    const isEmbed = src.isEmbed === true; 
+    const isDASH = url.indexOf('.mpd') > -1;
+    const isHLS = url.indexOf('.m3u8') > -1;
 
-                // LOGIC 1: DASH (Uses Shaka)
-                if (isDASH) {
-                    activePlayerType = 'shaka';
-                    shakaPlayer.configure({ 
-                        drm: { clearKeys: src.drm || {} },
-                        streaming: { bufferingGoal: 30, rebufferingGoal: 5 }
-                    });
-                    
-                    await shakaPlayer.load(url);
-                    status.innerHTML = '<span style="color:#2ecc71; font-weight:bold;">● Playing Live (DRM)</span>';
-                    setupQualityShaka();
-                } 
-                // LOGIC 2: HLS (Uses Hls.js for stability) WITH HEADERS SUPPORT
-                else if (isHLS) {
-                    if (Hls.isSupported()) {
-                        activePlayerType = 'hls';
+    try {
+        // --- CLEANUP ---
+        // ১. আগের প্লেয়ার বন্ধ করা
+        if (activePlayerType === 'hls' && hlsPlayer) {
+            hlsPlayer.destroy();
+            hlsPlayer = null;
+        }
+        if (activePlayerType === 'shaka') {
+            await shakaPlayer.unload();
+        }
+        activePlayerType = 'none';
 
-                        // --- Header Configuration Start ---
-                        const hlsConfig = {};
-                        if (src.headers) {
-                            hlsConfig.xhrSetup = function(xhr, url) {
-                                for (const [key, value] of Object.entries(src.headers)) {
-                                    try {
-                                        xhr.setRequestHeader(key, value);
-                                    } catch (e) {
-                                        console.warn(`Cannot set header: ${key}`, e);
-                                    }
-                                }
-                            };
+        // ২. ডিসপ্লে লজিক (ভিডিও vs আইফ্রেম)
+        if (isEmbed) {
+            video.style.display = 'none';  // ভিডিও ট্যাগ লুকাও
+            video.pause();                 // ভিডিও থামাও
+            iframe.style.display = 'block';// আইফ্রেম দেখাও
+            iframe.src = url;              // আইফ্রেমে লিংক লোড করো
+            status.innerHTML = '<span style="color:#f39c12; font-weight:bold;">● Playing Embed</span>';
+            return; // আইফ্রেম হলে নিচের কোড আর রান করবে না
+        } else {
+            iframe.style.display = 'none'; // আইফ্রেম লুকাও
+            iframe.src = "";               // আইফ্রেমের অডিও বন্ধ করো
+            video.style.display = 'block'; // ভিডিও ট্যাগ দেখাও
+        }
+
+        // --- NATIVE PLAYERS LOGIC ---
+        
+        // LOGIC 1: DASH (Shaka)
+        if (isDASH) {
+            activePlayerType = 'shaka';
+            shakaPlayer.configure({ 
+                drm: { clearKeys: src.drm || {} },
+                streaming: { bufferingGoal: 30, rebufferingGoal: 5 }
+            });
+            await shakaPlayer.load(url);
+            status.innerHTML = '<span style="color:#2ecc71; font-weight:bold;">● Playing Live (DRM)</span>';
+            setupQualityShaka();
+        } 
+        // LOGIC 2: HLS (Hls.js + Headers)
+        else if (isHLS) {
+            if (Hls.isSupported()) {
+                activePlayerType = 'hls';
+                const hlsConfig = {};
+                if (src.headers) {
+                    hlsConfig.xhrSetup = function(xhr, url) {
+                        for (const [key, value] of Object.entries(src.headers)) {
+                            try { xhr.setRequestHeader(key, value); } 
+                            catch (e) { console.warn(`Header error: ${key}`, e); }
                         }
-                        // --- Header Configuration End ---
+                    };
+                }
+                hlsPlayer = new Hls(hlsConfig);
+                hlsPlayer.loadSource(url);
+                hlsPlayer.attachMedia(video);
+                hlsPlayer.on(Hls.Events.MANIFEST_PARSED, function() {
+                    video.play();
+                    status.innerHTML = '<span style="color:#2ecc71; font-weight:bold;">● Playing Live (HLS)</span>';
+                    setupQualityHls();
+                });
+            }
+            else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                activePlayerType = 'native';
+                video.src = url;
+                video.play();
+                status.innerHTML = '<span style="color:#2ecc71; font-weight:bold;">● Playing Live (Native)</span>';
+            }
+        } 
+        else {
+            // যদি mpd বা m3u8 না হয়, তাহলে সরাসরি ভিডিও ট্যাগে চালানোর চেষ্টা (যেমন .mp4)
+            video.src = url;
+            video.play();
+        }
 
-                        hlsPlayer = new Hls(hlsConfig); // Config passed here
-                        hlsPlayer.loadSource(url);
-                        hlsPlayer.attachMedia(video);
-                        
-                        hlsPlayer.on(Hls.Events.MANIFEST_PARSED, function() {
-                            video.play();
-                            status.innerHTML = '<span style="color:#2ecc71; font-weight:bold;">● Playing Live (HLS)</span>';
-                            setupQualityHls();
-                        });
-
-                        hlsPlayer.on(Hls.Events.ERROR, function(event, data) {
-                            if (data.fatal) {
-                                status.innerHTML = '<span style="color:#ef4444">Stream Error (HLS)</span>';
-                                console.error("HLS Error:", data);
-                            }
-                        });
-                    }
+    } catch (e) {
+        console.error("Playback Error:", e);
+        status.innerHTML = '<span style="color:#ef4444">Connection Failed</span>';
+    }
+}
                     // Native Safari (iOS)
                     else if (video.canPlayType('application/vnd.apple.mpegurl')) {
                         activePlayerType = 'native';
