@@ -116,59 +116,50 @@
     display: none;
 }
 
-/* MATCH CARD (THE BOX) */
-.match-card {
-    min-width: 150px; /* বক্সের সাইজ ফিক্সড রাখার জন্য */
-    flex: 0 0 auto; /* বক্স যাতে ছোট না হয়ে যায় */
+/* মেইন কন্টেইনার */
+.hot-scroll {
+    display: flex;
+    flex-wrap: nowrap; /* এই লাইনটি অত্যন্ত গুরুত্বপূর্ণ: এটি আইটেমগুলোকে নিচে নামতে দেবে না */
+    gap: 12px;
+    overflow-x: auto; /* এই লাইনটি স্ক্রল চালু করে */
+    -webkit-overflow-scrolling: touch; /* মোবাইলে স্মুথ স্ক্রলিং এর জন্য */
+    padding: 10px 5px;
+    margin-bottom: 15px;
     
-    /* বক্স ডিজাইন */
-    background: #1a1a1a; /* সলিড কালার ব্যাকআপ */
+    /* স্ক্রলবার লুকানো (ঐচ্ছিক) */
+    scrollbar-width: none; 
+}
+.hot-scroll::-webkit-scrollbar {
+    display: none;
+}
+
+/* ভেতরের বক্স বা কার্ড */
+.match-card {
+    /* এই লাইনটি সবচেয়ে জরুরি - এটি বক্সকে ছোট হতে দেয় না */
+    flex: 0 0 auto; 
+    
+    width: 150px; /* ফিক্সড সাইজ */
+    min-width: 150px; /* যাতে কোনোভাবেই চেপে না যায় */
+    
+    /* আপনার ডিজাইনের বাকি অংশ */
     background: linear-gradient(145deg, rgba(255,255,255,0.1), rgba(0,0,0,0.6));
     border: 1px solid rgba(255,255,255,0.15);
-    border-radius: 12px; /* কোনাগুলো একটু বেশি গোল */
-    padding: 12px;
-    cursor: pointer;
+    border-radius: 10px;
+    padding: 10px;
     position: relative;
-    
-    /* বক্স শ্যাডো (Depth এর জন্য) */
-    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-    
-    /* স্ক্রল পজিশন */
-    scroll-snap-align: start; 
-    transition: transform 0.2s ease;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
 }
 
-/* ক্লিক ইফেক্ট (ঐচ্ছিক) */
-.match-card:active {
-    transform: scale(0.98); /* ক্লিক করলে একটু ছোট হবে */
-}
-
-/* TIME & TEAMS (আপনার আগের স্টাইল) */
+/* টেক্সট ডিজাইন */
 .match-time {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    font-size: 10px;
-    font-weight: bold;
-    background: rgba(0,0,0,0.7);
-    color: #fff;
-    padding: 3px 6px;
-    border-radius: 4px;
+    position: absolute; top: 5px; right: 5px;
+    font-size: 10px; background: rgba(0,0,0,0.6);
+    color: #fff; padding: 2px 6px; border-radius: 4px;
 }
-
-.match-time.is-live {
-    background: #ef4444;
-    box-shadow: 0 0 5px #ef4444; /* লাইভ হলে একটু গ্লো করবে */
-    animation: pulse 1.5s infinite;
-}
-
 .match-teams {
-    font-size: 12px;
-    font-weight: 600;
-    margin-top: 25px;
-    color: #e0e0e0;
-    line-height: 1.4;
-    text-align: center; /* লেখা মাঝখানে */
+    font-size: 12px; font-weight: bold;
+    margin-top: 25px; color: white;
+    text-align: center; white-space: normal; /* দলের নাম যাতে নিচে নিচে আসে */
 }
 
 /* LIVE ANIMATION */
