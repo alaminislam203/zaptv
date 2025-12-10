@@ -97,12 +97,86 @@
     .src-btn { background: rgba(255,255,255,0.08); border: none; color: #ccc; padding: 5px 10px; border-radius: 15px; font-size: 10px; cursor: pointer; }
     .src-btn.active { background: var(--primary); color: #000; font-weight: bold; }
 
-    /* HOT MATCHES */
-    .hot-scroll { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 5px; margin-bottom: 15px; scrollbar-width: none; }
-    .match-card { min-width: 140px; background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(0,0,0,0.5)); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 10px; cursor: pointer; position: relative; }
-    .match-time { position: absolute; top: 5px; right: 5px; font-size: 9px; font-weight: bold; background: rgba(0,0,0,0.6); color: #fff; padding: 2px 5px; border-radius: 4px; transition: 0.3s; }
-    .match-time.is-live { background: #ef4444; animation: pulse 1s infinite; }
-    .match-teams { font-size: 11px; font-weight: bold; margin-top: 20px; line-height: 1.4; }
+  /* HOT MATCHES CONTAINER */
+.hot-scroll {
+    display: flex;
+    gap: 12px; /* বক্সগুলোর মাঝখানের গ্যাপ একটু বাড়ালাম */
+    overflow-x: auto;
+    padding: 10px 5px; /* শ্যাডো যাতে কেটে না যায় তাই প্যাডিং */
+    margin-bottom: 15px;
+    scrollbar-width: none; /* Firefox এর জন্য স্ক্রলবার লুকানো */
+    
+    /* Smooth Scroll Magic */
+    scroll-snap-type: x mandatory; /* স্ক্রল করলে যাতে সুন্দরভাবে স্ন্যাপ করে */
+    -webkit-overflow-scrolling: touch; /* মোবাইলে স্মুথ হওয়ার জন্য */
+}
+
+/* Chrome, Safari এবং Opera এর জন্য স্ক্রলবার লুকানো */
+.hot-scroll::-webkit-scrollbar {
+    display: none;
+}
+
+/* MATCH CARD (THE BOX) */
+.match-card {
+    min-width: 150px; /* বক্সের সাইজ ফিক্সড রাখার জন্য */
+    flex: 0 0 auto; /* বক্স যাতে ছোট না হয়ে যায় */
+    
+    /* বক্স ডিজাইন */
+    background: #1a1a1a; /* সলিড কালার ব্যাকআপ */
+    background: linear-gradient(145deg, rgba(255,255,255,0.1), rgba(0,0,0,0.6));
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 12px; /* কোনাগুলো একটু বেশি গোল */
+    padding: 12px;
+    cursor: pointer;
+    position: relative;
+    
+    /* বক্স শ্যাডো (Depth এর জন্য) */
+    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    
+    /* স্ক্রল পজিশন */
+    scroll-snap-align: start; 
+    transition: transform 0.2s ease;
+}
+
+/* ক্লিক ইফেক্ট (ঐচ্ছিক) */
+.match-card:active {
+    transform: scale(0.98); /* ক্লিক করলে একটু ছোট হবে */
+}
+
+/* TIME & TEAMS (আপনার আগের স্টাইল) */
+.match-time {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    font-size: 10px;
+    font-weight: bold;
+    background: rgba(0,0,0,0.7);
+    color: #fff;
+    padding: 3px 6px;
+    border-radius: 4px;
+}
+
+.match-time.is-live {
+    background: #ef4444;
+    box-shadow: 0 0 5px #ef4444; /* লাইভ হলে একটু গ্লো করবে */
+    animation: pulse 1.5s infinite;
+}
+
+.match-teams {
+    font-size: 12px;
+    font-weight: 600;
+    margin-top: 25px;
+    color: #e0e0e0;
+    line-height: 1.4;
+    text-align: center; /* লেখা মাঝখানে */
+}
+
+/* LIVE ANIMATION */
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.6; }
+    100% { opacity: 1; }
+}
 
     /* SEARCH */
     .search-box { width: 100%; padding: 10px 15px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.2); color: #fff; margin-bottom: 10px; outline: none; font-size: 14px; }
