@@ -97,12 +97,29 @@
     .src-btn { background: rgba(255,255,255,0.08); border: none; color: #ccc; padding: 5px 10px; border-radius: 15px; font-size: 10px; cursor: pointer; }
     .src-btn.active { background: var(--primary); color: #000; font-weight: bold; }
 
-  /* HOT MATCHES */
-    .hot-scroll { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 5px; margin-bottom: 15px; scrollbar-width: none; }
-    .match-card { min-width: 140px; background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(0,0,0,0.5)); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 10px; cursor: pointer; position: relative; }
+  /* --- HOT MATCHES (DRAG ENABLED) --- */
+    .hot-scroll { 
+        display: flex; 
+        gap: 10px; 
+        overflow-x: auto; 
+        padding-bottom: 5px; 
+        margin-bottom: 15px; 
+        cursor: grab; /* PC তে হাত দেখাবে */
+        scrollbar-width: none; 
+        -webkit-overflow-scrolling: touch; /* মোবাইলে স্মুথ স্ক্রল */
+        user-select: none; /* টেক্সট সিলেক্ট বন্ধ */
+    }
+    .hot-scroll.active { cursor: grabbing; } /* টান দেওয়ার সময় */
+    
+    .match-card { min-width: 140px; background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(0,0,0,0.5)); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 10px; cursor: pointer; position: relative; pointer-events: none; /* চাইল্ড এলিমেন্ট ক্লিকের সমস্যা রোধে */ }
+    .match-card > * { pointer-events: none; } /* কার্ডের ভেতরের লেখায় ক্লিক পড়বে না */
+    
+    /* শুধুমাত্র কার্ডে ক্লিক ইভেন্ট সচল রাখার জন্য JS এ হ্যান্ডেল করা হবে */
+
     .match-time { position: absolute; top: 5px; right: 5px; font-size: 9px; font-weight: bold; background: rgba(0,0,0,0.6); color: #fff; padding: 2px 5px; border-radius: 4px; transition: 0.3s; }
     .match-time.is-live { background: #ef4444; animation: pulse 1s infinite; }
     .match-teams { font-size: 11px; font-weight: bold; margin-top: 20px; line-height: 1.4; }
+
 
 /* LIVE ANIMATION */
 @keyframes pulse {
@@ -3767,6 +3784,71 @@
     }
 
     // ================= LOGIC =================
+    // ================= HOT MATCH RENDER & DRAG =================
+    function renderHotMatches() {
+        hotMatchContainer.innerHTML = "";
+        const fragment = document.createDocumentFragment();
+        hotMatches.forEach(match => {
+            const div = document.createElement('div');
+            div.className = 'match-card';
+            div.innerHTML = `
+                <div class="match-time" data-time="${match.matchTime}">...</div>
+                <div class="match-teams">${match.team1} <br> <span style="color:#999;font-weight:normal">vs</span> <br> ${match.team2}</div>
+                <div style="font-size:10px; color:#aaa; margin-top:5px;">${match.info}</div>
+            `;
+            // Click Handler via JS to prevent drag conflict
+            div.addEventListener('click', (e) => {
+                // If dragged, don't trigger click
+                if(hotMatchContainer.classList.contains('dragging')) return;
+                
+                const targetIdx = channels.findIndex(ch => ch.name === match.channelName);
+                if(targetIdx !== -1) loadChannel(targetIdx);
+                else showToast("Channel not found!");
+            });
+            fragment.appendChild(div);
+        });
+        hotMatchContainer.appendChild(fragment);
+    }
+
+    // 🖱️ DRAG TO SCROLL LOGIC FOR PC
+    function initDragScroll() {
+        const slider = document.getElementById('hotMatchesContainer');
+        let isDown = false;
+        let startX;
+        let scrollLeft;
+
+        slider.addEventListener('mousedown', (e) => {
+            isDown = true;
+            slider.classList.add('active');
+            startX = e.pageX - slider.offsetLeft;
+            scrollLeft = slider.scrollLeft;
+        });
+
+        slider.addEventListener('mouseleave', () => {
+            isDown = false;
+            slider.classList.remove('active');
+            setTimeout(() => slider.classList.remove('dragging'), 50);
+        });
+
+        slider.addEventListener('mouseup', () => {
+            isDown = false;
+            slider.classList.remove('active');
+            setTimeout(() => slider.classList.remove('dragging'), 50);
+        });
+
+        slider.addEventListener('mousemove', (e) => {
+            if (!isDown) return;
+            e.preventDefault();
+            const x = e.pageX - slider.offsetLeft;
+            const walk = (x - startX) * 2; // Scroll speed
+            slider.scrollLeft = scrollLeft - walk;
+            
+            // Mark as dragging to prevent click event
+            if(Math.abs(walk) > 5) slider.classList.add('dragging');
+        });
+    }
+
+    // ================= TIMER LOGIC =================
     function startCountdown() {
         if(timerInterval) clearInterval(timerInterval);
         timerInterval = setInterval(() => {
@@ -3787,27 +3869,6 @@
                 }
             });
         }, 1000);
-    }
-
-    function renderHotMatches() {
-        hotMatchContainer.innerHTML = "";
-        const fragment = document.createDocumentFragment();
-        hotMatches.forEach(match => {
-            const div = document.createElement('div');
-            div.className = 'match-card';
-            div.innerHTML = `
-                <div class="match-time" data-time="${match.matchTime}">...</div>
-                <div class="match-teams">${match.team1} <br> <span style="color:#999;font-weight:normal">vs</span> <br> ${match.team2}</div>
-                <div style="font-size:10px; color:#aaa; margin-top:5px;">${match.info}</div>
-            `;
-            div.onclick = () => {
-                const targetIdx = channels.findIndex(ch => ch.name === match.channelName);
-                if(targetIdx !== -1) loadChannel(targetIdx);
-                else showToast("Channel not found!");
-            };
-            fragment.appendChild(div);
-        });
-        hotMatchContainer.appendChild(fragment);
     }
 
     function renderChannels(query = "") {
