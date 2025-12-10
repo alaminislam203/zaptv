@@ -97,70 +97,12 @@
     .src-btn { background: rgba(255,255,255,0.08); border: none; color: #ccc; padding: 5px 10px; border-radius: 15px; font-size: 10px; cursor: pointer; }
     .src-btn.active { background: var(--primary); color: #000; font-weight: bold; }
 
-  /* HOT MATCHES CONTAINER */
-.hot-scroll {
-    display: flex;
-    gap: 12px; /* বক্সগুলোর মাঝখানের গ্যাপ একটু বাড়ালাম */
-    overflow-x: auto;
-    padding: 10px 5px; /* শ্যাডো যাতে কেটে না যায় তাই প্যাডিং */
-    margin-bottom: 15px;
-    scrollbar-width: none; /* Firefox এর জন্য স্ক্রলবার লুকানো */
-    
-    /* Smooth Scroll Magic */
-    scroll-snap-type: x mandatory; /* স্ক্রল করলে যাতে সুন্দরভাবে স্ন্যাপ করে */
-    -webkit-overflow-scrolling: touch; /* মোবাইলে স্মুথ হওয়ার জন্য */
-}
-
-/* Chrome, Safari এবং Opera এর জন্য স্ক্রলবার লুকানো */
-.hot-scroll::-webkit-scrollbar {
-    display: none;
-}
-
-/* মেইন কন্টেইনার */
-.hot-scroll {
-    display: flex;
-    flex-wrap: nowrap; /* এই লাইনটি অত্যন্ত গুরুত্বপূর্ণ: এটি আইটেমগুলোকে নিচে নামতে দেবে না */
-    gap: 12px;
-    overflow-x: auto; /* এই লাইনটি স্ক্রল চালু করে */
-    -webkit-overflow-scrolling: touch; /* মোবাইলে স্মুথ স্ক্রলিং এর জন্য */
-    padding: 10px 5px;
-    margin-bottom: 15px;
-    
-    /* স্ক্রলবার লুকানো (ঐচ্ছিক) */
-    scrollbar-width: none; 
-}
-.hot-scroll::-webkit-scrollbar {
-    display: none;
-}
-
-/* ভেতরের বক্স বা কার্ড */
-.match-card {
-    /* এই লাইনটি সবচেয়ে জরুরি - এটি বক্সকে ছোট হতে দেয় না */
-    flex: 0 0 auto; 
-    
-    width: 150px; /* ফিক্সড সাইজ */
-    min-width: 150px; /* যাতে কোনোভাবেই চেপে না যায় */
-    
-    /* আপনার ডিজাইনের বাকি অংশ */
-    background: linear-gradient(145deg, rgba(255,255,255,0.1), rgba(0,0,0,0.6));
-    border: 1px solid rgba(255,255,255,0.15);
-    border-radius: 10px;
-    padding: 10px;
-    position: relative;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-}
-
-/* টেক্সট ডিজাইন */
-.match-time {
-    position: absolute; top: 5px; right: 5px;
-    font-size: 10px; background: rgba(0,0,0,0.6);
-    color: #fff; padding: 2px 6px; border-radius: 4px;
-}
-.match-teams {
-    font-size: 12px; font-weight: bold;
-    margin-top: 25px; color: white;
-    text-align: center; white-space: normal; /* দলের নাম যাতে নিচে নিচে আসে */
-}
+  /* HOT MATCHES */
+    .hot-scroll { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 5px; margin-bottom: 15px; scrollbar-width: none; }
+    .match-card { min-width: 140px; background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(0,0,0,0.5)); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 10px; cursor: pointer; position: relative; }
+    .match-time { position: absolute; top: 5px; right: 5px; font-size: 9px; font-weight: bold; background: rgba(0,0,0,0.6); color: #fff; padding: 2px 5px; border-radius: 4px; transition: 0.3s; }
+    .match-time.is-live { background: #ef4444; animation: pulse 1s infinite; }
+    .match-teams { font-size: 11px; font-weight: bold; margin-top: 20px; line-height: 1.4; }
 
 /* LIVE ANIMATION */
 @keyframes pulse {
@@ -206,9 +148,10 @@
 
 <div class="app-container">
     <div class="header">
-        <div class="logo"><i class="fas fa-play-circle"></i> ToffeePro</div>
-        <div class="live-badge">● LIVE</div>
-    </div>
+    <div class="logo"><i class="fas fa-play-circle"></i> ToffeePro</div>
+    <div style="font-size: 10px; color: #aaa; margin-top: -5px;">বিনোদনের নতুন দুনিয়া</div>
+    <div class="live-badge">● LIVE</div>
+</div>
 
     <div style="background: rgba(0,210,255,0.1); border-left: 3px solid var(--primary); padding: 8px; font-size: 12px; margin-bottom: 15px; border-radius: 4px;">
         <marquee>⚠️ চ্যানেল লোড হতে সমস্যা হলে 'Report' বাটনে ক্লিক করুন। নতুন নতুন চ্যানেল পেতে আমাদের টেলিগ্রামে যুক্ত হোন।</marquee>
