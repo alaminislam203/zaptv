@@ -100,22 +100,40 @@
     .src-btn { background: rgba(255,255,255,0.08); border: none; color: #ccc; padding: 5px 10px; border-radius: 15px; font-size: 10px; cursor: pointer; }
     .src-btn.active { background: var(--primary); color: #000; font-weight: bold; }
 
-  /* --- HOT MATCHES (DRAG ENABLED) --- */
-    .hot-scroll { 
-        display: flex; 
-        gap: 10px; 
-        overflow-x: auto; 
-        padding-bottom: 5px; 
-        margin-bottom: 15px; 
-        cursor: grab; /* PC তে হাত দেখাবে */
-        scrollbar-width: none; 
-        -webkit-overflow-scrolling: touch; /* মোবাইলে স্মুথ স্ক্রল */
-        user-select: none; /* টেক্সট সিলেক্ট বন্ধ */
-    }
-    .hot-scroll.active { cursor: grabbing; } /* টান দেওয়ার সময় */
+/* --- HOT MATCHES SCROLL (FIXED) --- */
+.hot-scroll { 
+    display: flex; 
+    gap: 10px; 
+    overflow-x: auto; /* স্ক্রল করার মূল মন্ত্র */
+    padding-bottom: 10px; /* নিচে একটু জায়গা যাতে কেটে না যায় */
+    margin-bottom: 15px; 
     
-    .match-card { min-width: 140px; background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(0,0,0,0.5)); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 10px; cursor: pointer; position: relative; pointer-events: none; /* চাইল্ড এলিমেন্ট ক্লিকের সমস্যা রোধে */ }
-    .match-card > * { pointer-events: none; } /* কার্ডের ভেতরের লেখায় ক্লিক পড়বে না */
+    /* পিসির জন্য */
+    cursor: grab; /* হাত আইকন দেখাবে */
+    scrollbar-width: none; /* ফায়ারফক্সে স্ক্রলবার লুকানো */
+    
+    /* মোবাইলের জন্য স্মুথ স্ক্রল */
+    -webkit-overflow-scrolling: touch; 
+    user-select: none; /* ড্রাগ করার সময় টেক্সট সিলেক্ট হবে না */
+}
+
+/* ক্রোম/সাফারিতে স্ক্রলবার লুকানো */
+.hot-scroll::-webkit-scrollbar { display: none; }
+
+/* যখন মাউস দিয়ে চেপে ধরা হবে */
+.hot-scroll.active { cursor: grabbing; }
+
+/* ম্যাচ কার্ডের স্টাইল (নিশ্চিত করুন min-width আছে) */
+.match-card { 
+    min-width: 150px; /* এটি থাকতেই হবে, নাহলে স্ক্রল হবে না */
+    background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(0,0,0,0.5)); 
+    border: 1px solid rgba(255,255,255,0.1); 
+    border-radius: 8px; 
+    padding: 10px; 
+    cursor: pointer; 
+    position: relative; 
+    flex-shrink: 0; /* কার্ডগুলো যাতে চেপে ছোট না হয়ে যায় */
+}
     
     /* শুধুমাত্র কার্ডে ক্লিক ইভেন্ট সচল রাখার জন্য JS এ হ্যান্ডেল করা হবে */
 
@@ -3725,7 +3743,8 @@
         }
         updateDate();
         renderHotMatches();
-        renderChannels(); 
+        renderChannels();
+        initDragScroll();
         startCountdown();
         
         let timeout = null;
@@ -3748,8 +3767,55 @@
     
 
     // ================= LOGIC =================
+
+    // ================= 🖱️ DRAG TO SCROLL LOGIC (FOR PC) =================
+    function initDragScroll() {
+        const slider = document.getElementById('hotMatchesContainer');
+        let isDown = false;
+        let startX;
+        let scrollLeft;
+        let isDragging = false; // ক্লিক আর ড্রাগের পার্থক্য বোঝার জন্য
+
+        slider.addEventListener('mousedown', (e) => {
+            isDown = true;
+            slider.classList.add('active');
+            startX = e.pageX - slider.offsetLeft;
+            scrollLeft = slider.scrollLeft;
+            isDragging = false; // শুরুতেই ড্রাগ ফলস থাকবে
+        });
+
+        slider.addEventListener('mouseleave', () => {
+            isDown = false;
+            slider.classList.remove('active');
+        });
+
+        slider.addEventListener('mouseup', (e) => {
+            isDown = false;
+            slider.classList.remove('active');
+            // যদি সামান্য একটু মুভ হয়, তবে সেটাকে ক্লিক হিসেবে গণ্য করা হবে
+            setTimeout(() => { isDragging = false; }, 50); 
+        });
+
+        slider.addEventListener('mousemove', (e) => {
+            if (!isDown) return;
+            e.preventDefault();
+            const x = e.pageX - slider.offsetLeft;
+            const walk = (x - startX) * 2; // *2 হলো স্ক্রল স্পিড
+            slider.scrollLeft = scrollLeft - walk;
+            
+            // যদি ইউজার ৫ পিক্সেলের বেশি মুভ করে, তবেই সেটা ড্রাগ
+            if(Math.abs(walk) > 5) {
+                isDragging = true;
+            }
+        });
+
+        // কার্ডে ক্লিক করার সময় চেক করা হবে এটা ড্রাগ নাকি ক্লিক
+        // এটি renderHotMatches ফাংশনের ভেতরে ব্যবহার করতে হবে। 
+        // তাই আমরা একটি গ্লোবাল ভেরিয়েবল ব্যবহার করছি।
+        window.zapIsDragging = () => isDragging;
+    }
     // ================= HOT MATCH RENDER & DRAG =================
-    function renderHotMatches() {
+  function renderHotMatches() {
         hotMatchContainer.innerHTML = "";
         const fragment = document.createDocumentFragment();
         hotMatches.forEach(match => {
@@ -3760,14 +3826,18 @@
                 <div class="match-teams">${match.team1} <br> <span style="color:#999;font-weight:normal">vs</span> <br> ${match.team2}</div>
                 <div style="font-size:10px; color:#aaa; margin-top:5px;">${match.info}</div>
             `;
-            // Click Handler via JS to prevent drag conflict
+            
+            // ✅ নতুন ক্লিক হ্যান্ডলার (ড্রাগ চেক সহ)
             div.addEventListener('click', (e) => {
-                // If dragged, don't trigger click
-                if(hotMatchContainer.classList.contains('dragging')) return;
+                // যদি ড্রাগ করা অবস্থায় থাকে, তবে ক্লিক কাজ করবে না
+                if(window.zapIsDragging && window.zapIsDragging()) return;
                 
                 const targetIdx = channels.findIndex(ch => ch.name === match.channelName);
-                if(targetIdx !== -1) loadChannel(targetIdx);
-                else showToast("Channel not found!");
+                if(targetIdx !== -1) {
+                    loadChannel(targetIdx);
+                } else {
+                    showToast("Channel not found!");
+                }
             });
             fragment.appendChild(div);
         });
