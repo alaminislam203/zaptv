@@ -46,26 +46,6 @@
 </script>
 
 
-    <script>
-        function updateDateTime() {
-            const now = new Date();
-
-            // Options for formatting date and time
-            const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-            const timeOptions = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }; // 24-hour format
-
-            const formattedDate = now.toLocaleDateString(undefined, dateOptions);
-            const formattedTime = now.toLocaleTimeString(undefined, timeOptions);
-
-            // Update the HTML elements
-            document.getElementById('current-date').textContent = formattedDate;
-            document.getElementById('current-time').textContent = formattedTime;
-        }
-
-        // Run the function immediately and then every second
-        updateDateTime();
-        setInterval(updateDateTime, 1000); // Updates the time every 1000ms (1 second)
-    </script>
 
     
 <style>
@@ -229,8 +209,13 @@
         Advertisement Area (Middle)
     </div>
 
-    <div style="margin-bottom: 8px; font-weight: 600; font-size: 13px; color: #fff;">🔥 HOT MATCHES ( <div id="current-date"></div>)</div>
-    <div id="hotMatchesContainer" class="hot-scroll"></div>
+    <div style="margin-bottom: 8px; font-weight: 600; font-size: 13px; color: #fff; display: flex; align-items: center; gap: 5px;">
+    <span>🔥 HOT MATCHES</span> 
+    <span style="color: #00d2ff; font-size: 11px; font-weight: normal;">
+        ( <span id="current-date"></span> )
+    </span>
+</div>
+<div id="hotMatchesContainer" class="hot-scroll"></div>
 
     <input type="text" id="searchInput" class="search-box" placeholder="🔍 চ্যানেল খুঁজুন...">
 
@@ -3738,6 +3723,7 @@
         if(shaka.Player.isBrowserSupported()) {
             shakaInstance = new shaka.Player(video);
         }
+        updateDate();
         renderHotMatches();
         renderChannels(); 
         startCountdown();
@@ -3750,6 +3736,16 @@
             }, 300);
         });
     }
+// ================= DATE FUNCTION =================
+    function updateDate() {
+        const dateElem = document.getElementById('current-date');
+        const now = new Date();
+        // ফরম্যাট: 12 Dec 2025
+        const options = { day: 'numeric', month: 'short', year: 'numeric' };
+        dateElem.innerText = now.toLocaleDateString('en-GB', options);
+    }
+
+    
 
     // ================= LOGIC =================
     // ================= HOT MATCH RENDER & DRAG =================
