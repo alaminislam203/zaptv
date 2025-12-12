@@ -45,6 +45,29 @@
 })();
 </script>
 
+
+    <script>
+        function updateDateTime() {
+            const now = new Date();
+
+            // Options for formatting date and time
+            const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            const timeOptions = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }; // 24-hour format
+
+            const formattedDate = now.toLocaleDateString(undefined, dateOptions);
+            const formattedTime = now.toLocaleTimeString(undefined, timeOptions);
+
+            // Update the HTML elements
+            document.getElementById('current-date').textContent = formattedDate;
+            document.getElementById('current-time').textContent = formattedTime;
+        }
+
+        // Run the function immediately and then every second
+        updateDateTime();
+        setInterval(updateDateTime, 1000); // Updates the time every 1000ms (1 second)
+    </script>
+
+    
 <style>
     :root {
         --primary: #00d2ff;
@@ -206,7 +229,7 @@
         Advertisement Area (Middle)
     </div>
 
-    <div style="margin-bottom: 8px; font-weight: 600; font-size: 13px; color: #fff;">🔥 HOT MATCHES</div>
+    <div style="margin-bottom: 8px; font-weight: 600; font-size: 13px; color: #fff;">🔥 HOT MATCHES ( <div id="current-date"></div>)</div>
     <div id="hotMatchesContainer" class="hot-scroll"></div>
 
     <input type="text" id="searchInput" class="search-box" placeholder="🔍 চ্যানেল খুঁজুন...">
@@ -231,69 +254,7 @@
 <script>
     // ================= DATA =================
     const hotMatches = [
-  {
-    "team1": "New Zealand",
-    "team2": "West Indies",
-    "info": "Wellington Test - Day 2",
-    "matchTime": "2025-12-11T04:00:00",
-    "channelName": "T Sports"
-  },
-  {
-    "team1": "India",
-    "team2": "South Africa",
-    "info": "2nd T20",
-    "matchTime": "2025-12-11T19:30:00",
-    "channelName": "T Sports"
-  },
-  {
-    "team1": "Knight Riders",
-    "team2": "Emirates",
-    "info": "ILT20",
-    "matchTime": "2025-12-11T20:30:00",
-    "channelName": "PTV Sports"
-  },
-  {
-    "team1": "Zagreb",
-    "team2": "Betis",
-    "info": "Europa League",
-    "matchTime": "2025-12-11T23:45:00",
-    "channelName": "Sony Sports 1"
-  },
-  {
-    "team1": "Mitiulan",
-    "team2": "Genk",
-    "info": "Europa League",
-    "matchTime": "2025-12-11T23:45:00",
-    "channelName": "Sony Sports 2"
-  },
-  {
-    "team1": "Utrecht",
-    "team2": "Nottingham",
-    "info": "Europa League",
-    "matchTime": "2025-12-11T23:45:00",
-    "channelName": "Sony Sports 5"
-  },
-  {
-    "team1": "Celtic",
-    "team2": "Roma",
-    "info": "Europa League",
-    "matchTime": "2025-12-12T02:00:00",
-    "channelName": "Sony Sports 1"
-  },
-  {
-    "team1": "Basel",
-    "team2": "Aston Villa",
-    "info": "Europa League",
-    "matchTime": "2025-12-12T02:00:00",
-    "channelName": "Sony Sports 2"
-  },
-  {
-    "team1": "Lyon",
-    "team2": "Eagles",
-    "info": "Europa League",
-    "matchTime": "2025-12-12T02:00:00",
-    "channelName": "Sony Sports 5"
-  }
+  
 ];
 
     const channels = [
