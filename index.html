@@ -13,6 +13,114 @@
 <link rel="manifest" href="https://raw.githubusercontent.com/alaminislam203/zaptv/refs/heads/main/manifest.json">
 <script>(function(s){s.dataset.zone='10282293',s.src='https://al5sm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
 
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+
+    
+
+    /* --- AD BANNER CSS --- */
+    .ad-container {
+        position: relative;
+        width: 100%;
+        max-width: 450px; /* ব্যানারের সর্বোচ্চ সাইজ */
+        background-color: #d1fafe; /* ছবির মতো হালকা নীল ব্যাকগ্রাউন্ড */
+        border-radius: 8px;
+        padding: 15px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        box-sizing: border-box;
+        overflow: hidden;
+        border: 1px solid #b3e5fc;
+    }
+
+    /* ADS Badge (উপরে বাম কোণায়) */
+    .ad-badge {
+        position: absolute;
+        top: 0;
+        left: 0;
+        background-color: #0f172a;
+        color: #fff;
+        font-size: 9px;
+        font-weight: bold;
+        padding: 2px 6px;
+        border-bottom-right-radius: 4px;
+        z-index: 10;
+    }
+
+    /* Logo Style */
+    .ad-logo-wrapper {
+        flex-shrink: 0;
+    }
+    .ad-logo {
+        width: 70px;
+        height: 70px;
+        border-radius: 12px;
+        object-fit: cover;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+
+    /* Text Content */
+    .ad-content {
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+
+    .ad-title {
+        font-size: 16px;
+        font-weight: 800;
+        color: #0f172a; /* গাঢ় নীল/কালো */
+        text-transform: uppercase;
+        margin: 0 0 5px 0;
+        line-height: 1.2;
+    }
+
+    .ad-desc {
+        font-size: 11px;
+        color: #334155;
+        margin: 0 0 8px 0;
+        line-height: 1.4;
+        font-weight: 500;
+    }
+
+    .ad-domain {
+        font-size: 9px;
+        color: #64748b;
+        font-weight: 600;
+    }
+
+    /* Visit Button */
+    .visit-btn {
+        text-decoration: none;
+        background: linear-gradient(90deg, #22d3ee, #00d2ff); /* বাটনের কালার */
+        color: #000;
+        font-size: 11px;
+        font-weight: 700;
+        padding: 8px 15px;
+        border-radius: 20px;
+        white-space: nowrap;
+        align-self: flex-end; /* নিচে ডানে রাখার জন্য */
+        margin-left: auto; /* কন্টেন্ট থেকে দূরে সরানোর জন্য */
+        box-shadow: 0 2px 5px rgba(0, 210, 255, 0.3);
+        transition: 0.2s;
+    }
+
+    .visit-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(0, 210, 255, 0.4);
+    }
+
+    /* Mobile Responsive */
+    @media (max-width: 400px) {
+        .ad-logo { width: 55px; height: 55px; }
+        .ad-title { font-size: 14px; }
+        .ad-container { padding: 12px; }
+    }
+</style>
+
 <script>
 (function() {
     const warningText = "আপনার ব্রাউজারে অ্যাড ব্লকার চালু আছে! আমাদের সাইটটি ফ্রি রাখতে অনুগ্রহ করে এটি বন্ধ করুন।";
@@ -224,7 +332,24 @@
     </div>
 
     <div class="ad-box">
-        Advertisement Area (Middle)
+        <div class="ad-container">
+        <div class="ad-badge">ADS</div>
+        
+        <div class="ad-logo-wrapper">
+            <img id="dynamic-logo" class="ad-logo" src="" alt="App Logo">
+        </div>
+
+        <div class="ad-content">
+            <h3 id="dynamic-title" class="ad-title">Loading...</h3>
+            <p id="dynamic-desc" class="ad-desc">Please wait...</p>
+            
+            <div style="display: flex; align-items: flex-end; justify-content: space-between; width: 100%;">
+                <span id="dynamic-domain" class="ad-domain">qalbetalks.com</span>
+                <a id="dynamic-link" href="#" class="visit-btn" target="_blank">VISIT NOW</a>
+            </div>
+        </div>
+    </div>
+
     </div>
 
     <div style="margin-bottom: 8px; font-weight: 600; font-size: 13px; color: #fff; display: flex; align-items: center; gap: 5px;">
@@ -4142,5 +4267,50 @@
 
     document.addEventListener('DOMContentLoaded', init);
 </script>
+
+    <script>
+        // ১. ডাটা লিস্ট (এখানে আপনি যত খুশি অ্যাড যোগ করতে পারেন)
+        const adsData = [
+            {
+                title: "TIKTOK VIDEO DOWNLOADER",
+                desc: "Download Your Favourite Tiktok Videos Without Watermark And Free",
+                logo: "https://upload.wikimedia.org/wikipedia/en/a/a9/TikTok_logo.svg", // টিকটক লোগো লিংক
+                url: "tiktok-downloader.html",
+                domain: "ToffeePro.com"
+            },
+            {
+                title: "LIVE CRICKET HD",
+                desc: "Watch T20 World Cup Live in HD Quality without buffering.",
+                logo: "https://i.ibb.co/Dr3R4jc/tsports.png", // স্পোর্টস লোগো
+                url: "#live-sports",
+                domain: "ToffeeLive.com"
+            },
+            {
+                title: "FREE VPN PRO",
+                desc: "Unlock any website with high speed secure VPN servers.",
+                logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/da/Google_Drive_logo.png/480px-Google_Drive_logo.png", // ভিপিএন লোগো (উদাহরণ)
+                url: "#vpn-download",
+                domain: "SecureNet.io"
+            }
+        ];
+
+        // ২. রেনডম ডাটা সেট করার ফাংশন
+        function setRandomAd() {
+            // ০ থেকে ডাটার সংখ্যা পর্যন্ত একটি রেনডম নম্বর তৈরি
+            const randomIndex = Math.floor(Math.random() * adsData.length);
+            const selectedAd = adsData[randomIndex];
+
+            // HTML এলিমেন্টগুলো ধরা
+            document.getElementById('dynamic-logo').src = selectedAd.logo;
+            document.getElementById('dynamic-title').innerText = selectedAd.title;
+            document.getElementById('dynamic-desc').innerText = selectedAd.desc;
+            document.getElementById('dynamic-domain').innerText = selectedAd.domain;
+            document.getElementById('dynamic-link').href = selectedAd.url;
+        }
+
+        // ৩. পেজ লোড হলেই অ্যাড সেট হবে
+        document.addEventListener('DOMContentLoaded', setRandomAd);
+
+    </script>
 </body>
 </html>
