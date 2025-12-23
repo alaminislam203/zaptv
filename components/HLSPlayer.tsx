@@ -8,6 +8,7 @@ interface HLSPlayerProps {
   src: string;
 }
 
+
 const HLSPlayer = ({ src }: HLSPlayerProps) => {
   const videoRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<Player | null>(null);
