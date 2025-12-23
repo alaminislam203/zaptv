@@ -1,14 +1,37 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
-// doc ইমপোর্ট করা হলো সেটিংস ফেচ করার জন্য
-import { collection, onSnapshot, addDoc, doc } from "firebase/firestore";
+// 1. Firebase imports
+import { 
+  collection, onSnapshot, addDoc, doc, setDoc,
+  query, orderBy 
+} from "firebase/firestore";
 import { db } from "./firebase";
-
 import Link from "next/link";
 
-import HLSPlayer from "../../components/HLSPlayer";
-import ShakaPlayer from "../../components/ShakaPlayer";
-import IframePlayer from "../../components/IframePlayer";
+// 2. Dynamic Imports (SSR Fix)
+import dynamic from "next/dynamic";
+
+// প্লেয়ার লোডিং কম্পোনেন্ট
+const LoadingPlayer = () => (
+  <div className="w-full h-full bg-black flex items-center justify-center text-gray-500 animate-pulse">
+    Loading Stream...
+  </div>
+);
+
+// প্লেয়ারগুলোকে সার্ভার সাইড রেন্ডারিং (SSR) বন্ধ করে ইমপোর্ট করা হচ্ছে
+const HLSPlayer = dynamic(() => import("../../components/HLSPlayer"), { 
+  ssr: false,
+  loading: () => <LoadingPlayer />
+});
+
+const ShakaPlayer = dynamic(() => import("../../components/ShakaPlayer"), { 
+  ssr: false,
+  loading: () => <LoadingPlayer />
+});
+
+const IframePlayer = dynamic(() => import("../../components/IframePlayer"), { 
+  ssr: false 
+});
 
 // --- ইন্টারফেস ---
 interface DrmConfig {
@@ -51,7 +74,7 @@ export default function Home() {
   const [matches, setMatches] = useState<HotMatch[]>([]);
   const [ads, setAds] = useState<AdData[]>([]);
   
-  // নতুন স্টেট: সাইট কনফিগারেশন (Marquee Text এর জন্য)
+  // সাইট কনফিগারেশন স্টেট
   const [siteConfig, setSiteConfig] = useState<any>({});
   
   const [currentChannel, setCurrentChannel] = useState<Channel | null>(null);
@@ -59,13 +82,20 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [isFavorite, setIsFavorite] = useState(false);
+  
+  // 3. Client Side Check (Double Protection against SSR Error)
+  const [isClient, setIsClient] = useState(false);
 
   const scriptsLoaded = useRef(false);
   const counterRef = useRef<HTMLDivElement>(null);
 
-  // ১. ফায়ারস্টোর ডাটা আনা (Settings সহ)
+  // ব্রাউজার চেক
   useEffect(() => {
-    // ক. চ্যানেলস
+    setIsClient(true);
+  }, []);
+
+  // ১. ফায়ারস্টোর ডাটা আনা
+  useEffect(() => {
     const channelsRef = collection(db, "channels");
     const unsubChannels = onSnapshot(channelsRef, (snapshot) => {
       const list = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })) as Channel[];
@@ -73,21 +103,18 @@ export default function Home() {
       setLoading(false);
     });
 
-    // খ. হট ম্যাচ
     const matchesRef = collection(db, "hotMatches");
     const unsubMatches = onSnapshot(matchesRef, (snapshot) => {
       const list = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })) as HotMatch[];
       setMatches(list);
     });
 
-    // গ. বিজ্ঞাপন
     const adsRef = collection(db, "ads");
     const unsubAds = onSnapshot(adsRef, (snapshot) => {
       const list = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })) as AdData[];
       setAds(list);
     });
 
-    // ঘ. সাইট সেটিংস (আপনার রিকোয়েস্ট অনুযায়ী যোগ করা হলো)
     const settingsRef = doc(db, "settings", "config");
     const unsubSettings = onSnapshot(settingsRef, (docSnap) => {
       if (docSnap.exists()) {
@@ -99,16 +126,16 @@ export default function Home() {
       unsubChannels();
       unsubMatches();
       unsubAds();
-      unsubSettings(); // ক্লিনআপ
+      unsubSettings();
     };
   }, []);
 
-  // ২. এক্সটার্নাল স্ক্রিপ্ট লোড (AdBlock, Ads, Counter)
+  // ২. স্ক্রিপ্ট লোড (AdBlock, Ads, Counter)
   useEffect(() => {
     if (scriptsLoaded.current) return;
     scriptsLoaded.current = true;
 
-    // --- A. AdBlock Detection ---
+    // AdBlock Detection
     const warningText = "আমাদের সাইটটি ফ্রি রাখতে অনুগ্রহ করে অ্যাড ব্লকার বন্ধ করুন।";
     const modalID = 'ab-warning-modal';
     const detectAdBlock = async () => {
@@ -128,7 +155,7 @@ export default function Home() {
     };
     setTimeout(detectAdBlock, 2000);
 
-    // --- B. Ad Script ---
+    // Ad Script
     try {
         const adScript = document.createElement('script');
         adScript.dataset.zone = '10282293';
@@ -137,7 +164,7 @@ export default function Home() {
         if(target) target.appendChild(adScript);
     } catch (e) { console.error("Ad script error:", e); }
 
-    // --- C. Visitor Counter ---
+    // Visitor Counter
     if (counterRef.current) {
         const link = document.createElement("a");
         link.href = "https://www.counters-free.net/";
@@ -161,7 +188,7 @@ export default function Home() {
     }
   }, []);
 
-  // ৩. চ্যানেল সিলেকশন ইফেক্ট
+  // ৩. চ্যানেল লজিক
   useEffect(() => {
     setActiveSourceIndex(0);
     if(currentChannel) {
@@ -229,6 +256,9 @@ export default function Home() {
   const middleAd = getAd("middle");
 
   const renderPlayer = () => {
+    // 4. Client Side Check: যদি সার্ভার হয়, তবে কিছুই দেখাবে না
+    if (!isClient) return <LoadingPlayer />;
+
     if (!currentChannel) {
       return (
         <div className="flex flex-col items-center justify-center h-full text-gray-400 bg-black">
@@ -308,7 +338,8 @@ export default function Home() {
         <div className="bg-black rounded-xl overflow-hidden shadow-2xl border border-gray-800">
           <div className="aspect-video w-full bg-black relative">
              <div key={`${currentChannel?.id}-${activeSourceIndex}`} className="w-full h-full">
-               {renderPlayer()}
+               {/* 5. Render Player with Client Check */}
+               {isClient ? renderPlayer() : <LoadingPlayer />}
              </div>
           </div>
           <div className="bg-[#0f172a] p-2 flex items-center justify-between text-xs border-t border-gray-800">
@@ -318,6 +349,7 @@ export default function Home() {
           </div>
         </div>
 
+        {/* INFO, HOT MATCHES, GRID... (বাকি সব আগের মতোই) */}
         {/* INFO */}
         <div className="bg-[#1e293b] p-4 rounded-lg border border-gray-700 flex items-center gap-4">
            <div className="w-12 h-12 rounded-full bg-black border border-gray-600 overflow-hidden flex-shrink-0">
