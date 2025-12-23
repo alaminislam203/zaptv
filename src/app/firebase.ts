@@ -1,7 +1,7 @@
-import { initializeApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore"; // পরিবর্তন হয়েছে
+import { initializeApp, getApps, getApp } from "firebase/app";
+import { getFirestore } from "firebase/firestore";
+import { getAnalytics, isSupported } from "firebase/analytics";
 
-// আপনার ফায়ারবেস কনসোল থেকে এই কনফিগারেশনটি কপি করে এখানে রিপ্লেস করুন
 const firebaseConfig = {
     apiKey: "AIzaSyD_-9XF6N6XHvN4Izf1jTw259hZCaKEwg0",
     authDomain: "nova-stream-dae14.firebaseapp.com",
@@ -13,5 +13,19 @@ const firebaseConfig = {
     measurementId: "G-BGSP3M2XRQ"
 };
 
-const app = initializeApp(firebaseConfig);
-export const db = getFirestore(app); // getDatabase এর বদলে getFirestore
+// অ্যাপ ইনিশিয়ালাইজ (যাতে বারবার ক্র্যাশ না করে)
+const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+
+const db = getFirestore(app);
+
+// Analytics ফিক্স (শুধুমাত্র ব্রাউজারে রান করবে)
+let analytics;
+if (typeof window !== "undefined") {
+  isSupported().then((yes) => {
+    if (yes) {
+      analytics = getAnalytics(app);
+    }
+  });
+}
+
+export { db, analytics };
