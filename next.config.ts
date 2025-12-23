@@ -1,15 +1,15 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
-  
-  // এই অংশটি বিল্ড ফেইল হওয়া আটকাবে
+  // বিল্ড এরর এড়ানোর জন্য এই সেটিংস
   eslint: {
     ignoreDuringBuilds: true,
   },
   typescript: {
     ignoreBuildErrors: true,
   },
+  // সার্ভার সাইড এরর কমানোর জন্য
+  reactStrictMode: false,
 };
 
 export default nextConfig;
