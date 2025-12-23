@@ -3,6 +3,7 @@ import React, { useEffect, useRef } from "react";
 import shaka from "shaka-player/dist/shaka-player.ui";
 import "shaka-player/dist/controls.css";
 
+
 // DRM এর জন্য টাইপ ডিফাইন করা হলো
 interface DrmConfig {
   type?: "clearkey" | "widevine";
