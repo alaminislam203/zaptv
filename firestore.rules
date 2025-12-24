@@ -1,0 +1,10 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ডিফল্টভাবে সমস্ত ডকুমেন্ট পড়া এবং লেখার অনুমতি দিন
+    // প্রোডাকশনের জন্য, নিরাপত্তা আরও কঠোর করা উচিত
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}

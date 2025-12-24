@@ -1,5 +1,6 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
+import { getDatabase } from "firebase/database";
 import { getAnalytics, isSupported } from "firebase/analytics";
 
 const firebaseConfig = {
@@ -7,25 +8,22 @@ const firebaseConfig = {
     authDomain: "nova-stream-dae14.firebaseapp.com",
     databaseURL: "https://nova-stream-dae14-default-rtdb.asia-southeast1.firebasedatabase.app",
     projectId: "nova-stream-dae14",
-    storageBucket: "nova-stream-dae14.firebasestorage.app",
+    storageBucket: "nova-stream-dae14.appspot.com",
     messagingSenderId: "724122550908",
     appId: "1:724122550908:web:57db597b5f5deae5643ff9",
     measurementId: "G-BGSP3M2XRQ"
 };
 
-// অ্যাপ ইনিশিয়ালাইজ (যাতে বারবার ক্র্যাশ না করে)
+// Initialize Firebase
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
-const db = getFirestore(app);
+// Export the necessary Firebase services
+export const db = getFirestore(app);
+export const rtdb = getDatabase(app);
 
-// Analytics ফিক্স (শুধুমাত্র ব্রাউজারে রান করবে)
+// Analytics (optional)
 let analytics;
-if (typeof window !== "undefined") {
-  isSupported().then((yes) => {
-    if (yes) {
-      analytics = getAnalytics(app);
-    }
-  });
+if (typeof window !== 'undefined' && isSupported()) {
+  analytics = getAnalytics(app);
 }
-
-export { db, analytics };
+export { analytics };

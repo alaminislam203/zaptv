@@ -1,12 +1,10 @@
 "use client";
 import React, { useState, useEffect } from "react";
-// setDoc ইমপোর্ট করা হয়েছে
 import { 
   collection, addDoc, updateDoc, deleteDoc, doc, setDoc,
   onSnapshot, query, orderBy 
 } from "firebase/firestore";
-import { db } from "../firebase";
-
+import { db } from "../firebase"; // পাথ ঠিক না থাকলে './firebase' দিন
 
 // --- Interfaces ---
 interface DrmConfig {
@@ -38,11 +36,13 @@ interface SiteSettings {
   maintenanceMode: boolean;
   popupMessage: string;
   popupEnabled: boolean;
+  enablePopunder: boolean;
 }
 
 export default function AdminPanel() {
   // --- States ---
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [username, setUsername] = useState("");
   const [pinInput, setPinInput] = useState("");
   const [activeTab, setActiveTab] = useState("channels");
   const [loading, setLoading] = useState(false);
@@ -58,7 +58,8 @@ export default function AdminPanel() {
     marqueeText: "", 
     maintenanceMode: false, 
     popupMessage: "", 
-    popupEnabled: false 
+    popupEnabled: false,
+    enablePopunder: true 
   });
 
   // Form States
@@ -74,11 +75,11 @@ export default function AdminPanel() {
 
   // --- Login ---
   const handleLogin = () => {
-    if (pinInput === "sajid@1234") { 
+    if (username === "admin" && pinInput === "sajid@1234") { 
       setIsAuthenticated(true);
       fetchData();
     } else {
-      alert("Wrong PIN!");
+      alert("Wrong Credentials!");
     }
   };
 
@@ -93,7 +94,14 @@ export default function AdminPanel() {
     // সেটিংস ফেচ করা
     onSnapshot(doc(db, "settings", "config"), (docSnap) => {
       if (docSnap.exists()) {
-        setSettings(docSnap.data() as SiteSettings);
+        const data = docSnap.data();
+        setSettings({
+            marqueeText: data.marqueeText || "",
+            maintenanceMode: data.maintenanceMode || false,
+            popupMessage: data.popupMessage || "",
+            popupEnabled: data.popupEnabled || false,
+            enablePopunder: data.enablePopunder !== undefined ? data.enablePopunder : true
+        });
       }
     });
   };
@@ -102,6 +110,7 @@ export default function AdminPanel() {
   const handleSaveSettings = async () => {
     setLoading(true);
     try {
+      // settings/config ডকুমেন্টে সেভ করা হচ্ছে
       await setDoc(doc(db, "settings", "config"), settings);
       alert("Site Settings Updated!");
     } catch (e) {
@@ -111,10 +120,15 @@ export default function AdminPanel() {
     setLoading(false);
   };
 
-  // --- CRUD: Channels ---
+  // --- CRUD: Channels (Custom ID Logic Added) ---
   const handleSaveChannel = async () => {
+    if (!channelForm.name) {
+        alert("Channel Name is required!");
+        return;
+    }
     setLoading(true);
     try {
+      // 1. Clean Sources
       const cleanSources = channelForm.sources.map(src => {
         if (!src.drm || src.drm.type === "none") {
           const { drm, ...rest } = src;
@@ -122,15 +136,25 @@ export default function AdminPanel() {
         }
         return src;
       });
+      
       const dataToSave = { ...channelForm, sources: cleanSources };
 
       if (editingId) {
+        // Edit Mode: Update existing doc
         await updateDoc(doc(db, "channels", editingId), dataToSave);
         alert("Channel Updated!");
       } else {
-        await addDoc(collection(db, "channels"), dataToSave);
-        alert("Channel Added!");
+        // Create Mode: Use Custom ID (Channel Name)
+        const customId = channelForm.name.trim(); 
+        
+        await setDoc(doc(db, "channels", customId), {
+            ...dataToSave,
+            id: customId,
+            createdAt: new Date()
+        });
+        alert("Channel Added with Custom ID: " + customId);
       }
+      
       setChannelForm(initialChannelState);
       setEditingId(null);
     } catch (e) { console.error(e); alert("Error saving channel"); }
@@ -176,7 +200,7 @@ export default function AdminPanel() {
     setMatchForm(initialMatchState); setEditingId(null);
   };
   const handleSaveAd = async () => {
-    if (editingId) await updateDoc(doc(db, "ads", editingId), { ...adForm });
+    if (editingId) await updateDoc(doc(db, "ads"), { ...adForm });
     else await addDoc(collection(db, "ads"), adForm);
     setAdForm(initialAdState); setEditingId(null);
   };
@@ -184,10 +208,30 @@ export default function AdminPanel() {
   if (!isAuthenticated) {
     return (
       <div className="flex h-screen items-center justify-center bg-gray-900 text-white">
-        <div className="p-8 bg-gray-800 rounded-lg shadow-xl text-center">
-          <h2 className="text-2xl font-bold mb-4">Admin Access</h2>
-          <input type="password" placeholder="Enter PIN" className="p-2 rounded text-black mb-4 w-full" value={pinInput} onChange={(e) => setPinInput(e.target.value)} />
-          <button onClick={handleLogin} className="bg-blue-600 px-4 py-2 rounded w-full font-bold">Login</button>
+        <div className="p-8 bg-gray-800 rounded-lg shadow-xl text-center w-full max-w-sm">
+          <h2 className="text-2xl font-bold mb-6">Admin Access</h2>
+          <div className="space-y-4">
+            <input 
+              type="text" 
+              placeholder="Username" 
+              className="p-3 rounded text-black w-full bg-gray-200 border border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500" 
+              value={username} 
+              onChange={(e) => setUsername(e.target.value)} 
+            />
+            <input 
+              type="password" 
+              placeholder="Enter PIN" 
+              className="p-3 rounded text-black w-full bg-gray-200 border border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500" 
+              value={pinInput} 
+              onChange={(e) => setPinInput(e.target.value)} 
+            />
+          </div>
+          <button 
+            onClick={handleLogin} 
+            className="bg-blue-600 px-4 py-3 rounded w-full font-bold mt-6 hover:bg-blue-700 transition"
+          >
+            Login
+          </button>
         </div>
       </div>
     );
@@ -221,6 +265,20 @@ export default function AdminPanel() {
               <label className="block text-sm font-bold mb-2 text-gray-300">Scrolling News Ticker</label>
               <textarea className="w-full bg-gray-900 p-3 rounded border border-gray-600 focus:border-purple-500 outline-none" rows={3} placeholder="Enter scrolling text here..." value={settings.marqueeText} onChange={(e) => setSettings({...settings, marqueeText: e.target.value})} />
             </div>
+            
+            <div className="bg-gray-900 p-4 rounded border border-gray-700">
+              <div className="flex justify-between items-center">
+                <div>
+                    <span className="font-bold text-green-400 block">Popunder Ads</span>
+                    <span className="text-xs text-gray-400">Enable/Disable 3rd party popup ads</span>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input type="checkbox" className="sr-only peer" checked={settings.enablePopunder} onChange={(e) => setSettings({...settings, enablePopunder: e.target.checked})} />
+                  <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
+                </label>
+              </div>
+            </div>
+
             <div className="bg-gray-900 p-4 rounded border border-gray-700">
               <div className="flex justify-between items-center mb-4">
                 <span className="font-bold text-gray-300">Global Popup / Notice</span>
@@ -231,6 +289,7 @@ export default function AdminPanel() {
               </div>
               <input className="w-full bg-gray-800 p-2 rounded border border-gray-600 mb-2" placeholder="Popup Message (e.g. Join our Telegram)" value={settings.popupMessage} onChange={(e) => setSettings({...settings, popupMessage: e.target.value})} />
             </div>
+
             <div className="flex items-center justify-between bg-red-900/20 p-4 rounded border border-red-900/50">
               <div><h3 className="font-bold text-red-400">Maintenance Mode</h3><p className="text-xs text-gray-400">Enable this to hide the site content.</p></div>
               <label className="relative inline-flex items-center cursor-pointer">
@@ -251,12 +310,12 @@ export default function AdminPanel() {
           <div className="lg:col-span-1 bg-gray-800 p-6 rounded-lg h-fit shadow-lg border border-gray-700">
             <h2 className="text-xl font-bold mb-4 text-cyan-400">{editingId ? "Edit Channel" : "Add New Channel"}</h2>
             <div className="space-y-3">
-              <input className="w-full bg-gray-700 p-2 rounded border border-gray-600" placeholder="Channel Name" value={channelForm.name} onChange={(e) => setChannelForm({...channelForm, name: e.target.value})} />
+              <input className="w-full bg-gray-700 p-2 rounded border border-gray-600" placeholder="Channel Name (Will be ID)" value={channelForm.name} onChange={(e) => setChannelForm({...channelForm, name: e.target.value})} />
               <input className="w-full bg-gray-700 p-2 rounded border border-gray-600" placeholder="Logo URL" value={channelForm.logo} onChange={(e) => setChannelForm({...channelForm, logo: e.target.value})} />
               <select className="w-full bg-gray-700 p-2 rounded border border-gray-600" value={channelForm.category} onChange={(e) => setChannelForm({...channelForm, category: e.target.value})}>
                 <option>Sports</option><option>News</option><option>Entertainment</option><option>Kids</option><option>Movies</option>
               </select>
-              <label className="flex items-center gap-2 bg-gray-700 p-2 rounded cursor-pointer">
+              <label className="flex items-center gap-2 bg-gray-700 p-2 rounded cursor-pointer border border-gray-600">
                 <input type="checkbox" checked={channelForm.is_embed} onChange={(e) => setChannelForm({...channelForm, is_embed: e.target.checked})} /> Is Iframe/Embed?
               </label>
 
@@ -266,11 +325,11 @@ export default function AdminPanel() {
                   <div key={idx} className="bg-gray-900 p-3 rounded border border-gray-700 relative group">
                     <button onClick={() => removeSource(idx)} className="absolute top-2 right-2 text-red-500 text-xs font-bold hover:text-red-400">✖ Remove</button>
                     <div className="grid gap-2">
-                       <div className="flex gap-2">
-                         <input className="w-1/3 bg-gray-800 p-1.5 text-xs rounded border border-gray-600" placeholder="Label (HD)" value={src.label} onChange={(e) => handleSourceChange(idx, "label", e.target.value)} />
-                         <input className="w-2/3 bg-gray-800 p-1.5 text-xs rounded border border-gray-600" placeholder="Stream URL (.m3u8/.mpd)" value={src.url} onChange={(e) => handleSourceChange(idx, "url", e.target.value)} />
-                       </div>
-                       <div className="bg-gray-800 p-2 rounded border border-gray-700">
+                        <div className="flex gap-2">
+                          <input className="w-1/3 bg-gray-800 p-1.5 text-xs rounded border border-gray-600" placeholder="Label (HD)" value={src.label} onChange={(e) => handleSourceChange(idx, "label", e.target.value)} />
+                          <input className="w-2/3 bg-gray-800 p-1.5 text-xs rounded border border-gray-600" placeholder="Stream URL (.m3u8/.mpd)" value={src.url} onChange={(e) => handleSourceChange(idx, "url", e.target.value)} />
+                        </div>
+                        <div className="bg-gray-800 p-2 rounded border border-gray-700">
                           <div className="flex items-center gap-2 mb-2">
                              <span className="text-[10px] uppercase font-bold text-yellow-500">DRM Type:</span>
                              <select className="bg-gray-700 text-xs p-1 rounded border border-gray-600" value={src.drm?.type || "none"} onChange={(e) => handleDrmChange(idx, "type", e.target.value)}>
@@ -284,12 +343,12 @@ export default function AdminPanel() {
                             </div>
                           )}
                           {src.drm?.type === "widevine" && <input className="w-full bg-gray-900 p-1.5 text-xs rounded border border-gray-600" placeholder="License URL" value={src.drm.licenseUrl || ""} onChange={(e) => handleDrmChange(idx, "licenseUrl", e.target.value)} />}
-                       </div>
+                        </div>
                     </div>
                   </div>
                 ))}
               </div>
-              <button onClick={handleSaveChannel} disabled={loading} className="w-full bg-cyan-600 py-2 rounded font-bold hover:bg-cyan-500 disabled:opacity-50 mt-4">{loading ? "Saving..." : (editingId ? "Update Channel" : "Create Channel")}</button>
+              <button onClick={handleSaveChannel} disabled={loading} className="w-full bg-cyan-600 py-2 rounded font-bold hover:bg-cyan-500 disabled:opacity-50 mt-4 border border-cyan-400">{loading ? "Saving..." : (editingId ? "Update Channel" : "Create Channel")}</button>
               {editingId && <button onClick={() => {setEditingId(null); setChannelForm(initialChannelState);}} className="w-full bg-gray-600 py-1 mt-2 rounded text-sm">Cancel</button>}
             </div>
           </div>
@@ -298,7 +357,11 @@ export default function AdminPanel() {
               <div key={ch.id} className="bg-gray-800 p-4 rounded flex justify-between items-center border border-gray-700 hover:border-cyan-500 transition">
                 <div className="flex items-center gap-3">
                   <img src={ch.logo} className="w-12 h-12 rounded bg-black object-contain p-1 border border-gray-600" />
-                  <div><h3 className="font-bold text-white">{ch.name}</h3><div className="flex flex-wrap gap-2 text-xs text-gray-400 mt-1"><span className="bg-gray-700 px-1.5 rounded">{ch.category}</span><span className={`px-1.5 rounded ${ch.is_embed ? "bg-purple-900 text-purple-200" : "bg-green-900 text-green-200"}`}>{ch.is_embed ? "Embed" : "Stream"}</span><span>{ch.sources.length} Links</span></div></div>
+                  <div>
+                      <h3 className="font-bold text-white">{ch.name}</h3>
+                      <p className="text-[10px] text-gray-500">ID: {ch.id}</p>
+                      <div className="flex flex-wrap gap-2 text-xs text-gray-400 mt-1"><span className="bg-gray-700 px-1.5 rounded">{ch.category}</span><span className={`px-1.5 rounded ${ch.is_embed ? "bg-purple-900 text-purple-200" : "bg-green-900 text-green-200"}`}>{ch.is_embed ? "Embed" : "Stream"}</span><span>{ch.sources.length} Links</span></div>
+                  </div>
                 </div>
                 <div className="flex gap-2"><button onClick={() => handleEditChannel(ch)} className="bg-blue-600 px-3 py-1 rounded text-sm hover:bg-blue-500">Edit</button><button onClick={() => handleDelete("channels", ch.id!)} className="bg-red-600 px-3 py-1 rounded text-sm hover:bg-red-500">Delete</button></div>
               </div>
@@ -313,15 +376,15 @@ export default function AdminPanel() {
            <div className="lg:col-span-1 bg-gray-800 p-6 rounded-lg h-fit border border-gray-700">
              <h2 className="text-xl font-bold mb-4 text-orange-400">Manage Match</h2>
              <div className="space-y-3">
-                <input className="w-full bg-gray-700 p-2 rounded" placeholder="Team 1 (e.g. BAN)" value={matchForm.team1} onChange={(e) => setMatchForm({...matchForm, team1: e.target.value})} />
-                <input className="w-full bg-gray-700 p-2 rounded" placeholder="Team 2 (e.g. IND)" value={matchForm.team2} onChange={(e) => setMatchForm({...matchForm, team2: e.target.value})} />
-                <input className="w-full bg-gray-700 p-2 rounded" placeholder="Info (e.g. 1st ODI)" value={matchForm.info} onChange={(e) => setMatchForm({...matchForm, info: e.target.value})} />
-                <input className="w-full bg-gray-700 p-2 rounded" placeholder="Time (e.g. 2:00 PM)" value={matchForm.matchTime} onChange={(e) => setMatchForm({...matchForm, matchTime: e.target.value})} />
-                <select className="w-full bg-gray-700 p-2 rounded" value={matchForm.channelName} onChange={(e) => setMatchForm({...matchForm, channelName: e.target.value})}>
+                <input className="w-full bg-gray-700 p-2 rounded border border-gray-600" placeholder="Team 1 (e.g. BAN)" value={matchForm.team1} onChange={(e) => setMatchForm({...matchForm, team1: e.target.value})} />
+                <input className="w-full bg-gray-700 p-2 rounded border border-gray-600" placeholder="Team 2 (e.g. IND)" value={matchForm.team2} onChange={(e) => setMatchForm({...matchForm, team2: e.target.value})} />
+                <input className="w-full bg-gray-700 p-2 rounded border border-gray-600" placeholder="Info (e.g. 1st ODI)" value={matchForm.info} onChange={(e) => setMatchForm({...matchForm, info: e.target.value})} />
+                <input className="w-full bg-gray-700 p-2 rounded border border-gray-600" placeholder="Time (e.g. 2:00 PM)" value={matchForm.matchTime} onChange={(e) => setMatchForm({...matchForm, matchTime: e.target.value})} />
+                <select className="w-full bg-gray-700 p-2 rounded border border-gray-600" value={matchForm.channelName} onChange={(e) => setMatchForm({...matchForm, channelName: e.target.value})}>
                   <option value="">Select Channel to Play</option>
                   {channels.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
-                <button onClick={handleSaveMatch} className="w-full bg-orange-600 py-2 rounded font-bold hover:bg-orange-500">Save Match</button>
+                <button onClick={handleSaveMatch} className="w-full bg-orange-600 py-2 rounded font-bold hover:bg-orange-500 border border-orange-400">Save Match</button>
              </div>
            </div>
            <div className="lg:col-span-2 space-y-3">
@@ -341,11 +404,11 @@ export default function AdminPanel() {
             <div className="bg-gray-800 p-6 rounded-lg border border-gray-700">
               <h2 className="text-xl font-bold mb-4 text-yellow-400">Add/Edit Advertisement</h2>
               <div className="space-y-3">
-                <select className="w-full bg-gray-700 p-2 rounded" value={adForm.location} onChange={(e) => setAdForm({...adForm, location: e.target.value})}><option value="top">Top Ad</option><option value="middle">Middle Ad</option></select>
-                <input className="w-full bg-gray-700 p-2 rounded" placeholder="Image URL (Optional)" value={adForm.imageUrl} onChange={(e) => setAdForm({...adForm, imageUrl: e.target.value})} />
-                <input className="w-full bg-gray-700 p-2 rounded" placeholder="Target Link" value={adForm.link} onChange={(e) => setAdForm({...adForm, link: e.target.value})} />
-                <input className="w-full bg-gray-700 p-2 rounded" placeholder="Text (If no image)" value={adForm.text} onChange={(e) => setAdForm({...adForm, text: e.target.value})} />
-                <button onClick={handleSaveAd} className="w-full bg-yellow-600 py-2 rounded font-bold hover:bg-yellow-500">Publish Ad</button>
+                <select className="w-full bg-gray-700 p-2 rounded border border-gray-600" value={adForm.location} onChange={(e) => setAdForm({...adForm, location: e.target.value})}><option value="top">Top Ad</option><option value="middle">Middle Ad</option></select>
+                <input className="w-full bg-gray-700 p-2 rounded border border-gray-600" placeholder="Image URL (Optional)" value={adForm.imageUrl} onChange={(e) => setAdForm({...adForm, imageUrl: e.target.value})} />
+                <input className="w-full bg-gray-700 p-2 rounded border border-gray-600" placeholder="Target Link" value={adForm.link} onChange={(e) => setAdForm({...adForm, link: e.target.value})} />
+                <input className="w-full bg-gray-700 p-2 rounded border border-gray-600" placeholder="Text (If no image)" value={adForm.text} onChange={(e) => setAdForm({...adForm, text: e.target.value})} />
+                <button onClick={handleSaveAd} className="w-full bg-yellow-600 py-2 rounded font-bold hover:bg-yellow-500 border border-yellow-400">Publish Ad</button>
               </div>
             </div>
             <div className="space-y-3">
