@@ -44,21 +44,25 @@ const DynamicPlayer: React.FC<DynamicPlayerProps> = ({ player, src, drm }) => {
   // প্লেয়ারের ধরন অনুযায়ী সঠিক কম্পোনেন্ট রেন্ডার করা
   switch (player) {
     case 'plyr':
-      // সমাধান: PlyrPlayer `source` প্রপ গ্রহণ করে
-      return <PlyrPlayer source={{ type: 'video', sources: [{ src: src, type: src.includes('.m3u8') ? 'application/x-mpegURL' : 'video/mp4' }] }} />;
+      // সমাধান: `PlyrPlayer` এখন `source` অবজেক্ট গ্রহণ করছে, যার ভেতরে `src` এবং `drm` আছে
+      return <PlyrPlayer source={{ src: src, drm: drm }} />;
+    
     case 'videojs':
-      // সমাধান: VideoJSPlayer `options` প্রপ গ্রহণ করে
-      return <VideoJSPlayer options={{ autoplay: true, controls: true, responsive: true, fluid: true, sources: [{ src: src, type: src.includes('.m3u8') ? 'application/x-mpegURL' : 'video/mp4' }] }} />;
+      // সমাধান: `VideoJSPlayer` সরাসরি `src` স্ট্রিং গ্রহণ করে
+      return <VideoJSPlayer src={src} />;
+    
     case 'native':
-       // সমাধান: NativePlayer `source` প্রপ গ্রহণ করে
-      return <NativePlayer source={src} />;
+      // সমাধান: `NativePlayer` সরাসরি `src` স্ট্রিং গ্রহণ করে
+      return <NativePlayer src={src} />;
+
     case 'shaka':
-      // ShakaPlayer-কে সঠিকভাবে DRM প্রপস পাস করা
+      // সমাধান: `ShakaPlayer` সরাসরি `src` এবং `drm` প্রপস গ্রহণ করে
       return <ShakaPlayer src={src} drm={drm} />;
+
     default:
       // যদি কোনো অজানা প্লেয়ার টাইপ আসে, তবে ডিফল্ট হিসেবে Native প্লেয়ার দেখানো
       console.warn(`Unknown player type: "${player}". Falling back to native player.`);
-      return <NativePlayer source={src} />;
+      return <NativePlayer src={src} />;
   }
 };
 
