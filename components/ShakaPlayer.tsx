@@ -1,12 +1,10 @@
-'use client';
-import React, { useEffect, useRef } from 'react';
-import 'shaka-player/dist/controls.css';
-
-// শুধুমাত্র টাইপ ইম্পোর্ট করা হচ্ছে
-import type { Player, ui } from 'shaka-player';
+"use client";
+import React, { useRef, useEffect } from "react";
+// CSS অবশ্যই ইমপোর্ট করতে হবে
+import "shaka-player/dist/controls.css"; 
 
 interface DrmConfig {
-  type?: 'clearkey' | 'widevine';
+  type: "clearkey" | "widevine";
   keyId?: string;
   key?: string;
   licenseUrl?: string;
@@ -17,65 +15,101 @@ interface ShakaPlayerProps {
   drm?: DrmConfig;
 }
 
-const ShakaPlayer = ({ src, drm }: ShakaPlayerProps) => {
+const ShakaPlayer: React.FC<ShakaPlayerProps> = ({ src, drm }) => {
+  const uiContainerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  
-  //インスタンスを保存するためのRef
-  const playerRef = useRef<Player | null>(null);
-  const uiRef = useRef<ui.Overlay | null>(null);
+  const playerRef = useRef<any>(null); // প্লেয়ার ইন্সট্যান্স রাখার জন্য
 
   useEffect(() => {
+    let player: any;
+    let ui: any;
+
     const initPlayer = async () => {
-      if (!videoRef.current || !containerRef.current) return;
+      // Dynamic Import (যাতে সার্ভারে লোড না হয় এবং document error না দেয়)
+      const shaka = (await import("shaka-player/dist/shaka-player.ui")).default;
 
-      const shaka = await import('shaka-player/dist/shaka-player.ui.js');
-      shaka.polyfill.installAll();
+      if (!shaka.Player.isBrowserSupported()) {
+        console.error("Browser not supported!");
+        return;
+      }
 
-      if (shaka.Player.isBrowserSupported()) {
-        const player = new shaka.Player(videoRef.current);
+      const video = videoRef.current;
+      const uiContainer = uiContainerRef.current;
+
+      if (video && uiContainer) {
+        player = new shaka.Player(video);
         playerRef.current = player;
 
-        const ui = new shaka.ui.Overlay(player, containerRef.current, videoRef.current);
-        uiRef.current = ui;
-        
+        // Error Listener (ভিডিও কেন চলছে না তা দেখার জন্য)
+        player.addEventListener("error", (event: any) => {
+          console.error("Shaka Player Error Code:", event.detail.code, "Details:", event.detail);
+        });
+
+        // UI সেটআপ
+        ui = new shaka.ui.Overlay(player, uiContainer, video);
+        ui.configure({
+          'controlPanelElements': [
+             'play_pause', 'time_and_duration', 'spacer', 
+             'mute', 'volume', 'fullscreen', 'overflow_menu'
+          ]
+        });
+
+        // DRM কনফিগারেশন
+        const playerConfig: any = {
+           streaming: {
+              bufferingGoal: 60, // বাফারিং কমানোর চেষ্টা
+              rebufferingGoal: 2,
+           }
+        };
+
         if (drm) {
-          const drmConfig: any = {};
-          if (drm.type === 'clearkey' && drm.keyId && drm.key) {
-            drmConfig.clearKeys = { [drm.keyId]: drm.key };
+          if (drm.type === "clearkey" && drm.keyId && drm.key) {
+            playerConfig.drm = {
+              clearKeys: {
+                [drm.keyId]: drm.key,
+              },
+            };
+          } else if (drm.type === "widevine" && drm.licenseUrl) {
+            playerConfig.drm = {
+              servers: {
+                "com.widevine.alpha": drm.licenseUrl,
+              },
+            };
           }
-          if (drm.type === 'widevine' && drm.licenseUrl) {
-            drmConfig.servers = { 'com.widevine.alpha': drm.licenseUrl };
-          }
-          player.configure({ drm: drmConfig });
         }
+
+        player.configure(playerConfig);
 
         try {
           await player.load(src);
-        } catch (error) {
-          console.error('Error loading video', error);
+          console.log("Video loaded successfully!");
+        } catch (e: any) {
+          console.error("Error loading video:", e);
         }
       }
     };
 
     initPlayer();
 
+    // ক্লিনআপ
     return () => {
-      uiRef.current?.destroy();
-      playerRef.current?.destroy();
+      if (ui) ui.destroy();
+      if (player) player.destroy();
     };
   }, [src, drm]);
 
   return (
-    <div ref={containerRef} className="relative w-full h-full bg-black">
+    <div 
+      ref={uiContainerRef} 
+      className="w-full h-full relative bg-black overflow-hidden shadow-lg rounded-lg"
+    >
       <video
         ref={videoRef}
-        className="w-full h-full"
-        poster=""
+        className="w-full h-full object-contain"
+        poster="https://via.placeholder.com/640x360/000000/FFFFFF/?text=Loading+Stream" 
         autoPlay
         playsInline
-        style={{ objectFit: 'contain' }}
-      ></video>
+      />
     </div>
   );
 };
