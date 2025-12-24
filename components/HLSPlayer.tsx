@@ -1,58 +1,100 @@
 "use client";
 import React, { useEffect, useRef } from "react";
-import videojs from "video.js";
-import "video.js/dist/video-js.css";
-import Player from "video.js/dist/types/player";
+import Hls from "hls.js"; // HLS.js ইঞ্জিন
+import Plyr from "plyr";  // Plyr প্লেয়ার (সুন্দর UI)
+import "plyr/dist/plyr.css"; // Plyr CSS
 
 interface HLSPlayerProps {
   src: string;
 }
 
-
 const HLSPlayer = ({ src }: HLSPlayerProps) => {
-  const videoRef = useRef<HTMLDivElement>(null);
-  const playerRef = useRef<Player | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
-    // প্লেয়ার ইনিশিয়ালাইজ করা
-    if (!playerRef.current) {
-      const videoElement = document.createElement("video-js");
-      videoElement.classList.add("vjs-big-play-centered");
-      videoRef.current?.appendChild(videoElement);
+    const video = videoRef.current;
+    if (!video) return;
 
-      const player = (playerRef.current = videojs(videoElement, {
-        autoplay: false,
-        controls: true,
-        responsive: true,
-        fluid: true,
-        sources: [
-          {
-            src: src,
-            type: "application/x-mpegURL", // HLS এর জন্য টাইপ
-          },
-        ],
-      }));
-    } else {
-      // যদি লিংক পরিবর্তন হয়, প্লেয়ার আপডেট করা
-      const player = playerRef.current;
-      player.src({ src: src, type: "application/x-mpegURL" });
-    }
-  }, [src]);
+    let hls: Hls | null = null;
+    let player: Plyr | null = null;
 
-  // কম্পোনেন্ট আনমাউন্ট হলে প্লেয়ার ক্লিন করা
-  useEffect(() => {
-    const player = playerRef.current;
-    return () => {
-      if (player && !player.isDisposed()) {
-        player.dispose();
-        playerRef.current = null;
+    const initPlayer = () => {
+      // ১. যদি ব্রাউজার Hls.js সাপোর্ট করে (Chrome, Firefox, Edge, Android)
+      if (Hls.isSupported()) {
+        hls = new Hls({
+          maxBufferLength: 30, // বাফারিং অপটিমাইজেশন
+          startLevel: -1,      // অটো কোয়ালিটি
+        });
+        
+        hls.loadSource(src);
+        hls.attachMedia(video);
+        
+        hls.on(Hls.Events.MANIFEST_PARSED, () => {
+          // HLS রেডি হলে Plyr লোড হবে
+          player = new Plyr(video, {
+            controls: [
+              'play-large', 'play', 'progress', 'current-time', 
+              'mute', 'volume', 'settings', 'pip', 'airplay', 'fullscreen'
+            ],
+            settings: ['quality', 'speed']
+          });
+        });
+
+        // এরর হ্যান্ডলিং (খুবই জরুরি)
+        hls.on(Hls.Events.ERROR, function (event, data) {
+          if (data.fatal) {
+            switch (data.type) {
+              case Hls.ErrorTypes.NETWORK_ERROR:
+                console.error("Network error, trying to recover...");
+                hls?.startLoad();
+                break;
+              case Hls.ErrorTypes.MEDIA_ERROR:
+                console.error("Media error, trying to recover...");
+                hls?.recoverMediaError();
+                break;
+              default:
+                hls?.destroy();
+                break;
+            }
+          }
+        });
+      } 
+      // ২. যদি নেটিভ HLS সাপোর্ট থাকে (Safari, iOS, Mac)
+      else if (video.canPlayType("application/x-mpegURL")) {
+        video.src = src;
+        // নেটিভ সাপোর্টেও Plyr লোড করা হচ্ছে সুন্দর UI এর জন্য
+        player = new Plyr(video, {
+            controls: [
+              'play-large', 'play', 'progress', 'current-time', 
+              'mute', 'volume', 'settings', 'pip', 'airplay', 'fullscreen'
+            ]
+        });
       }
     };
-  }, []);
+
+    initPlayer();
+
+    // ক্লিনআপ ফাংশন (মেমোরি লিক বন্ধ করতে)
+    return () => {
+      if (hls) {
+        hls.destroy();
+      }
+      if (player) {
+        player.destroy();
+      }
+    };
+  }, [src]);
 
   return (
-    <div data-vjs-player>
-      <div ref={videoRef} />
+    <div className="w-full h-full bg-black rounded-lg overflow-hidden shadow-lg">
+      <video
+        ref={videoRef}
+        className="plyr-react plyr"
+        controls
+        playsInline
+        crossOrigin="anonymous"
+        style={{ width: "100%", height: "100%" }}
+      />
     </div>
   );
 };
