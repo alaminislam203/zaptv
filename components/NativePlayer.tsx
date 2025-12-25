@@ -1,6 +1,5 @@
 'use client';
 import React, { useRef, useState, useEffect } from 'react';
-// সমাধান: `Level` টাইপটি আলাদাভাবে ইমপোর্ট করা
 import Hls, { type Level } from 'hls.js';
 
 // --- আইকন কম্পোনেন্ট (SVG) ---
@@ -17,37 +16,24 @@ const NativePlayer = ({ src }: { src: string }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // প্লেয়ার স্টেট
   const [isPlaying, setIsPlaying] = useState(true);
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(1);
   const [isMuted, setIsMuted] = useState(false);
   const [showControls, setShowControls] = useState(true);
-
-  // লোডিং ও কোয়ালিটি স্টেট
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  // সমাধান: `Level` টাইপটি সরাসরি ব্যবহার করা
   const [qualityLevels, setQualityLevels] = useState<Level[]>([]);
-  const [currentQuality, setCurrentQuality] = useState(-1); // -1 = Auto
+  const [currentQuality, setCurrentQuality] = useState(-1);
   const [showQualityMenu, setShowQualityMenu] = useState(false);
 
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
 
-    // পূর্ববর্তী ইনস্ট্যান্স ধ্বংস করা
-    if (hlsRef.current) {
-      hlsRef.current.destroy();
-    }
-
-    // নতুন সোর্সের জন্য স্টেট রিসেট
-    setIsLoading(true);
-    setError(null);
-    setQualityLevels([]);
-    setCurrentQuality(-1);
-    setIsPlaying(true); // Autoplay
+    if (hlsRef.current) hlsRef.current.destroy();
+    setIsLoading(true); setError(null); setQualityLevels([]); setCurrentQuality(-1); setIsPlaying(true);
 
     if (Hls.isSupported() && src.endsWith('.m3u8')) {
       const hls = new Hls();
@@ -57,107 +43,62 @@ const NativePlayer = ({ src }: { src: string }) => {
 
       hls.on(Hls.Events.MANIFEST_PARSED, (_, data) => {
         setIsLoading(false);
-        if (data.levels.length > 1) {
-          setQualityLevels(data.levels.reverse()); // Best quality on top
-        }
+        if (data.levels.length > 1) setQualityLevels(data.levels.reverse());
       });
-
-      hls.on(Hls.Events.ERROR, (_, data) => {
-        if (data.fatal) {
-          setError('Stream Error: Could not load the video.');
-        }
-      });
+      hls.on(Hls.Events.ERROR, (_, data) => { if (data.fatal) setError('Stream Error: Could not load the video.'); });
     } else {
       video.src = src;
       setIsLoading(false);
     }
 
-    video.play().catch(() => setIsPlaying(false)); // Autoplay চেষ্টা
+    video.play().catch(() => setIsPlaying(false));
 
-    // --- ভিডিও ইভেন্ট লিসেনার ---
     const onPlay = () => setIsPlaying(true);
     const onPause = () => setIsPlaying(false);
     const onTimeUpdate = () => setProgress(video.currentTime);
     const onDurationChange = () => setDuration(video.duration);
     const onCanPlay = () => setIsLoading(false);
     const onWaiting = () => setIsLoading(true);
-    const onVolumeChange = () => { 
-      setIsMuted(video.muted); 
-      setVolume(video.volume); 
-    };
+    const onVolumeChange = () => { setIsMuted(video.muted); setVolume(video.volume); };
 
-    video.addEventListener('play', onPlay);
-    video.addEventListener('pause', onPause);
-    video.addEventListener('timeupdate', onTimeUpdate);
-    video.addEventListener('durationchange', onDurationChange);
-    video.addEventListener('canplay', onCanPlay);
-    video.addEventListener('waiting', onWaiting);
+    video.addEventListener('play', onPlay); video.addEventListener('pause', onPause);
+    video.addEventListener('timeupdate', onTimeUpdate); video.addEventListener('durationchange', onDurationChange);
+    video.addEventListener('canplay', onCanPlay); video.addEventListener('waiting', onWaiting);
     video.addEventListener('volumechange', onVolumeChange);
 
     return () => {
       if (hlsRef.current) hlsRef.current.destroy();
-      video.removeEventListener('play', onPlay);
-      video.removeEventListener('pause', onPause);
-      // ...সব লিসেনার রিমুভ করা
+      video.removeEventListener('play', onPlay); video.removeEventListener('pause', onPause); /* ... remove all */
     };
   }, [src]);
 
-  // কন্ট্রোল হাইড করার জন্য
   const handleMouseMove = () => {
     setShowControls(true);
     if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
     controlsTimeoutRef.current = setTimeout(() => setShowControls(false), 3000);
   };
 
-  // --- কন্ট্রোল ফাংশন ---
   const togglePlay = () => videoRef.current?.paused ? videoRef.current?.play() : videoRef.current?.pause();
-  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if(videoRef.current) videoRef.current.currentTime = Number(e.target.value);
-  };
-  const handleVolume = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if(videoRef.current) videoRef.current.volume = Number(e.target.value);
-  };
+  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => { if(videoRef.current) videoRef.current.currentTime = Number(e.target.value); };
+  const handleVolume = (e: React.ChangeEvent<HTMLInputElement>) => { if(videoRef.current) videoRef.current.volume = Number(e.target.value); };
   const toggleMute = () => { if(videoRef.current) videoRef.current.muted = !videoRef.current.muted; };
   const toggleFullScreen = () => containerRef.current?.requestFullscreen();
-  const handleQualityChange = (levelIndex: number) => {
-    if (hlsRef.current) hlsRef.current.currentLevel = levelIndex;
-    setCurrentQuality(levelIndex);
-    setShowQualityMenu(false);
-  };
+  const handleQualityChange = (levelIndex: number) => { if (hlsRef.current) hlsRef.current.currentLevel = levelIndex; setCurrentQuality(levelIndex); setShowQualityMenu(false); };
+
+  // সমাধান: SeekBar শুধুমাত্র সসীম সময়কালের জন্য দেখানো
+  const isLive = !isFinite(duration);
 
   return (
-    <div 
-      ref={containerRef} 
-      className="w-full h-full bg-black flex items-center justify-center relative rounded-xl overflow-hidden text-white"
-      onMouseMove={handleMouseMove}
-      onMouseLeave={() => setShowControls(false)}
-    >
+    <div ref={containerRef} className="w-full h-full bg-black flex items-center justify-center relative rounded-xl overflow-hidden text-white" onMouseMove={handleMouseMove} onMouseLeave={() => setShowControls(false)}>
       <video ref={videoRef} className="w-full h-full" playsInline onClick={togglePlay} />
 
-      {/* ওভারলে UI (লোডিং ও এরর) */}
-      {(isLoading || error) && (
-         <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-black/70 pointer-events-none text-center p-4">
-            {error ? (
-                <><div className="text-red-500 text-4xl mb-3">⚠</div>
-                <h3 className="font-bold text-red-400 text-lg">Playback Error</h3>
-                <p className="text-sm text-gray-300 max-w-sm">{error}</p></>
-            ) : (
-                <><div className="w-10 h-10 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin"></div>
-                <p className="text-white text-sm mt-2">Loading Stream...</p></>
-            )}
-         </div>
-      )}
+      {(isLoading || error) && <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-black/70 pointer-events-none text-center p-4"> {error ? <><div className="text-red-500 text-4xl mb-3">⚠</div><h3 className="font-bold text-red-400 text-lg">Playback Error</h3><p className="text-sm text-gray-300 max-w-sm">{error}</p></> : <><div className="w-10 h-10 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin"></div><p className="text-white text-sm mt-2">Loading Stream...</p></>} </div>}
 
-      {/* কাস্টম কন্ট্রোল */}
-      <div 
-        className={`absolute bottom-0 left-0 right-0 z-20 p-2 bg-gradient-to-t from-black/80 to-transparent transition-opacity duration-300 ${showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
-        onMouseEnter={() => {if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);}} // মেনুতে হোভার করলে হাইড হবে না
-      >
-        {/* SeekBar */}
-        <input type="range" min="0" max={duration} value={progress} onChange={handleSeek} className="w-full h-1 bg-white/20 rounded-full appearance-none cursor-pointer range-thumb" />
+      <div className={`absolute bottom-0 left-0 right-0 z-20 p-2 bg-gradient-to-t from-black/80 to-transparent transition-opacity duration-300 ${showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} onMouseEnter={() => {if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);}} >
+        
+        {!isLive && <input type="range" min="0" max={duration} value={progress} onChange={handleSeek} className="w-full h-1 bg-white/20 rounded-full appearance-none cursor-pointer range-thumb" />}
 
         <div className="flex items-center justify-between mt-1">
-          {/* বাম দিকের কন্ট্রোল */}
           <div className="flex items-center gap-3">
             <button onClick={togglePlay}>{isPlaying ? <PauseIcon /> : <PlayIcon />}</button>
             <div className="flex items-center gap-2 group">
@@ -165,30 +106,18 @@ const NativePlayer = ({ src }: { src: string }) => {
                 <input type="range" min="0" max="1" step="0.1" value={volume} onChange={handleVolume} className="w-20 h-1 bg-white/20 rounded-full appearance-none cursor-pointer range-thumb transition-all duration-300 opacity-0 group-hover:opacity-100" />
             </div>
             <div className="text-xs font-mono">
-              {new Date(progress * 1000).toISOString().substr(14, 5)} / {new Date(duration * 1000).toISOString().substr(14, 5)}
+              {isLive ? <span className='text-red-500 font-bold'>LIVE</span> : `${new Date(progress * 1000).toISOString().substr(14, 5)} / ${new Date(duration * 1000).toISOString().substr(14, 5)}`}
             </div>
           </div>
 
-          {/* ডান দিকের কন্ট্রোল */}
           <div className="flex items-center gap-3 relative">
-            {/* কোয়ালিটি মেনু */}
-            {qualityLevels.length > 0 && (
-              <div>
-                {showQualityMenu && (
-                  <div className="absolute bottom-full right-0 mb-2 bg-black/90 rounded p-2 text-sm shadow-lg">
-                    <ul>
-                      <li onClick={() => handleQualityChange(-1)} className={`cursor-pointer px-3 py-1 rounded hover:bg-cyan-600/50 ${currentQuality === -1 ? 'font-bold text-cyan-400' : ''}`}>Auto</li>
-                      {qualityLevels.map((level, i) => (
-                        <li key={i} onClick={() => handleQualityChange(qualityLevels.length - 1 - i)} className={`cursor-pointer px-3 py-1 rounded hover:bg-cyan-600/50 ${currentQuality === (qualityLevels.length - 1 - i) ? 'font-bold text-cyan-400' : ''}`}>
-                          {level.height}p
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
+            {qualityLevels.length > 0 && <div>
+                {showQualityMenu && <div className="absolute bottom-full right-0 mb-2 bg-black/90 rounded p-2 text-sm shadow-lg"><ul>
+                    <li onClick={() => handleQualityChange(-1)} className={`cursor-pointer px-3 py-1 rounded hover:bg-cyan-600/50 ${currentQuality === -1 ? 'font-bold text-cyan-400' : ''}`}>Auto</li>
+                    {qualityLevels.map((level, i) => <li key={i} onClick={() => handleQualityChange(qualityLevels.length - 1 - i)} className={`cursor-pointer px-3 py-1 rounded hover:bg-cyan-600/50 ${currentQuality === (qualityLevels.length - 1 - i) ? 'font-bold text-cyan-400' : ''}`}>{level.height}p</li>)}
+                </ul></div>}
                 <button onClick={() => setShowQualityMenu(!showQualityMenu)}><SettingsIcon /></button>
-              </div>
-            )}
+            </div>}
             <button onClick={toggleFullScreen}><FullscreenIcon /></button>
           </div>
         </div>

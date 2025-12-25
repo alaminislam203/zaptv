@@ -110,7 +110,6 @@ export default function AdminPanel() {
   const handleSaveSettings = async () => {
     setLoading(true);
     try {
-      // settings/config ডকুমেন্টে সেভ করা হচ্ছে
       await setDoc(doc(db, "settings", "config"), settings);
       alert("Site Settings Updated!");
     } catch (e) {
@@ -120,7 +119,7 @@ export default function AdminPanel() {
     setLoading(false);
   };
 
-  // --- CRUD: Channels (Custom ID Logic Added) ---
+  // --- CRUD: Channels (DRM Fix & Custom ID Added) ---
   const handleSaveChannel = async () => {
     if (!channelForm.name) {
         alert("Channel Name is required!");
@@ -128,31 +127,43 @@ export default function AdminPanel() {
     }
     setLoading(true);
     try {
-      // 1. Clean Sources
+      // FIX: DRM keys এবং URL ক্লিন করা হচ্ছে (Trim spaces)
       const cleanSources = channelForm.sources.map(src => {
-        if (!src.drm || src.drm.type === "none") {
-          const { drm, ...rest } = src;
-          return rest;
+        // ১. বেসিক URL ক্লিন করা
+        const cleanSrc = { ...src, url: src.url.trim() };
+
+        // ২. DRM চেক এবং ক্লিন করা
+        if (cleanSrc.drm && cleanSrc.drm.type !== "none") {
+           if (cleanSrc.drm.type === "clearkey") {
+               cleanSrc.drm.keyId = cleanSrc.drm.keyId?.trim();
+               cleanSrc.drm.key = cleanSrc.drm.key?.trim();
+           }
+           if (cleanSrc.drm.type === "widevine") {
+               cleanSrc.drm.licenseUrl = cleanSrc.drm.licenseUrl?.trim();
+           }
+        } else {
+           // DRM না থাকলে টাইপ 'none' বা অবজেক্ট ডিলিট
+           const { drm, ...rest } = cleanSrc;
+           return rest; 
         }
-        return src;
+        return cleanSrc;
       });
       
       const dataToSave = { ...channelForm, sources: cleanSources };
 
       if (editingId) {
-        // Edit Mode: Update existing doc
+        // Edit Mode
         await updateDoc(doc(db, "channels", editingId), dataToSave);
         alert("Channel Updated!");
       } else {
-        // Create Mode: Use Custom ID (Channel Name)
+        // Create Mode (Custom ID)
         const customId = channelForm.name.trim(); 
-        
         await setDoc(doc(db, "channels", customId), {
             ...dataToSave,
             id: customId,
             createdAt: new Date()
         });
-        alert("Channel Added with Custom ID: " + customId);
+        alert("Channel Added with ID: " + customId);
       }
       
       setChannelForm(initialChannelState);
@@ -193,16 +204,23 @@ export default function AdminPanel() {
     setChannelForm({ ...channelForm, sources: newSources });
   };
 
-  // Match & Ad Save
+  // Match Save
   const handleSaveMatch = async () => {
     if (editingId) await updateDoc(doc(db, "hotMatches", editingId), { ...matchForm });
     else await addDoc(collection(db, "hotMatches"), matchForm);
     setMatchForm(initialMatchState); setEditingId(null);
   };
+
+  // Ad Save (FIXED: updateDoc bug resolved)
   const handleSaveAd = async () => {
-    if (editingId) await updateDoc(doc(db, "ads"), { ...adForm });
-    else await addDoc(collection(db, "ads"), adForm);
-    setAdForm(initialAdState); setEditingId(null);
+    if (editingId) {
+        // ফিক্স: এখানে আগে editingId মিসিং ছিল
+        await updateDoc(doc(db, "ads", editingId), { ...adForm }); 
+    } else {
+        await addDoc(collection(db, "ads"), adForm);
+    }
+    setAdForm(initialAdState); 
+    setEditingId(null);
   };
 
   if (!isAuthenticated) {
@@ -266,6 +284,7 @@ export default function AdminPanel() {
               <textarea className="w-full bg-gray-900 p-3 rounded border border-gray-600 focus:border-purple-500 outline-none" rows={3} placeholder="Enter scrolling text here..." value={settings.marqueeText} onChange={(e) => setSettings({...settings, marqueeText: e.target.value})} />
             </div>
             
+            {/* Popunder Ads Control */}
             <div className="bg-gray-900 p-4 rounded border border-gray-700">
               <div className="flex justify-between items-center">
                 <div>
@@ -315,7 +334,7 @@ export default function AdminPanel() {
               <select className="w-full bg-gray-700 p-2 rounded border border-gray-600" value={channelForm.category} onChange={(e) => setChannelForm({...channelForm, category: e.target.value})}>
                 <option>Sports</option><option>News</option><option>Entertainment</option><option>Kids</option><option>Movies</option>
               </select>
-              <label className="flex items-center gap-2 bg-gray-700 p-2 rounded cursor-pointer border border-gray-600">
+              <label className="flex items-center gap-2 bg-gray-700 p-2 rounded cursor-pointer">
                 <input type="checkbox" checked={channelForm.is_embed} onChange={(e) => setChannelForm({...channelForm, is_embed: e.target.checked})} /> Is Iframe/Embed?
               </label>
 
@@ -376,10 +395,10 @@ export default function AdminPanel() {
            <div className="lg:col-span-1 bg-gray-800 p-6 rounded-lg h-fit border border-gray-700">
              <h2 className="text-xl font-bold mb-4 text-orange-400">Manage Match</h2>
              <div className="space-y-3">
-                <input className="w-full bg-gray-700 p-2 rounded border border-gray-600" placeholder="Team 1 (e.g. BAN)" value={matchForm.team1} onChange={(e) => setMatchForm({...matchForm, team1: e.target.value})} />
-                <input className="w-full bg-gray-700 p-2 rounded border border-gray-600" placeholder="Team 2 (e.g. IND)" value={matchForm.team2} onChange={(e) => setMatchForm({...matchForm, team2: e.target.value})} />
-                <input className="w-full bg-gray-700 p-2 rounded border border-gray-600" placeholder="Info (e.g. 1st ODI)" value={matchForm.info} onChange={(e) => setMatchForm({...matchForm, info: e.target.value})} />
-                <input className="w-full bg-gray-700 p-2 rounded border border-gray-600" placeholder="Time (e.g. 2:00 PM)" value={matchForm.matchTime} onChange={(e) => setMatchForm({...matchForm, matchTime: e.target.value})} />
+                <input className="w-full bg-gray-700 p-2 rounded" placeholder="Team 1 (e.g. BAN)" value={matchForm.team1} onChange={(e) => setMatchForm({...matchForm, team1: e.target.value})} />
+                <input className="w-full bg-gray-700 p-2 rounded" placeholder="Team 2 (e.g. IND)" value={matchForm.team2} onChange={(e) => setMatchForm({...matchForm, team2: e.target.value})} />
+                <input className="w-full bg-gray-700 p-2 rounded" placeholder="Info (e.g. 1st ODI)" value={matchForm.info} onChange={(e) => setMatchForm({...matchForm, info: e.target.value})} />
+                <input className="w-full bg-gray-700 p-2 rounded" placeholder="Time (e.g. 2:00 PM)" value={matchForm.matchTime} onChange={(e) => setMatchForm({...matchForm, matchTime: e.target.value})} />
                 <select className="w-full bg-gray-700 p-2 rounded border border-gray-600" value={matchForm.channelName} onChange={(e) => setMatchForm({...matchForm, channelName: e.target.value})}>
                   <option value="">Select Channel to Play</option>
                   {channels.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}

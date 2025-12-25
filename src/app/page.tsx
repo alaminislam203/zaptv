@@ -82,17 +82,6 @@ export default function Home() {
   const [onlineUsers, setOnlineUsers] = useState(0);
   const [totalVisitors, setTotalVisitors] = useState(0);
 
-  // Maintenance Mode Check
-  if (siteConfig?.maintenanceMode === true) {
-    return (
-      <div className="min-h-screen bg-gray-900 flex flex-col items-center justify-center text-center p-6 text-white">
-        <h1 className="text-4xl font-bold text-red-500 mb-4">Site Under Maintenance 🛠️</h1>
-        <p className="text-lg text-gray-400">We are improving our site. Please check back later.</p>
-        <div className="mt-8 animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-500"></div>
-      </div>
-    );
-  }
-
   // Player & User States
   const [currentChannel, setCurrentChannel] = useState<Channel | null>(null);
   const [activeSourceIndex, setActiveSourceIndex] = useState<number>(0);
@@ -102,6 +91,8 @@ export default function Home() {
   const [playerType, setPlayerType] = useState<"plyr" | "videojs" | "native">("plyr");
   const [isClient, setIsClient] = useState(false);
   const scriptsLoaded = useRef(false);
+
+  // --- ALL HOOKS MUST BE DECLARED BEFORE ANY RETURN STATEMENT ---
 
   useEffect(() => {
     setIsClient(true);
@@ -195,7 +186,7 @@ export default function Home() {
         onDisconnect(myConnectionsRef).cancel();
         set(myConnectionsRef, null);
     };
-}, [isClient]);
+  }, [isClient]);
 
   useEffect(() => {
     if (!scriptsLoaded.current) {
@@ -274,6 +265,17 @@ export default function Home() {
     }
     return <IframePlayer src={url} />;
   };
+
+  // --- Maintenance Mode Check (Moved HERE, after hooks) ---
+  if (siteConfig?.maintenanceMode === true) {
+    return (
+      <div className="min-h-screen bg-gray-900 flex flex-col items-center justify-center text-center p-6 text-white">
+        <h1 className="text-4xl font-bold text-red-500 mb-4">Site Under Maintenance 🛠️</h1>
+        <p className="text-lg text-gray-400">We are improving our site. Please check back later.</p>
+        <div className="mt-8 animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-500"></div>
+      </div>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-[#0b1120] text-gray-200 font-sans pb-10 select-none">
