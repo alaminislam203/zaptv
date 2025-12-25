@@ -8,6 +8,7 @@ import {
 import { 
   ref, onValue, off, set, onDisconnect, serverTimestamp 
 } from "firebase/database";
+// নোট: আপনার firebase ফাইলটি কোথায় আছে তা নিশ্চিত করুন (সাধারণত ../firebase হয়)
 import { db, rtdb } from "./firebase"; 
 import Link from "next/link";
 
@@ -81,6 +82,7 @@ export default function Home() {
   const [siteConfig, setSiteConfig] = useState<any>({});
   const [onlineUsers, setOnlineUsers] = useState(0);
   const [totalVisitors, setTotalVisitors] = useState(0);
+  const [activeDirectLink, setActiveDirectLink] = useState<{url: string, label: string} | null>(null);
 
   // Player & User States
   const [currentChannel, setCurrentChannel] = useState<Channel | null>(null);
@@ -92,7 +94,15 @@ export default function Home() {
   const [isClient, setIsClient] = useState(false);
   const scriptsLoaded = useRef(false);
 
-  // --- ALL HOOKS MUST BE DECLARED BEFORE ANY RETURN STATEMENT ---
+  // --- ALL HOOKS ---
+
+  // Random Direct Link Logic
+  useEffect(() => {
+    if (siteConfig?.directLinks && Array.isArray(siteConfig.directLinks) && siteConfig.directLinks.length > 0) {
+        const randomIndex = Math.floor(Math.random() * siteConfig.directLinks.length);
+        setActiveDirectLink(siteConfig.directLinks[randomIndex]);
+    }
+  }, [siteConfig]);
 
   useEffect(() => {
     setIsClient(true);
@@ -266,7 +276,7 @@ export default function Home() {
     return <IframePlayer src={url} />;
   };
 
-  // --- Maintenance Mode Check (Moved HERE, after hooks) ---
+  // --- Maintenance Mode Check (Correctly Placed) ---
   if (siteConfig?.maintenanceMode === true) {
     return (
       <div className="min-h-screen bg-gray-900 flex flex-col items-center justify-center text-center p-6 text-white">
@@ -300,6 +310,7 @@ export default function Home() {
           </div>
         )}
 
+        {/* --- PLAYER SECTION --- */}
         <div className="bg-black rounded-xl overflow-hidden shadow-2xl border border-gray-800">
           <div className="aspect-video w-full bg-black relative"><div key={`${currentChannel?.id}-${activeSourceIndex}-${playerType}`} className="w-full h-full">{renderPlayer()}</div></div>
           <div className="bg-[#0f172a] p-2 flex flex-wrap items-center justify-between text-xs border-t border-gray-800 gap-2">
@@ -318,6 +329,20 @@ export default function Home() {
             </div>
           </div>
         </div>
+
+        {/* --- RANDOM DIRECT LINK BUTTON --- */}
+        {activeDirectLink && (
+            <div className="flex justify-center animate-bounce mt-4">
+                <a 
+                href={activeDirectLink.url} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="bg-gradient-to-r from-green-600 to-emerald-800 text-white font-bold py-3 px-8 rounded-full shadow-lg border-2 border-green-400 hover:scale-105 transition-transform flex items-center gap-2 cursor-pointer z-10"
+                >
+                <span className="text-xl">📥</span> {activeDirectLink.label}
+                </a>
+            </div>
+        )}
 
         <div className="bg-[#1e293b] p-4 rounded-lg border border-gray-700 flex items-center gap-4">
            <div className="w-12 h-12 rounded-full bg-black border border-gray-600 overflow-hidden flex-shrink-0">{currentChannel?.logo ? <img src={currentChannel.logo} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-xl">📡</div>}</div>
