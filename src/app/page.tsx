@@ -8,7 +8,7 @@ import {
 import { 
   ref, onValue, off, set, onDisconnect, serverTimestamp 
 } from "firebase/database";
-// নোট: আপনার firebase ফাইলটি কোথায় আছে তা নিশ্চিত করুন (সাধারণত ../firebase হয়)
+// নোট: আপনার firebase ফাইলটি কোথায় আছে তা নিশ্চিত করুন (সাধারণত ../firebase হয়)
 import { db, rtdb } from "./firebase"; 
 import Link from "next/link";
 
@@ -36,6 +36,10 @@ const ShakaPlayer = dynamic(() => import("../../components/ShakaPlayer"), {
 });
 const IframePlayer = dynamic(() => import("../../components/IframePlayer"), { 
   ssr: false 
+});
+// PlayerJS ইমপোর্ট করা হলো
+const PlayerJSPlayer = dynamic(() => import("../../components/PlayerJSPlayer"), { 
+  ssr: false, loading: () => <LoadingPlayer /> 
 });
 
 // --- Interfaces ---
@@ -90,7 +94,8 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [isFavorite, setIsFavorite] = useState(false);
-  const [playerType, setPlayerType] = useState<"plyr" | "videojs" | "native">("plyr");
+  // প্লেয়ার টাইপে 'playerjs' যুক্ত করা হলো
+  const [playerType, setPlayerType] = useState<"plyr" | "videojs" | "native" | "playerjs">("plyr");
   const [isClient, setIsClient] = useState(false);
   const scriptsLoaded = useRef(false);
 
@@ -265,18 +270,19 @@ export default function Home() {
     
     if (currentChannel.is_embed) return <IframePlayer src={url} />;
     if (url.includes(".mpd") || drm) return <ShakaPlayer src={url} drm={drm} />;
+    
     if (url.includes(".m3u8")) {
       const sourceProps = { src: url, drm: drm };
       switch (playerType) {
           case "videojs": return <VideoJSPlayer src={url} />;
           case "native": return <NativePlayer src={url} />;
-          default: return <PlyrPlayer source={sourceProps} />;
+          // PlayerJS লজিক যোগ করা হলো
+          case "playerjs": return <PlayerJSPlayer src={url} />;
       }
     }
     return <IframePlayer src={url} />;
   };
 
-  // --- Maintenance Mode Check (Correctly Placed) ---
   if (siteConfig?.maintenanceMode === true) {
     return (
       <div className="min-h-screen bg-gray-900 flex flex-col items-center justify-center text-center p-6 text-white">
@@ -310,16 +316,17 @@ export default function Home() {
           </div>
         )}
 
-        {/* --- PLAYER SECTION --- */}
         <div className="bg-black rounded-xl overflow-hidden shadow-2xl border border-gray-800">
           <div className="aspect-video w-full bg-black relative"><div key={`${currentChannel?.id}-${activeSourceIndex}-${playerType}`} className="w-full h-full">{renderPlayer()}</div></div>
           <div className="bg-[#0f172a] p-2 flex flex-wrap items-center justify-between text-xs border-t border-gray-800 gap-2">
             {currentChannel?.sources[activeSourceIndex]?.url.includes(".m3u8") && !currentChannel.is_embed && (
                 <div className="flex gap-2 items-center">
                     <span className="text-gray-500 hidden sm:block">Engine:</span>
-                    <button onClick={() => setPlayerType("plyr")} className={`px-3 py-1 rounded border transition ${playerType === "plyr" ? "bg-cyan-600 border-cyan-500 text-white" : "bg-gray-800 border-gray-600 text-gray-400"}`}>P-1</button>
-                    <button onClick={() => setPlayerType("videojs")} className={`px-3 py-1 rounded border transition ${playerType === "videojs" ? "bg-cyan-600 border-cyan-500 text-white" : "bg-gray-800 border-gray-600 text-gray-400"}`}>P-2</button>
-                    <button onClick={() => setPlayerType("native")} className={`px-3 py-1 rounded border transition ${playerType === "native" ? "bg-cyan-600 border-cyan-500 text-white" : "bg-gray-800 border-gray-600 text-gray-400"}`}>Nat</button>
+                    <button onClick={() => setPlayerType("plyr")} className={`px-3 py-1 rounded border transition ${playerType === "plyr" ? "bg-cyan-600 border-cyan-500 text-white" : "bg-gray-800 border-gray-600 text-gray-400"}`}>Player-1</button>
+                    <button onClick={() => setPlayerType("videojs")} className={`px-3 py-1 rounded border transition ${playerType === "videojs" ? "bg-cyan-600 border-cyan-500 text-white" : "bg-gray-800 border-gray-600 text-gray-400"}`}>Player-2</button>
+                    <button onClick={() => setPlayerType("native")} className={`px-3 py-1 rounded border transition ${playerType === "native" ? "bg-cyan-600 border-cyan-500 text-white" : "bg-gray-800 border-gray-600 text-gray-400"}`}>Player-3</button>
+                    {/* PlayerJS Button Added */}
+                    <button onClick={() => setPlayerType("playerjs")} className={`px-3 py-1 rounded border transition ${playerType === "playerjs" ? "bg-cyan-600 border-cyan-500 text-white" : "bg-gray-800 border-gray-600 text-gray-400"}`}>Player-4</button>
                 </div>
             )}
             <div className="flex gap-2 ml-auto">
@@ -330,7 +337,6 @@ export default function Home() {
           </div>
         </div>
 
-        {/* --- RANDOM DIRECT LINK BUTTON --- */}
         {activeDirectLink && (
             <div className="flex justify-center animate-bounce mt-4">
                 <a 
@@ -339,7 +345,7 @@ export default function Home() {
                 rel="noopener noreferrer"
                 className="bg-gradient-to-r from-green-600 to-emerald-800 text-white font-bold py-3 px-8 rounded-full shadow-lg border-2 border-green-400 hover:scale-105 transition-transform flex items-center gap-2 cursor-pointer z-10"
                 >
-                <span className="text-xl">📥</span> {activeDirectLink.label}
+                <span className="text-xl"></span> {activeDirectLink.label}
                 </a>
             </div>
         )}

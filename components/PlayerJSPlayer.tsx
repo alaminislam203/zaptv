@@ -34,7 +34,7 @@ const PlayerJSPlayer: React.FC<PlayerJSProps> = ({ src, poster }) => {
     const scriptId = "playerjs-script";
     if (!document.getElementById(scriptId)) {
       const script = document.createElement("script");
-      script.src = "/playerjs-21.1.2 (1).js"; // public ফোল্ডারের ফাইল পাথ
+      script.src = "/playerjs-21.1.2.js"; // public ফোল্ডারের ফাইল পাথ
       script.id = scriptId;
       script.async = true;
       script.onload = initPlayer;

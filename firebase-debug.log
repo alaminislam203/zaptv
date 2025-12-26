@@ -380,3 +380,101 @@
 [error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
 [debug] [2025-12-25T10:43:26.818Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform","https://www.googleapis.com/auth/userinfo.email"]
 [debug] [2025-12-25T10:43:26.818Z] > authorizing via signed-in user (ai729776@gmail.com)
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[debug] [2025-12-26T13:57:00.215Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform","https://www.googleapis.com/auth/userinfo.email"]
+[debug] [2025-12-26T13:57:00.217Z] > authorizing via signed-in user (ai729776@gmail.com)
+[debug] [2025-12-26T13:57:00.250Z] Checked if tokens are valid: false, expires at: 1766663004602
+[debug] [2025-12-26T13:57:00.251Z] Checked if tokens are valid: false, expires at: 1766663004602
+[debug] [2025-12-26T13:57:00.254Z] > refreshing access token with scopes: []
+[debug] [2025-12-26T13:57:00.263Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2025-12-26T13:57:00.266Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-12-26T13:57:00.352Z] Checked if tokens are valid: false, expires at: 1766663004602
+[debug] [2025-12-26T13:57:00.353Z] Checked if tokens are valid: false, expires at: 1766663004602
+[debug] [2025-12-26T13:57:00.355Z] > refreshing access token with scopes: []
+[debug] [2025-12-26T13:57:00.356Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2025-12-26T13:57:00.357Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-12-26T13:57:00.395Z] Checked if tokens are valid: false, expires at: 1766663004602
+[debug] [2025-12-26T13:57:00.396Z] Checked if tokens are valid: false, expires at: 1766663004602
+[debug] [2025-12-26T13:57:00.396Z] > refreshing access token with scopes: []
+[debug] [2025-12-26T13:57:00.399Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2025-12-26T13:57:00.400Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-12-26T13:57:00.415Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform","https://www.googleapis.com/auth/userinfo.email"]
+[debug] [2025-12-26T13:57:00.416Z] > authorizing via signed-in user (ai729776@gmail.com)
+[debug] [2025-12-26T13:57:00.420Z] Checked if tokens are valid: false, expires at: 1766663004602
+[debug] [2025-12-26T13:57:00.420Z] Checked if tokens are valid: false, expires at: 1766663004602
+[debug] [2025-12-26T13:57:00.422Z] > refreshing access token with scopes: []
+[debug] [2025-12-26T13:57:00.423Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2025-12-26T13:57:00.423Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-12-26T13:57:00.432Z] Checked if tokens are valid: false, expires at: 1766663004602
+[debug] [2025-12-26T13:57:00.432Z] Checked if tokens are valid: false, expires at: 1766663004602
+[debug] [2025-12-26T13:57:00.432Z] > refreshing access token with scopes: []
+[debug] [2025-12-26T13:57:00.465Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2025-12-26T13:57:00.465Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-12-26T13:57:00.477Z] Checked if tokens are valid: false, expires at: 1766663004602
+[debug] [2025-12-26T13:57:00.480Z] Checked if tokens are valid: false, expires at: 1766663004602
+[debug] [2025-12-26T13:57:00.480Z] > refreshing access token with scopes: []
+[debug] [2025-12-26T13:57:00.481Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2025-12-26T13:57:00.481Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-12-26T13:57:00.764Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2025-12-26T13:57:00.765Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-12-26T13:57:00.846Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/nova-stream-dae14/services/firebasedataconnect.googleapis.com [none]
+[debug] [2025-12-26T13:57:00.846Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/nova-stream-dae14/services/firebasedataconnect.googleapis.com x-goog-quota-user=projects/nova-stream-dae14
+[debug] [2025-12-26T13:57:00.857Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2025-12-26T13:57:00.857Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-12-26T13:57:00.876Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/nova-stream-dae14/services/firebaseapphosting.googleapis.com [none]
+[debug] [2025-12-26T13:57:00.876Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/nova-stream-dae14/services/firebaseapphosting.googleapis.com x-goog-quota-user=projects/nova-stream-dae14
+[debug] [2025-12-26T13:57:00.962Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2025-12-26T13:57:00.962Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-12-26T13:57:00.981Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/nova-stream-dae14/services/firebaseapphosting.googleapis.com [none]
+[debug] [2025-12-26T13:57:00.981Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/nova-stream-dae14/services/firebaseapphosting.googleapis.com x-goog-quota-user=projects/nova-stream-dae14
+[debug] [2025-12-26T13:57:00.996Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2025-12-26T13:57:00.996Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-12-26T13:57:01.019Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/nova-stream-dae14/services/cloudfunctions.googleapis.com [none]
+[debug] [2025-12-26T13:57:01.019Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/nova-stream-dae14/services/cloudfunctions.googleapis.com x-goog-quota-user=projects/nova-stream-dae14
+[debug] [2025-12-26T13:57:01.026Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2025-12-26T13:57:01.026Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-12-26T13:57:01.049Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/nova-stream-dae14/services/cloudfunctions.googleapis.com [none]
+[debug] [2025-12-26T13:57:01.049Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/nova-stream-dae14/services/cloudfunctions.googleapis.com x-goog-quota-user=projects/nova-stream-dae14
+[debug] [2025-12-26T13:57:01.076Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2025-12-26T13:57:01.084Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-12-26T13:57:01.113Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/nova-stream-dae14/services/firebasedataconnect.googleapis.com [none]
+[debug] [2025-12-26T13:57:01.113Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/nova-stream-dae14/services/firebasedataconnect.googleapis.com x-goog-quota-user=projects/nova-stream-dae14
+[debug] [2025-12-26T13:57:01.965Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/nova-stream-dae14/services/firebasedataconnect.googleapis.com 200
+[debug] [2025-12-26T13:57:01.966Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/nova-stream-dae14/services/firebasedataconnect.googleapis.com [omitted]
+[debug] [2025-12-26T13:57:02.004Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/nova-stream-dae14/services/firebaseapphosting.googleapis.com 200
+[debug] [2025-12-26T13:57:02.004Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/nova-stream-dae14/services/firebaseapphosting.googleapis.com [omitted]
+[debug] [2025-12-26T13:57:02.142Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/nova-stream-dae14/services/cloudfunctions.googleapis.com 200
+[debug] [2025-12-26T13:57:02.142Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/nova-stream-dae14/services/cloudfunctions.googleapis.com [omitted]
+[debug] [2025-12-26T13:57:02.162Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/nova-stream-dae14/services/firebaseapphosting.googleapis.com 200
+[debug] [2025-12-26T13:57:02.162Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/nova-stream-dae14/services/firebaseapphosting.googleapis.com [omitted]
+[debug] [2025-12-26T13:57:02.166Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/nova-stream-dae14/services/cloudfunctions.googleapis.com 200
+[debug] [2025-12-26T13:57:02.166Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/nova-stream-dae14/services/cloudfunctions.googleapis.com [omitted]
+[debug] [2025-12-26T13:57:02.183Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/nova-stream-dae14/services/firebasedataconnect.googleapis.com 200
+[debug] [2025-12-26T13:57:02.183Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/nova-stream-dae14/services/firebasedataconnect.googleapis.com [omitted]
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[debug] [2025-12-26T13:57:02.189Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform","https://www.googleapis.com/auth/userinfo.email"]
+[debug] [2025-12-26T13:57:02.189Z] > authorizing via signed-in user (ai729776@gmail.com)
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[debug] [2025-12-26T13:57:02.192Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform","https://www.googleapis.com/auth/userinfo.email"]
+[debug] [2025-12-26T13:57:02.192Z] > authorizing via signed-in user (ai729776@gmail.com)
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[debug] [2025-12-26T13:57:02.215Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform","https://www.googleapis.com/auth/userinfo.email"]
+[debug] [2025-12-26T13:57:02.215Z] > authorizing via signed-in user (ai729776@gmail.com)
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[debug] [2025-12-26T13:57:02.219Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform","https://www.googleapis.com/auth/userinfo.email"]
+[debug] [2025-12-26T13:57:02.219Z] > authorizing via signed-in user (ai729776@gmail.com)
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[debug] [2025-12-26T13:57:02.233Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform","https://www.googleapis.com/auth/userinfo.email"]
+[debug] [2025-12-26T13:57:02.233Z] > authorizing via signed-in user (ai729776@gmail.com)
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[debug] [2025-12-26T13:57:02.239Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform","https://www.googleapis.com/auth/userinfo.email"]
+[debug] [2025-12-26T13:57:02.240Z] > authorizing via signed-in user (ai729776@gmail.com)
