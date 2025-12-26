@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useRef } from "react";
+import React, { useEffect } from "react";
 
 interface PlayerJSProps {
   src: string;
@@ -7,51 +7,64 @@ interface PlayerJSProps {
 }
 
 const PlayerJSPlayer: React.FC<PlayerJSProps> = ({ src, poster }) => {
-  // একটি ইউনিক আইডি তৈরি করা হচ্ছে যাতে প্লেয়ারটি সঠিকভাবে রেন্ডার হয়
   const containerId = "playerjs_container"; 
 
   useEffect(() => {
-    let playerInstance: any = null;
-
-    const initPlayer = () => {
+    // 1. প্লেয়ার তৈরি করার ফাংশন
+    const createPlayer = () => {
       if ((window as any).Playerjs) {
         try {
-          // প্লেয়ার ইনিশিয়াল করা
-          playerInstance = new (window as any).Playerjs({
+          // আগের প্লেয়ার থাকলে সেটা সরিয়ে ফেলা (ক্লিনআপ)
+          const existingContainer = document.getElementById(containerId);
+          if (existingContainer) {
+             existingContainer.innerHTML = ""; // আগের প্লেয়ার কন্টেন্ট মুছে ফেলা
+          }
+
+          // নতুন প্লেয়ার তৈরি
+          new (window as any).Playerjs({
             id: containerId,
             file: src,
             poster: poster || "",
-            autoplay: 1, // অটোমেটিক প্লে
-            // কোনো কাস্টম কনফিগারেশন থাকলে এখানে দিতে পারেন
+            autoplay: 1,
+            // ডিফল্ট থিম বা কালার কনফিগ (প্রয়োজন হলে আনকমেন্ট করুন)
+            // default_quality: "HD",
           });
         } catch (e) {
-          console.error("PlayerJS Error:", e);
+          console.error("PlayerJS Init Error:", e);
         }
       }
     };
 
-    // স্ক্রিপ্ট লোড করা (যদি আগে লোড না হয়ে থাকে)
+    // 2. স্ক্রিপ্ট লোড এবং ম্যানেজমেন্ট
     const scriptId = "playerjs-script";
-    if (!document.getElementById(scriptId)) {
+    const existingScript = document.getElementById(scriptId);
+
+    if (!existingScript) {
       const script = document.createElement("script");
-      script.src = "/playerjs-21.1.2 (1).js"; // public ফোল্ডারের ফাইল পাথ
+      // ফাইলের নাম সহজ করে 'playerjs.js' রাখা ভালো
+      script.src = "/playerjs.js"; 
       script.id = scriptId;
       script.async = true;
-      script.onload = initPlayer;
+      script.onload = createPlayer;
       document.body.appendChild(script);
     } else {
-      // স্ক্রিপ্ট থাকলে সরাসরি প্লেয়ার চালু করো
-      // একটু সময় নিয়ে রান করা যাতে আগের প্লেয়ারটি ডেস্ট্রয় হতে পারে
-      setTimeout(initPlayer, 100); 
+      // স্ক্রিপ্ট অলরেডি লোড থাকলে সরাসরি প্লেয়ার বানাও
+      createPlayer();
     }
 
-  }, [src, poster]); // সোর্স পাল্টালে প্লেয়ার রিলোড হবে
+    // 3. ক্লিনআপ ( কম্পোনেন্ট আনমাউন্ট হলে )
+    return () => {
+       const container = document.getElementById(containerId);
+       if(container) container.innerHTML = "";
+    };
+
+  }, [src, poster]); // সোর্স পাল্টালে আবার রান হবে
 
   return (
     <div 
       id={containerId} 
       className="w-full h-full bg-black rounded-lg overflow-hidden"
-      style={{ minHeight: "100%" }}
+      style={{ minHeight: "100%", width: "100%" }}
     ></div>
   );
 };

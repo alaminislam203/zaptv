@@ -11,7 +11,6 @@ const PlayerLoading = () => (
 );
 
 // --- প্রতিটি প্লেয়ার কম্পোনেন্ট ডায়নামিকভাবে ইমপোর্ট করা ---
-// লক্ষ্য রাখুন: পাথগুলো যেন সঠিক থাকে (যেমন './PlyrPlayer' যদি একই ফোল্ডারে থাকে)
 const PlyrPlayer = dynamic(() => import('./PlyrPlayer'), { 
   loading: () => <PlayerLoading />,
   ssr: false 
@@ -32,36 +31,41 @@ const ShakaPlayer = dynamic(() => import('./ShakaPlayer'), {
   ssr: false 
 });
 
+// নতুন: PlayerJSPlayer ইমপোর্ট করা হলো
+const PlayerJSPlayer = dynamic(() => import('./PlayerJSPlayer'), { 
+  loading: () => <PlayerLoading />,
+  ssr: false 
+});
+
 // --- প্রপস ইন্টারফেস ---
 interface DynamicPlayerProps {
-  player: 'plyr' | 'videojs' | 'native' | 'shaka'; // প্লেয়ার টাইপ স্ট্রিং হতে হবে
+  // 'playerjs' অপশনটি টাইপে যুক্ত করা হলো
+  player: 'plyr' | 'videojs' | 'native' | 'shaka' | 'playerjsplayer'; 
   src: string;
-  drm?: any; // DRM কনফিগারেশন অপশনাল
+  drm?: any; 
 }
 
 // --- মূল কম্পোনেন্ট ---
 const DynamicPlayer: React.FC<DynamicPlayerProps> = ({ player, src, drm }) => {
 
-  // প্লেয়ারের ধরন অনুযায়ী সঠিক কম্পোনেন্ট রেন্ডার করা
   switch (player) {
     case 'plyr':
-      // PlyrPlayer কে আমরা source অবজেক্ট পাঠাচ্ছি
-      return <PlyrPlayer source={{ src, drm }} />;
+      return <PlyrPlayer src={src} />;
     
     case 'videojs':
-      // VideoJS সরাসরি src নেয়
       return <VideoJSPlayer src={src} />;
     
     case 'shaka':
-      // Shaka Player সরাসরি src এবং drm নেয়
       return <ShakaPlayer src={src} drm={drm} />;
       
     case 'native':
-      // Native Player সরাসরি src নেয়
       return <NativePlayer src={src} />;
 
+    case 'playerjsplayer':
+      // PlayerJSPlayer রেন্ডার করা হলো
+      return <PlayerJSPlayer src={src} />;
+
     default:
-      // ফলব্যাক হিসেবে Native Player
       console.warn(`Unknown player type: "${player}". Falling back to native.`);
       return <NativePlayer src={src} />;
   }
