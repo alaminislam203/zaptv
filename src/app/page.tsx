@@ -298,7 +298,7 @@ export default function Home() {
       <header className="bg-[#0f172a] border-b border-gray-800 sticky top-0 z-50 shadow-lg">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2 cursor-pointer" onClick={() => setCurrentChannel(null)}>
-            <div className="text-2xl font-bold"><span className="bg-gradient-to-r from-cyan-400 to-blue-600 text-transparent bg-clip-text">ToffeePro</span></div>
+            <div className="text-2xl font-bold"><span className="bg-gradient-to-r from-cyan-400 to-blue-600 text-transparent bg-clip-text">ToffeeLiveToday.online</span></div>
           </div>
           <div className="flex items-center gap-3">
              <span className="bg-red-600 text-white text-[10px] px-2 py-0.5 rounded font-bold animate-pulse">● LIVE</span>
