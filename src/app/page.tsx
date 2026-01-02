@@ -42,7 +42,6 @@ const PlayerJSPlayer = dynamic(() => import("../../components/PlayerJSPlayer"), 
   ssr: false, loading: () => <LoadingPlayer /> 
 });
 
-const [totalChannels, setTotalChannels] = useState(0);
 
 // --- Interfaces ---
 interface DrmConfig {
@@ -100,6 +99,8 @@ export default function Home() {
   const [playerType, setPlayerType] = useState<"plyr" | "videojs" | "native" | "playerjs">("plyr");
   const [isClient, setIsClient] = useState(false);
   const scriptsLoaded = useRef(false);
+  const [channels, setChannels] = useState([]);
+  const [totalChannels, setTotalChannels] = useState(0);
 
   // --- ALL HOOKS ---
 
@@ -145,7 +146,7 @@ export default function Home() {
   const unsubChannels = onSnapshot(collection(db, "channels"), (snapshot) => {
     const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Channel[];
     setChannels(list);
-    setTotalChannels(snapshot.docs.length); // ✅ totalChannels set
+    setTotalChannels(snapshot.docs.length);
     setLoading(false);
   });
 
