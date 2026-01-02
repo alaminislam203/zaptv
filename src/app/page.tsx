@@ -42,6 +42,8 @@ const PlayerJSPlayer = dynamic(() => import("../../components/PlayerJSPlayer"), 
   ssr: false, loading: () => <LoadingPlayer /> 
 });
 
+const [totalChannels, setTotalChannels] = useState(0);
+
 // --- Interfaces ---
 interface DrmConfig {
   type: "clearkey" | "widevine";
@@ -141,13 +143,13 @@ export default function Home() {
 
   useEffect(() => {
   const unsubChannels = onSnapshot(collection(db, "channels"), (snapshot) => {
-    const list = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })) as Channel[];
+    const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Channel[];
     setChannels(list);
-    setTotalChannels(snapshot.docs.length);
+    setTotalChannels(snapshot.docs.length); // ✅ totalChannels set
     setLoading(false);
   });
-  ...
-  return () => { unsubChannels(); };
+
+  return () => unsubChannels();
 }, []);
 
 
