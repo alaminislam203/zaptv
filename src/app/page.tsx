@@ -306,8 +306,8 @@ export default function Home() {
           </div>
         </div>
         <div className="bg-[#1e293b] h-8 flex items-center overflow-hidden relative border-b border-gray-800"><div className="whitespace-pre animate-marquee text-xs text-white-400 pl-4 font-mono">{siteConfig.marqueeText || "Welcome to ToffeePro! Please disable adblocker to keep our site free."}</div></div>
-      
-   <div className="max-w-5xl bg-[#0f172a] border border-gray-700 rounded-lg px-4 py-2 flex items-center justify-between gap-3">
+      </div>
+   <div className="max-w-5xl mx-auto px-3 bg-[#0f172a] border border-gray-700 rounded-lg px-4 py-2 flex items-center justify-between gap-3">
   <p className="text-xs sm:text-sm text-gray-200 font-mono">
     আমাদের অফিসিয়াল টেলিগ্রাম চ্যানেলে জয়েন করুন আপডেট পেতে
   </p>
