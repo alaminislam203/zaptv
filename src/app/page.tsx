@@ -320,14 +320,7 @@ export default function Home() {
         Join Telegram
       </button>
     </Link>
-  </div>
-
-  {/* Player */}
-  <div className="rounded-xl overflow-hidden bg-black">
-    {/* player iframe / component */}
-  </div>
-
-</div>
+  </div></div>
 
 
         
