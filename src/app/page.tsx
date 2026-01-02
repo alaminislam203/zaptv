@@ -404,7 +404,29 @@ export default function Home() {
   </Link>
 </div>
 
+        
+    <div className="max-w-5xl bg-[#0f172a] border border-gray-700 rounded-lg px-4 py-2 flex items-center justify-between gap-3">
+  <p className="text-xs sm:text-sm text-gray-200 font-mono">
+    নতুন চ্যানেল যোগ করা হয়েছে, দেখুন যেখানে খুশি, যখন খুশি
+  </p>
 
+  <Link href="https://otieu.com/4/7249389">
+    <button className="text-xs sm:text-sm bg-blue-800 hover:bg-blue-500 px-3 py-1.5 rounded-md text-white transition whitespace-nowrap">
+      Enjoy
+    </button>
+  </Link>
+</div>
+        <div className="max-w-5xl bg-[#0f172a] border border-gray-700 rounded-lg px-4 py-2 flex items-center justify-between gap-3">
+  <p className="text-xs sm:text-sm text-gray-200 font-mono">
+    আমাদের সাপোর্ট করতে বাটনটিতে ক্লিক করুন
+  </p>
+
+  <Link href="https://otieu.com/4/7249389">
+    <button className="text-xs sm:text-sm bg-sky-500 hover:bg-blue-500 px-3 py-1.5 rounded-md text-white transition whitespace-nowrap">
+      Support Us
+    </button>
+  </Link>
+</div>
 
     
         {topAd && (
