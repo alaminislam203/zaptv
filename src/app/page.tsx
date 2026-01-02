@@ -414,8 +414,121 @@ export default function Home() {
           </div>
         )}
 
-        <div className="bg-black rounded-xl overflow-hidden shadow-2xl border border-gray-800"> <div className="aspect-video w-full bg-black relative"><div key={${currentChannel?.id}-${activeSourceIndex}-${playerType}} className="w-full h-full">{renderPlayer()}</div></div> <div className="bg-[#0f172a] p-2 flex flex-wrap items-center justify-between text-xs border-t border-gray-800 gap-2"> {currentChannel?.sources[activeSourceIndex]?.url.includes(".m3u8") && !currentChannel.is_embed && ( <div className="flex gap-2 items-center"> <span className="text-gray-500 hidden sm:block">Engine:</span> <button onClick={() => setPlayerType("plyr")} className={px-3 py-1 rounded border transition ${playerType === "plyr" ? "bg-cyan-600 border-cyan-500 text-white" : "bg-gray-800 border-gray-600 text-gray-400"}}>Player-1</button> <button onClick={() => setPlayerType("videojs")} className={px-3 py-1 rounded border transition ${playerType === "videojs" ? "bg-cyan-600 border-cyan-500 text-white" : "bg-gray-800 border-gray-600 text-gray-400"}}>Player-2</button> <button onClick={() => setPlayerType("native")} className={px-3 py-1 rounded border transition ${playerType === "native" ? "bg-cyan-600 border-cyan-500 text-white" : "bg-gray-800 border-gray-600 text-gray-400"}}>Player-3</button> {/* PlayerJS Button Added */} <button onClick={() => setPlayerType("playerjs")} className={px-3 py-1 rounded border transition ${playerType === "playerjs" ? "bg-cyan-600 border-cyan-500 text-white" : "bg-gray-800 border-gray-600 text-gray-400"}}>Player-4</button> </div> )} <div className="flex gap-2 ml-auto"> <button onClick={() => document.querySelector("video")?.requestPictureInPicture()} className="flex items-center gap-1 hover:text-cyan-400 px-3 py-1 bg-gray-800/50 rounded"><span className="text-lg">⛶</span></button> <button onClick={toggleFavorite} className={flex items-center gap-1 px-3 py-1 bg-gray-800/50 rounded transition ${isFavorite ? "text-pink-500" : "text-gray-300"}}><span className="text-lg">{isFavorite ? "♥" : "♡"}</span></button> <button onClick={handleReport} className="flex items-center gap-1 text-red-400 bg-red-900/20 px-3 py-1 rounded border border-red-500/20">⚠ Report</button> </div> </div> </div>
+        <div className="bg-black rounded-xl overflow-hidden shadow-2xl border border-gray-800">
 
+  {/* Player */}
+  <div className="aspect-video w-full bg-black relative">
+    <div
+      key={`${currentChannel?.id}-${activeSourceIndex}-${playerType}`}
+      className="w-full h-full"
+    >
+      {renderPlayer()}
+    </div>
+  </div>
+
+  {/* Bottom control bar */}
+  <div className="bg-[#0f172a] px-3 py-2 flex flex-wrap items-center 
+                  justify-between gap-2 text-xs border-t border-gray-800">
+
+    {/* Player engine buttons */}
+    {currentChannel?.sources[activeSourceIndex]?.url.includes(".m3u8") &&
+      !currentChannel.is_embed && (
+        <div className="flex items-center gap-2">
+          <span className="text-gray-500 hidden sm:block">
+            Engine:
+          </span>
+
+          <button
+            onClick={() => setPlayerType("plyr")}
+            className={`px-3 py-1 rounded-md border transition
+              ${
+                playerType === "plyr"
+                  ? "bg-cyan-600 border-cyan-500 text-white"
+                  : "bg-gray-800 border-gray-700 text-gray-400 hover:text-gray-200"
+              }`}
+          >
+            Player-1
+          </button>
+
+          <button
+            onClick={() => setPlayerType("videojs")}
+            className={`px-3 py-1 rounded-md border transition
+              ${
+                playerType === "videojs"
+                  ? "bg-cyan-600 border-cyan-500 text-white"
+                  : "bg-gray-800 border-gray-700 text-gray-400 hover:text-gray-200"
+              }`}
+          >
+            Player-2
+          </button>
+
+          <button
+            onClick={() => setPlayerType("native")}
+            className={`px-3 py-1 rounded-md border transition
+              ${
+                playerType === "native"
+                  ? "bg-cyan-600 border-cyan-500 text-white"
+                  : "bg-gray-800 border-gray-700 text-gray-400 hover:text-gray-200"
+              }`}
+          >
+            Player-3
+          </button>
+
+          <button
+            onClick={() => setPlayerType("playerjs")}
+            className={`px-3 py-1 rounded-md border transition
+              ${
+                playerType === "playerjs"
+                  ? "bg-cyan-600 border-cyan-500 text-white"
+                  : "bg-gray-800 border-gray-700 text-gray-400 hover:text-gray-200"
+              }`}
+          >
+            Player-4
+          </button>
+        </div>
+      )}
+
+    {/* Right side actions */}
+    <div className="flex items-center gap-2 ml-auto">
+
+      {/* PiP */}
+      <button
+        onClick={() =>
+          document.querySelector("video")?.requestPictureInPicture()
+        }
+        className="px-3 py-1 rounded-md bg-gray-800/60 
+                   hover:text-cyan-400 transition"
+        title="Picture in Picture"
+      >
+        ⛶
+      </button>
+
+      {/* Favorite */}
+      <button
+        onClick={toggleFavorite}
+        className={`px-3 py-1 rounded-md bg-gray-800/60 transition
+          ${isFavorite ? "text-pink-500" : "text-gray-300 hover:text-pink-400"}
+        `}
+        title="Favorite"
+      >
+        {isFavorite ? "♥" : "♡"}
+      </button>
+
+      {/* Report */}
+      <button
+        onClick={handleReport}
+        className="px-3 py-1 rounded-md 
+                   bg-red-900/20 border border-red-500/20 
+                   text-red-400 hover:bg-red-900/30 transition"
+        title="Report stream"
+      >
+        ⚠ Report
+      </button>
+    </div>
+  </div>
+</div>
+
+        
         {activeDirectLink && (
             <div className="flex justify-center mt-6">
   <a
