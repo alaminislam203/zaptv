@@ -99,7 +99,6 @@ export default function Home() {
   const [playerType, setPlayerType] = useState<"plyr" | "videojs" | "native" | "playerjs">("plyr");
   const [isClient, setIsClient] = useState(false);
   const scriptsLoaded = useRef(false);
-  const [channels, setChannels] = useState([]);
   const [totalChannels, setTotalChannels] = useState(0);
 
   // --- ALL HOOKS ---
