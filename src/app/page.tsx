@@ -285,11 +285,43 @@ export default function Home() {
 
   if (siteConfig?.maintenanceMode === true) {
     return (
-      <div className="min-h-screen bg-gray-900 flex flex-col items-center justify-center text-center p-6 text-white">
-        <h1 className="text-4xl font-bold text-red-500 mb-4">Site Under Maintenance 🛠️</h1>
-        <p className="text-lg text-gray-400">We are improving our site. Please check back later.</p>
-        <div className="mt-8 animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-500"></div>
-      </div>
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-gray-900 to-slate-900 
+                flex items-center justify-center px-6 text-white">
+
+  <div className="max-w-md w-full text-center bg-slate-900/70 backdrop-blur 
+                  border border-gray-800 rounded-2xl p-8 shadow-2xl">
+
+    {/* Icon */}
+    <div className="mx-auto mb-6 h-14 w-14 flex items-center justify-center 
+                    rounded-full bg-red-500/10 text-red-500 text-2xl">
+      🛠️
+    </div>
+
+    {/* Title */}
+    <h1 className="text-3xl font-bold tracking-wide text-red-500 mb-3">
+      Site Under Maintenance
+    </h1>
+
+    {/* Description */}
+    <p className="text-sm sm:text-base text-gray-400 leading-relaxed">
+      We’re upgrading systems to deliver a faster and smoother experience.
+      Please check back shortly.
+    </p>
+
+    {/* Loader */}
+    <div className="mt-8 flex justify-center">
+      <div className="h-10 w-10 rounded-full border-2 border-gray-700 
+                      border-t-red-500 animate-spin"></div>
+    </div>
+
+    {/* Footer note */}
+    <p className="mt-6 text-xs text-gray-500">
+      Thank you for your patience 🤍
+    </p>
+
+  </div>
+</div>
+
     );
   }
 
