@@ -488,13 +488,72 @@ export default function Home() {
         {middleAd && <div className="w-full min-h-[40px] bg-[#1e293b] rounded flex flex-col items-center justify-center overflow-hidden border border-gray-800 relative mt-2"><span className="absolute top-0 right-0 bg-gray-700 text-[8px] px-1 text-white">Ad</span>{middleAd.imageUrl ? <a href={middleAd.link || "#"} target="_blank" className="w-full"><img src={middleAd.imageUrl} alt="Ad" className="w-full h-auto object-cover max-h-24" /></a> : <div className="text-center p-2 text-gray-300 text-xs">{middleAd.text}</div>}</div>}
 
         {matches.length > 0 && (
-          <div className="space-y-2 mt-4">
-            <div className="flex items-center gap-2 text-orange-400 font-bold text-sm px-1"><span className="animate-pulse">🔥</span> HOT MATCHES</div>
-            <div className="flex gap-3 overflow-x-auto pb-4 custom-scrollbar">
-              {matches.map((match) => <div key={match.id} onClick={() => handleMatchClick(match.channelName)} className="min-w-[240px] bg-[#1e293b] p-3 rounded-lg border border-gray-700 relative flex-shrink-0 cursor-pointer hover:border-orange-500 transition-all group"><span className="absolute top-2 right-2 bg-red-600 text-[9px] px-2 py-0.5 rounded text-white font-bold shadow-lg animate-pulse">LIVE</span><div className="mt-4 flex justify-between items-center text-sm font-bold text-gray-200"><span className="truncate max-w-[45%]">{match.team1}</span><span className="text-gray-500 text-xs">VS</span><span className="truncate max-w-[45%] text-right">{match.team2}</span></div><div className="mt-3 flex justify-between items-center border-t border-gray-700 pt-2"><span className="text-[10px] text-cyan-400 font-medium">{match.info}</span><span className="text-[10px] text-gray-400 flex items-center gap-1">🕒 {match.matchTime}</span></div></div>)}
-            </div>
+  <div className="mt-6 space-y-3">
+
+    {/* Section title */}
+    <div className="flex items-center gap-2 px-1">
+      <span className="flex items-center gap-1 text-orange-400 text-sm font-semibold tracking-wide">
+        <span className="h-2 w-2 rounded-full bg-orange-500 animate-pulse"></span>
+        HOT MATCHES
+      </span>
+    </div>
+
+    {/* Match cards */}
+    <div className="flex gap-4 overflow-x-auto pb-4 custom-scrollbar">
+      {matches.map((match) => (
+        <div
+          key={match.id}
+          onClick={() => handleMatchClick(match.channelName)}
+          className="
+            group relative min-w-[260px] flex-shrink-0 cursor-pointer
+            rounded-xl bg-gradient-to-b from-slate-800 to-slate-900
+            border border-gray-700/80 p-4
+            transition-all duration-300
+            hover:border-orange-500/70 hover:shadow-lg hover:shadow-orange-900/30
+          "
+        >
+          {/* LIVE badge */}
+          <div className="absolute top-3 right-3 flex items-center gap-1 
+                          rounded-full bg-red-500/10 border border-red-500/30 
+                          px-2 py-0.5">
+            <span className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse"></span>
+            <span className="text-[10px] font-semibold text-red-400">
+              LIVE
+            </span>
           </div>
-        )}
+
+          {/* Teams */}
+          <div className="mt-6 flex items-center justify-between text-sm font-semibold text-gray-100">
+            <span className="truncate max-w-[40%]">
+              {match.team1}
+            </span>
+
+            <span className="text-xs text-gray-500 font-medium">
+              VS
+            </span>
+
+            <span className="truncate max-w-[40%] text-right">
+              {match.team2}
+            </span>
+          </div>
+
+          {/* Footer */}
+          <div className="mt-4 flex items-center justify-between 
+                          border-t border-gray-700/60 pt-3 text-[11px]">
+            <span className="text-cyan-400 font-medium">
+              {match.info}
+            </span>
+
+            <span className="flex items-center gap-1 text-gray-400">
+              🕒 {match.matchTime}
+            </span>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+)}
+
 
         <div className="bg-[#111827] p-4 rounded-xl border border-gray-800">
           <div className="mb-4 relative"><input type="text" placeholder="Search for a channel..." className="w-full bg-[#1f2937] text-white text-sm px-4 py-2.5 pl-10 rounded-lg border border-gray-700 focus:outline-none focus:border-cyan-500" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} /><span className="absolute left-3 top-2.5 text-gray-500">🔍</span></div>
