@@ -436,16 +436,40 @@ export default function Home() {
         </div>
 
         {activeDirectLink && (
-            <div className="flex justify-center animate-bounce mt-4">
-                <a 
-                href={activeDirectLink.url} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="bg-gradient-to-r from-green-600 to-emerald-800 text-white font-bold py-3 px-8 rounded-full shadow-lg border-2 border-green-400 hover:scale-105 transition-transform flex items-center gap-2 cursor-pointer z-10"
-                >
-                <span className="text-xl"></span> {activeDirectLink.label}
-                </a>
-            </div>
+            <div className="flex justify-center mt-6">
+  <a
+    href={activeDirectLink.url}
+    target="_blank"
+    rel="noopener noreferrer"
+    className="
+      group relative inline-flex items-center gap-2
+      rounded-full px-8 py-3
+      font-semibold text-white
+      bg-gradient-to-r from-emerald-600 via-green-600 to-emerald-700
+      shadow-lg shadow-emerald-900/40
+      border border-emerald-400/30
+      transition-all duration-300
+      hover:scale-[1.04] hover:shadow-emerald-500/40
+      active:scale-[0.98]
+    "
+  >
+    {/* glow ring */}
+    <span className="
+      absolute inset-0 rounded-full
+      bg-emerald-400/20 blur-xl opacity-0
+      group-hover:opacity-100 transition
+    "></span>
+
+    {/* icon */}
+    <span className="relative text-lg">▶</span>
+
+    {/* label */}
+    <span className="relative tracking-wide">
+      {activeDirectLink.label}
+    </span>
+  </a>
+</div>
+
         )}
 
         <div className="bg-[#1e293b] p-4 rounded-lg border border-gray-700 flex items-center gap-4">
