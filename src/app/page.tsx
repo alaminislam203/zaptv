@@ -539,7 +539,7 @@ export default function Home() {
       group relative inline-flex items-center gap-2
       rounded-full px-8 py-3
       font-semibold text-white
-      bg-gradient-to-r from-emerald-600 via-green-600 to-emerald-700
+      bg-gradient-to-r from-emerald-600 via-blue-700 to-emerald-700
       shadow-lg shadow-emerald-900/40
       border border-emerald-400/30
       transition-all duration-300
@@ -555,7 +555,7 @@ export default function Home() {
     "></span>
 
     {/* icon */}
-    <span className="relative text-lg">▶</span>
+    <span className="relative text-lg"></span>
 
     {/* label */}
     <span className="relative tracking-wide">
