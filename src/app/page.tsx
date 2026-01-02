@@ -327,26 +327,49 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-[#0b1120] text-gray-200 font-sans pb-10 select-none">
-      <header className="bg-[#0f172a] border-b border-gray-800 sticky top-0 z-50 shadow-lg">
-        <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2 cursor-pointer" onClick={() => setCurrentChannel(null)}>
-            <div className="text-2xl font-bold"><span className="bg-gradient-to-r from-cyan-400 to-blue-600 text-transparent bg-clip-text">ToffeeLiveToday</span></div>
-          </div>
-          <div className="flex items-center gap-3">
-             <span className="bg-red-600 text-white text-[10px] px-2 py-0.5 rounded font-bold animate-pulse">● LIVE</span>
-             <Link href="/admin"><button className="text-sm bg-gray-800 px-3 py-1 rounded hover:bg-gray-700 transition text-white">Login</button></Link>
-          </div>
-        </div>
-        
+      <header className="sticky top-0 z-50 bg-gradient-to-b from-slate-950 to-slate-900 
+                   border-b border-gray-800/80 backdrop-blur supports-[backdrop-filter]:bg-slate-950/70">
 
-      
-   
+  <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
 
+    {/* Logo */}
+    <div
+      onClick={() => setCurrentChannel(null)}
+      className="flex items-center gap-2 cursor-pointer select-none"
+    >
+      <div className="text-xl sm:text-2xl font-extrabold tracking-wide">
+        <span className="bg-gradient-to-r from-cyan-400 via-sky-400 to-blue-600 
+                         text-transparent bg-clip-text">
+          ToffeeLiveToday
+        </span>
+      </div>
+    </div>
 
+    {/* Right actions */}
+    <div className="flex items-center gap-3">
 
-        
-      
-      </header>
+      {/* LIVE badge */}
+      <div className="flex items-center gap-1.5 px-2 py-1 rounded-full 
+                      bg-red-500/10 border border-red-500/30">
+        <span className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse"></span>
+        <span className="text-[10px] font-semibold tracking-wider text-red-400">
+          LIVE
+        </span>
+      </div>
+
+      {/* Login */}
+      <Link href="/admin">
+        <button className="text-sm px-4 py-1.5 rounded-md 
+                           bg-gray-800/80 hover:bg-gray-700 
+                           border border-gray-700 text-gray-200 transition">
+          Login
+        </button>
+      </Link>
+
+    </div>
+  </div>
+</header>
+
 
       <div className="max-w-4xl mx-auto px-2 md:px-4 mt-4 space-y-4">
 
