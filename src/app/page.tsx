@@ -143,7 +143,7 @@ export default function Home() {
   const unsubChannels = onSnapshot(collection(db, "channels"), (snapshot) => {
     const list = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })) as Channel[];
     setChannels(list);
-    setTotalChannels(snapshot.docs.length); // ✅ এখানে সংখ্যা সেট
+    setTotalChannels(snapshot.docs.length);
     setLoading(false);
   });
   ...
@@ -215,6 +215,7 @@ export default function Home() {
         set(myConnectionsRef, null);
     };
   }, [isClient]);
+  
 
   useEffect(() => {
     if (!scriptsLoaded.current) {
