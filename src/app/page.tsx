@@ -307,28 +307,28 @@ export default function Home() {
         </div>
         <div className="bg-[#1e293b] h-8 flex items-center overflow-hidden relative border-b border-gray-800"><div className="whitespace-pre animate-marquee text-xs text-white-400 pl-4 font-mono">{siteConfig.marqueeText || "Welcome to ToffeePro! Please disable adblocker to keep our site free."}</div></div>
       
-     <div className="bg-[#0f172a] border border-gray-700 rounded-lg px-4 py-2 flex items-center justify-between gap-3">
-  <p className="text-xs sm:text-sm text-gray-200 font-mono">
-    আমাদের অফিসিয়াল টেলিগ্রাম চ্যানেলে জয়েন করুন আপডেট পেতে
-  </p>
+     <<div className="max-w-5xl mx-auto px-3">
+  
+  {/* Notice Box */}
+  <div className="mb-3 bg-[#0f172a] border border-gray-700 rounded-lg px-4 py-2 flex items-center justify-between gap-3">
+    <p className="text-xs sm:text-sm text-gray-200 font-mono">
+      আমাদের অফিসিয়াল টেলিগ্রাম চ্যানেলে জয়েন করুন আপডেট পেতে
+    </p>
 
-  <Link href="https://t.me/toffeepro">
-    <button className="text-xs sm:text-sm bg-blue-600 hover:bg-blue-500 px-3 py-1.5 rounded-md text-white transition whitespace-nowrap">
-      Join Telegram
-    </button>
-  </Link>
-</div>
-<div className="bg-gradient-to-r from-slate-900 to-slate-800 border-l-4 border-blue-500 px-4 py-3 flex items-center justify-between rounded-md">
-  <span className="text-sm text-gray-100">
-    🚀 আপডেট মিস করতে না চাইলে আমাদের টেলিগ্রাম চ্যানেলে যুক্ত হন
-  </span>
+    <Link href="https://t.me/toffeepro">
+      <button className="text-xs sm:text-sm bg-blue-600 hover:bg-blue-500 px-3 py-1.5 rounded-md text-white transition whitespace-nowrap">
+        Join Telegram
+      </button>
+    </Link>
+  </div>
 
-  <Link href="https://t.me/toffeepro">
-    <button className="bg-blue-600 hover:bg-blue-500 text-white text-sm px-4 py-1.5 rounded transition">
-      Join
-    </button>
-  </Link>
+  {/* Player */}
+  <div className="rounded-xl overflow-hidden bg-black">
+    {/* player iframe / component */}
+  </div>
+
 </div>
+
 
         
       
