@@ -138,6 +138,19 @@ export default function Home() {
     };
   }, []);
 
+
+  useEffect(() => {
+  const unsubChannels = onSnapshot(collection(db, "channels"), (snapshot) => {
+    const list = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })) as Channel[];
+    setChannels(list);
+    setTotalChannels(snapshot.docs.length); // ✅ এখানে সংখ্যা সেট
+    setLoading(false);
+  });
+  ...
+  return () => { unsubChannels(); };
+}, []);
+
+
   useEffect(() => {
     const unsubChannels = onSnapshot(collection(db, "channels"), (snapshot) => {
       const list = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })) as Channel[];
@@ -685,8 +698,11 @@ export default function Home() {
                 <div className="text-center"><p className="font-bold text-lg text-green-400">{onlineUsers}</p><p className="text-gray-500">Online</p></div>
                 <div className="border-l border-gray-600 h-8"></div>
                 <div className="text-center"><p className="font-bold text-lg text-cyan-400">{totalVisitors}</p><p className="text-gray-500">Visitors</p></div>
+              <div className="border-l border-gray-600 h-8"></div>
+               <div className="text-center"><p className="font-bold text-lg text-cyan-400">{totalChannels}</p><p className="text-gray-500">Channels</p></div>
             </div>
             <div className="text-[10px] text-gray-400 text-center pt-2 border-t border-gray-700 w-full mt-2">&copy; 2026 ToffeePro Streaming. All rights reserved.</div>
+          
         </div>
       </div>
     </main>
