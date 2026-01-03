@@ -209,7 +209,7 @@ export default function MatchPage() {
                     {/* Watch Button (Only if not ended) */}
                     {!isEnded && (
                        <Link href={`/livetv`}> 
-                       {/* আপনি চাইলে স্পেসিফিক চ্যানেলে নেওয়ার জন্য href={`/livetv?play=${match.channelName}`} ব্যবহার করতে পারেন যদি আপনার মেইন পেজ কোয়েরি প্যারাম সাপোর্ট করে */}
+                       {/* আপনি চাইলে স্পেসিফিক চ্যানেলে নেওয়ার জন্য href={`/livesports?play=${match.channelName}`} ব্যবহার করতে পারেন যদি আপনার মেইন পেজ কোয়েরি প্যারাম সাপোর্ট করে */}
                          <button className="w-full mt-3 bg-gray-700 hover:bg-gray-600 text-white py-2 rounded-lg text-xs font-bold uppercase tracking-wide transition flex items-center justify-center gap-2 group-hover:bg-cyan-700">
                            <span>📺</span> Watch Stream
                          </button>
