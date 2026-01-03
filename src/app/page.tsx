@@ -33,14 +33,14 @@ export default function GuidePage() {
     },
     {
       id: 2,
-      title: "Sports Channels (Server 1)",
+      title: "Sports Channels (Server 1)(daily update)",
       desc: "সনি, স্টার স্পোর্টস, এবং টি-স্পোর্টস এর সব চ্যানেল।",
       icon: "🏆",
       link: "/livesports",
       color: "from-blue-500 to-cyan-500"
     },{
       id: 2,
-      title: "Sports Channels (Server 2)",
+      title: "Sports Channels (Server 2) (daily update)",
       desc: "সনি, স্টার স্পোর্টস, এবং টি-স্পোর্টস এর সব চ্যানেল।",
       icon: "🏆",
       link: "/livesports2",
