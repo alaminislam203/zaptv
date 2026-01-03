@@ -7,7 +7,7 @@ import {
 import { db } from "../firebase";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell } from 'recharts';
 
-// --- ICONS (SVG Components for Professional Look) ---
+// --- ICONS (SVG Components) ---
 const Icons = {
   Dashboard: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg>,
   Matches: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.1.2-2.2.5-3.3.3-1.12.8-2.22 1.5-3.2.5 1 1 2 1.5 3z"></path></svg>,
@@ -21,8 +21,7 @@ const Icons = {
   Delete: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>,
   Search: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>,
   Refresh: () => <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>,
-  // 🔥 Check Icon Added Here
-  Check: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+  Check: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
 };
 
 // --- Interfaces ---
@@ -43,13 +42,16 @@ export default function AdminPanel() {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [loading, setLoading] = useState(false);
   
-  // 🔥 সার্চ স্টেট
+  // Search State
   const [searchTerm, setSearchTerm] = useState(""); 
 
+  // Data States
   const [channels, setChannels] = useState<Channel[]>([]);
   const [matches, setMatches] = useState<HotMatch[]>([]);
   const [ads, setAds] = useState<AdData[]>([]);
   const [reports, setReports] = useState<Report[]>([]);
+  
+  // Settings State
   const [siteConfig, setSiteConfig] = useState<SiteSettings>({ marqueeText: "", maintenanceMode: false, popupMessage: "", popupEnabled: false, enablePopunder: true, directLinks: [] });
   const [tempLink, setTempLink] = useState({ url: "", label: "" });
 
@@ -88,10 +90,8 @@ export default function AdminPanel() {
   };
   const handleDelete = async (col: string, id: string) => { if (confirm("Sure?")) await deleteDoc(doc(db, col, id)); };
 
-  // --- STATUS CHECKER LOGIC ---
   const checkStreamStatus = async (url: string) => { try { await fetch(url, { method: 'HEAD', mode: 'no-cors' }); return "online"; } catch (error) { return "offline"; } };
   
-  // Single Channel Check Function
   const checkSingleChannel = async (channelId: string) => {
     setChannels(prev => prev.map(ch => { if (ch.id === channelId) return { ...ch, sources: ch.sources.map(s => ({ ...s, status: "checking" as any })) }; return ch; }));
     const targetChannel = channels.find(c => c.id === channelId);
@@ -188,13 +188,48 @@ export default function AdminPanel() {
             </div>
         )}
 
+        {/* --- ADS TAB (FIXED SYNTAX ERROR) --- */}
         {activeTab === "ads" && (
              <div className="grid lg:grid-cols-2 gap-6 animate-fadeIn">
-                 <div className="bg-[#1e293b] p-6 rounded-2xl border border-gray-700 h-fit"><h2 className="text-xl font-bold text-yellow-400 mb-4">Banner Ads</h2><div className="space-y-3"><select className="w-full bg-gray-900 border border-gray-700 p-2 rounded" value={adForm.location} onChange={e=>setAdForm({...adForm, location:e.target.value})}><option value="top">Top Banner (Below Nav)</option><option value="middle">Middle Banner (Below Player)</option></select><input className="w-full bg-gray-900 border border-gray-700 p-2 rounded" placeholder="Image URL" value={adForm.imageUrl} onChange={e=>setAdForm({...adForm, imageUrl:e.target.value})}/><input className="w-full bg-gray-900 border border-gray-700 p-2 rounded" placeholder="Click Link" value={adForm.link} onChange={e=>setAdForm({...adForm, link:e.target.value})}/><input className="w-full bg-gray-900 border border-gray-700 p-2 rounded" placeholder="Alt Text" value={adForm.text} onChange={e=>setAdForm({...adForm, text:e.target.value})}/><button onClick={handleSaveAd} className="w-full bg-yellow-600 py-2 rounded-lg font-bold">Save Ad</button></div></div>
-                 <div className="space-y-3">{ads.map(ad => (<div key={ad.id} className="bg-[#1e293b] p-4 rounded-xl border border-gray-700"><div className="flex justify-between items-start"><div><span className="text-xs bg-yellow-900 text-yellow-200 px-2 py-0.5 rounded uppercase font-bold">{ad.location}</span>{ad.imageUrl && <img src={ad.imageUrl} className="h-20 w-auto mt-2 rounded border border-gray-600"/><p className="text-xs text-gray-400 mt-1">{ad.link}</p>}</div><div className="flex gap-2"><button onClick={()=>{setEditingId(ad.id!); setAdForm(ad)}} className="text-blue-400 text-sm"><Icons.Edit/></button><button onClick={()=>handleDelete("ads", ad.id!)} className="text-red-400 text-sm"><Icons.Delete/></button></div></div></div>))}</div>
+                 <div className="bg-[#1e293b] p-6 rounded-2xl border border-gray-700 h-fit">
+                    <h2 className="text-xl font-bold text-yellow-400 mb-4">Banner Ads</h2>
+                    <div className="space-y-3">
+                        <select className="w-full bg-gray-900 border border-gray-700 p-2 rounded" value={adForm.location} onChange={e=>setAdForm({...adForm, location:e.target.value})}>
+                            <option value="top">Top Banner (Below Nav)</option>
+                            <option value="middle">Middle Banner (Below Player)</option>
+                        </select>
+                        <input className="w-full bg-gray-900 border border-gray-700 p-2 rounded" placeholder="Image URL" value={adForm.imageUrl} onChange={e=>setAdForm({...adForm, imageUrl:e.target.value})}/>
+                        <input className="w-full bg-gray-900 border border-gray-700 p-2 rounded" placeholder="Click Link" value={adForm.link} onChange={e=>setAdForm({...adForm, link:e.target.value})}/>
+                        <input className="w-full bg-gray-900 border border-gray-700 p-2 rounded" placeholder="Alt Text" value={adForm.text} onChange={e=>setAdForm({...adForm, text:e.target.value})}/>
+                        <button onClick={handleSaveAd} className="w-full bg-yellow-600 py-2 rounded-lg font-bold">Save Ad</button>
+                    </div>
+                 </div>
+                 
+                 {/* Fixed Ads List Loop */}
+                 <div className="space-y-3">
+                    {ads.map(ad => (
+                        <div key={ad.id} className="bg-[#1e293b] p-4 rounded-xl border border-gray-700">
+                             <div className="flex justify-between items-start">
+                                <div>
+                                    <span className="text-xs bg-yellow-900 text-yellow-200 px-2 py-0.5 rounded uppercase font-bold">{ad.location}</span>
+                                    {/* Properly nested image condition */}
+                                    {ad.imageUrl && (
+                                        <img src={ad.imageUrl} className="h-20 w-auto mt-2 rounded border border-gray-600" alt="ad"/>
+                                    )}
+                                    <p className="text-xs text-gray-400 mt-1">{ad.link}</p>
+                                </div>
+                                <div className="flex gap-2">
+                                     <button onClick={()=>{setEditingId(ad.id!); setAdForm(ad)}} className="text-blue-400 text-sm"><Icons.Edit/></button>
+                                     <button onClick={()=>handleDelete("ads", ad.id!)} className="text-red-400 text-sm"><Icons.Delete/></button>
+                                </div>
+                             </div>
+                        </div>
+                    ))}
+                 </div>
              </div>
         )}
 
+        {/* --- STATUS CHECK TAB (FIXED SINGLE CHECK) --- */}
         {activeTab === "status_check" && (
             <div className="bg-[#1e293b] p-6 rounded-2xl border border-gray-700 animate-fadeIn h-[85vh] flex flex-col">
                 <div className="flex justify-between items-center mb-6">
@@ -204,7 +239,10 @@ export default function AdminPanel() {
                 <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2 pr-2">
                     {channels.map(ch => (
                         <div key={ch.id} className="bg-gray-900 p-3 rounded-lg border border-gray-700 flex flex-col sm:flex-row justify-between items-center gap-2">
-                             <div className="flex items-center gap-3 w-full sm:w-auto"><div className={`w-2 h-2 rounded-full ${ch.sources.some(s=>s.status==='online') ? 'bg-green-500' : 'bg-gray-500'}`}></div><span className="font-medium text-sm">{ch.name}</span></div>
+                             <div className="flex items-center gap-3 w-full sm:w-auto">
+                                 <div className={`w-2 h-2 rounded-full ${ch.sources.some(s=>s.status==='online') ? 'bg-green-500' : 'bg-gray-500'}`}></div>
+                                 <span className="font-medium text-sm">{ch.name}</span>
+                             </div>
                              <div className="flex gap-2 flex-wrap justify-end items-center">
                                  {ch.sources.map((src, idx) => (
                                      <span key={idx} className={`text-[10px] px-2 py-1 rounded border ${src.status === 'online' ? 'bg-green-900/30 border-green-500/50 text-green-400' : src.status === 'offline' ? 'bg-red-900/30 border-red-500/50 text-red-400' : 'bg-gray-800 border-gray-600 text-gray-400'}`}>{src.label}: {src.status || "Unknown"}</span>
