@@ -3,12 +3,12 @@ import React, { useState, useEffect, useRef } from "react";
 // 1. Firebase imports
 import { 
   collection, onSnapshot, addDoc, doc, 
-  query, orderBy, runTransaction 
+  runTransaction 
 } from "firebase/firestore";
 import { 
   ref, onValue, off, set, onDisconnect, serverTimestamp 
 } from "firebase/database";
-// নোট: আপনার firebase ফাইলটি কোথায় আছে তা নিশ্চিত করুন (সাধারণত ../firebase হয়)
+// নোট: আপনার firebase ফাইলটি কোথায় আছে তা নিশ্চিত করুন
 import { db, rtdb } from "./firebase"; 
 import Link from "next/link";
 
@@ -37,7 +37,6 @@ const ShakaPlayer = dynamic(() => import("../../components/ShakaPlayer"), {
 const IframePlayer = dynamic(() => import("../../components/IframePlayer"), { 
   ssr: false 
 });
-// PlayerJS ইমপোর্ট করা হলো
 const PlayerJSPlayer = dynamic(() => import("../../components/PlayerJSPlayer"), { 
   ssr: false, loading: () => <LoadingPlayer /> 
 });
@@ -63,14 +62,7 @@ interface Channel {
   category?: string;
   sources: Source[];
 }
-interface HotMatch {
-  id: string;
-  team1: string;
-  team2: string;
-  info: string;
-  matchTime: string;
-  channelName: string;
-}
+// HotMatch Interface Removed
 interface AdData {
   id: string;
   location: "top" | "middle";
@@ -82,7 +74,7 @@ interface AdData {
 export default function Home() {
   // Data States
   const [channels, setChannels] = useState<Channel[]>([]);
-  const [matches, setMatches] = useState<HotMatch[]>([]);
+  // Matches State Removed
   const [ads, setAds] = useState<AdData[]>([]);
   const [siteConfig, setSiteConfig] = useState<any>({});
   const [onlineUsers, setOnlineUsers] = useState(0);
@@ -95,13 +87,25 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [isFavorite, setIsFavorite] = useState(false);
-  // প্লেয়ার টাইপে 'playerjs' যুক্ত করা হলো
   const [playerType, setPlayerType] = useState<"plyr" | "videojs" | "native" | "playerjs">("plyr");
   const [isClient, setIsClient] = useState(false);
   const scriptsLoaded = useRef(false);
   const [totalChannels, setTotalChannels] = useState(0);
 
+  // Infinite Scroll State
+  const [visibleCount, setVisibleCount] = useState(48);
+
   // --- ALL HOOKS ---
+
+  // Handle Scroll to Load More
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const { scrollTop, clientHeight, scrollHeight } = e.currentTarget;
+    if (scrollHeight - scrollTop <= clientHeight + 50) {
+        if (visibleCount < filteredChannels.length) {
+            setVisibleCount((prev) => prev + 24);
+        }
+    }
+  };
 
   // Random Direct Link Logic
   useEffect(() => {
@@ -142,27 +146,13 @@ export default function Home() {
 
 
   useEffect(() => {
-  const unsubChannels = onSnapshot(collection(db, "channels"), (snapshot) => {
-    const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Channel[];
-    setChannels(list);
-    setTotalChannels(snapshot.docs.length);
-    setLoading(false);
-  });
-
-  return () => unsubChannels();
-}, []);
-
-
-  useEffect(() => {
     const unsubChannels = onSnapshot(collection(db, "channels"), (snapshot) => {
-      const list = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })) as Channel[];
+      const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Channel[];
       setChannels(list);
+      setTotalChannels(snapshot.docs.length);
       setLoading(false);
     });
-    const unsubMatches = onSnapshot(collection(db, "hotMatches"), (snapshot) => {
-      const list = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })) as HotMatch[];
-      setMatches(list);
-    });
+
     const unsubAds = onSnapshot(collection(db, "ads"), (snapshot) => {
       const list = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })) as AdData[];
       setAds(list);
@@ -170,7 +160,7 @@ export default function Home() {
     const unsubSettings = onSnapshot(doc(db, "settings", "config"), (docSnap) => {
       if (docSnap.exists()) setSiteConfig(docSnap.data());
     });
-    return () => { unsubChannels(); unsubMatches(); unsubAds(); unsubSettings(); };
+    return () => { unsubChannels(); unsubAds(); unsubSettings(); };
   }, []);
 
   useEffect(() => {
@@ -266,11 +256,7 @@ export default function Home() {
   };
 
   const filteredChannels = channels.filter(ch => ch.name.toLowerCase().includes(searchQuery.toLowerCase()));
-  const handleMatchClick = (name: string) => {
-    const chan = channels.find(c => c.name.toLowerCase() === name.toLowerCase() || c.id === name);
-    if (chan) setCurrentChannel(chan);
-    else alert("Channel not found!");
-  };
+  const channelsToDisplay = filteredChannels.slice(0, visibleCount);
 
   const getAd = (loc: "top" | "middle") => ads.find(ad => ad.location === loc);
   const topAd = getAd("top");
@@ -288,12 +274,11 @@ export default function Home() {
     if (url.includes(".mpd") || drm) return <ShakaPlayer src={url} drm={drm} />;
     
     if (url.includes(".m3u8")) {
-      const sourceProps = { src: url, drm: drm };
       switch (playerType) {
           case "videojs": return <VideoJSPlayer src={url} />;
           case "native": return <NativePlayer src={url} />;
-          // PlayerJS লজিক যোগ করা হলো
           case "playerjs": return <PlayerJSPlayer src={url} />;
+          default: return <PlyrPlayer src={url} />;
       }
     }
     return <IframePlayer src={url} />;
@@ -306,35 +291,24 @@ export default function Home() {
 
   <div className="max-w-md w-full text-center bg-slate-900/70 backdrop-blur 
                   border border-gray-800 rounded-2xl p-8 shadow-2xl">
-
-    {/* Icon */}
     <div className="mx-auto mb-6 h-14 w-14 flex items-center justify-center 
                     rounded-full bg-red-500/10 text-red-500 text-2xl">
       🛠️
     </div>
-
-    {/* Title */}
     <h1 className="text-3xl font-bold tracking-wide text-red-500 mb-3">
       Site Under Maintenance
     </h1>
-
-    {/* Description */}
     <p className="text-sm sm:text-base text-gray-400 leading-relaxed">
       We’re upgrading systems to deliver a faster and smoother experience.
       Please check back shortly.
     </p>
-
-    {/* Loader */}
     <div className="mt-8 flex justify-center">
       <div className="h-10 w-10 rounded-full border-2 border-gray-700 
                       border-t-red-500 animate-spin"></div>
     </div>
-
-    {/* Footer note */}
     <p className="mt-6 text-xs text-gray-500">
       Thank you for your patience 🤍
     </p>
-
   </div>
 </div>
 
@@ -347,8 +321,6 @@ export default function Home() {
                    border-b border-gray-800/80 backdrop-blur supports-[backdrop-filter]:bg-slate-950/70">
 
   <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-
-    {/* Logo */}
     <div
       onClick={() => setCurrentChannel(null)}
       className="flex items-center gap-2 cursor-pointer select-none"
@@ -360,11 +332,7 @@ export default function Home() {
         </span>
       </div>
     </div>
-
-    {/* Right actions */}
     <div className="flex items-center gap-3">
-
-      {/* LIVE badge */}
       <div className="flex items-center gap-1.5 px-2 py-1 rounded-full 
                       bg-red-500/10 border border-red-500/30">
         <span className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse"></span>
@@ -372,8 +340,6 @@ export default function Home() {
           LIVE
         </span>
       </div>
-
-      {/* Login */}
       <Link href="/admin">
         <button className="text-sm px-4 py-1.5 rounded-md 
                            bg-gray-800/80 hover:bg-gray-700 
@@ -381,7 +347,6 @@ export default function Home() {
           Login
         </button>
       </Link>
-
     </div>
   </div>
 </header>
@@ -391,26 +356,18 @@ export default function Home() {
 
 <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 
                 border-b border-gray-700 h-9 flex items-center overflow-hidden relative">
-
-  {/* Left accent */}
   <div className="absolute left-0 top-0 h-full w-1 bg-blue-500"></div>
-
-  {/* Marquee text */}
   <div className="flex items-center whitespace-nowrap animate-marquee pl-6">
     <span className="text-xs sm:text-sm text-gray-200 font-mono tracking-wide">
       📢 {siteConfig.marqueeText || 
       "Welcome to ToffeePro — Please disable adblocker to support free streaming"}
     </span>
   </div>
-
 </div>
-
-
-        
-        
+   
     <div className="max-w-5xl bg-[#0f172a] border border-gray-700 rounded-lg px-4 py-2 flex items-center justify-between gap-3">
   <p className="text-xs sm:text-sm text-gray-200 font-mono">
-    আমাদের অফিসিয়াল টেলিগ্রাম চ্যানেলে জয়েন করুন আপডেট পেতে
+    আমাদের অফিসিয়াল টেলিগ্রাম চ্যানেলে জয়েন করুন আপডেট পেতে
   </p>
 
   <Link href="https://t.me/toffeepro">
@@ -420,7 +377,6 @@ export default function Home() {
   </Link>
 </div>
 
-        
     <div className="max-w-5xl bg-[#0f172a] border border-gray-700 rounded-lg px-4 py-2 flex items-center justify-between gap-3">
   <p className="text-xs sm:text-sm text-gray-200 font-mono">
     ৫০০ টির ও বেশি চ্যানেল যোগ করা হয়েছে, দেখুন 
@@ -444,7 +400,6 @@ export default function Home() {
   </Link>
 </div>
 
-    
         {topAd && (
           <div className="w-full min-h-[50px] bg-[#1e293b] rounded flex flex-col items-center justify-center overflow-hidden border border-gray-800 relative group">
             <span className="absolute top-0 right-0 bg-gray-700 text-[8px] px-1 text-white">Ad</span>
@@ -453,8 +408,6 @@ export default function Home() {
         )}
 
         <div className="bg-black rounded-xl overflow-hidden shadow-2xl border border-gray-800">
-
-  {/* Player */}
   <div className="aspect-video w-full bg-black relative">
     <div
       key={`${currentChannel?.id}-${activeSourceIndex}-${playerType}`}
@@ -464,104 +417,25 @@ export default function Home() {
     </div>
   </div>
 
-  {/* Bottom control bar */}
   <div className="bg-[#0f172a] px-3 py-2 flex flex-wrap items-center 
                   justify-between gap-2 text-xs border-t border-gray-800">
-
-    {/* Player engine buttons */}
     {currentChannel?.sources[activeSourceIndex]?.url.includes(".m3u8") &&
       !currentChannel.is_embed && (
         <div className="flex items-center gap-2">
           <span className="text-gray-500 hidden sm:block">
             Engine:
           </span>
-
-          <button
-            onClick={() => setPlayerType("plyr")}
-            className={`px-3 py-1 rounded-md border transition
-              ${
-                playerType === "plyr"
-                  ? "bg-cyan-600 border-cyan-500 text-white"
-                  : "bg-gray-800 border-gray-700 text-gray-400 hover:text-gray-200"
-              }`}
-          >
-            Player-1
-          </button>
-
-          <button
-            onClick={() => setPlayerType("videojs")}
-            className={`px-3 py-1 rounded-md border transition
-              ${
-                playerType === "videojs"
-                  ? "bg-cyan-600 border-cyan-500 text-white"
-                  : "bg-gray-800 border-gray-700 text-gray-400 hover:text-gray-200"
-              }`}
-          >
-            Player-2
-          </button>
-
-          <button
-            onClick={() => setPlayerType("native")}
-            className={`px-3 py-1 rounded-md border transition
-              ${
-                playerType === "native"
-                  ? "bg-cyan-600 border-cyan-500 text-white"
-                  : "bg-gray-800 border-gray-700 text-gray-400 hover:text-gray-200"
-              }`}
-          >
-            Player-3
-          </button>
-
-          <button
-            onClick={() => setPlayerType("playerjs")}
-            className={`px-3 py-1 rounded-md border transition
-              ${
-                playerType === "playerjs"
-                  ? "bg-cyan-600 border-cyan-500 text-white"
-                  : "bg-gray-800 border-gray-700 text-gray-400 hover:text-gray-200"
-              }`}
-          >
-            Player-4
-          </button>
+          <button onClick={() => setPlayerType("plyr")} className={`px-3 py-1 rounded-md border transition ${playerType === "plyr" ? "bg-cyan-600 border-cyan-500 text-white" : "bg-gray-800 border-gray-700 text-gray-400 hover:text-gray-200"}`}>Player-1</button>
+          <button onClick={() => setPlayerType("videojs")} className={`px-3 py-1 rounded-md border transition ${playerType === "videojs" ? "bg-cyan-600 border-cyan-500 text-white" : "bg-gray-800 border-gray-700 text-gray-400 hover:text-gray-200"}`}>Player-2</button>
+          <button onClick={() => setPlayerType("native")} className={`px-3 py-1 rounded-md border transition ${playerType === "native" ? "bg-cyan-600 border-cyan-500 text-white" : "bg-gray-800 border-gray-700 text-gray-400 hover:text-gray-200"}`}>Player-3</button>
+          <button onClick={() => setPlayerType("playerjs")} className={`px-3 py-1 rounded-md border transition ${playerType === "playerjs" ? "bg-cyan-600 border-cyan-500 text-white" : "bg-gray-800 border-gray-700 text-gray-400 hover:text-gray-200"}`}>Player-4</button>
         </div>
       )}
 
-    {/* Right side actions */}
     <div className="flex items-center gap-2 ml-auto">
-
-      {/* PiP */}
-      <button
-        onClick={() =>
-          document.querySelector("video")?.requestPictureInPicture()
-        }
-        className="px-3 py-1 rounded-md bg-gray-800/60 
-                   hover:text-cyan-400 transition"
-        title="Picture in Picture"
-      >
-        ⛶
-      </button>
-
-      {/* Favorite */}
-      <button
-        onClick={toggleFavorite}
-        className={`px-3 py-1 rounded-md bg-gray-800/60 transition
-          ${isFavorite ? "text-pink-500" : "text-gray-300 hover:text-pink-400"}
-        `}
-        title="Favorite"
-      >
-        {isFavorite ? "♥" : "♡"}
-      </button>
-
-      {/* Report */}
-      <button
-        onClick={handleReport}
-        className="px-3 py-1 rounded-md 
-                   bg-red-900/20 border border-red-500/20 
-                   text-red-400 hover:bg-red-900/30 transition"
-        title="Report stream"
-      >
-        ⚠ Report
-      </button>
+      <button onClick={() => document.querySelector("video")?.requestPictureInPicture()} className="px-3 py-1 rounded-md bg-gray-800/60 hover:text-cyan-400 transition" title="Picture in Picture">⛶</button>
+      <button onClick={toggleFavorite} className={`px-3 py-1 rounded-md bg-gray-800/60 transition ${isFavorite ? "text-pink-500" : "text-gray-300 hover:text-pink-400"}`} title="Favorite">{isFavorite ? "♥" : "♡"}</button>
+      <button onClick={handleReport} className="px-3 py-1 rounded-md bg-red-900/20 border border-red-500/20 text-red-400 hover:bg-red-900/30 transition" title="Report stream">⚠ Report</button>
     </div>
   </div>
 </div>
@@ -585,17 +459,12 @@ export default function Home() {
       active:scale-[0.98]
     "
   >
-    {/* glow ring */}
     <span className="
       absolute inset-0 rounded-full
       bg-emerald-400/20 blur-xl opacity-0
       group-hover:opacity-100 transition
     "></span>
-
-    {/* icon */}
     <span className="relative text-lg"></span>
-
-    {/* label */}
     <span className="relative tracking-wide">
       {activeDirectLink.label}
     </span>
@@ -619,79 +488,20 @@ export default function Home() {
 
         {middleAd && <div className="w-full min-h-[40px] bg-[#1e293b] rounded flex flex-col items-center justify-center overflow-hidden border border-gray-800 relative mt-2"><span className="absolute top-0 right-0 bg-gray-700 text-[8px] px-1 text-white">Ad</span>{middleAd.imageUrl ? <a href={middleAd.link || "#"} target="_blank" className="w-full"><img src={middleAd.imageUrl} alt="Ad" className="w-full h-auto object-cover max-h-24" /></a> : <div className="text-center p-2 text-gray-300 text-xs">{middleAd.text}</div>}</div>}
 
-        {matches.length > 0 && (
-  <div className="mt-6 space-y-3">
-
-    {/* Section title */}
-    <div className="flex items-center gap-2 px-1">
-      <span className="flex items-center gap-1 text-orange-400 text-sm font-semibold tracking-wide">
-        <span className="h-2 w-2 rounded-full bg-orange-500 animate-pulse"></span>
-        HOT MATCHES
-      </span>
-    </div>
-
-    {/* Match cards */}
-    <div className="flex gap-4 overflow-x-auto pb-4 custom-scrollbar">
-      {matches.map((match) => (
-        <div
-          key={match.id}
-          onClick={() => handleMatchClick(match.channelName)}
-          className="
-            group relative min-w-[260px] flex-shrink-0 cursor-pointer
-            rounded-xl bg-gradient-to-b from-slate-800 to-slate-900
-            border border-gray-700/80 p-4
-            transition-all duration-300
-            hover:border-orange-500/70 hover:shadow-lg hover:shadow-orange-900/30
-          "
-        >
-          {/* LIVE badge */}
-          <div className="absolute top-3 right-3 flex items-center gap-1 
-                          rounded-full bg-red-500/10 border border-red-500/30 
-                          px-2 py-0.5">
-            <span className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse"></span>
-            <span className="text-[10px] font-semibold text-red-400">
-              LIVE
-            </span>
-          </div>
-
-          {/* Teams */}
-          <div className="mt-6 flex items-center justify-between text-sm font-semibold text-gray-100">
-            <span className="truncate max-w-[40%]">
-              {match.team1}
-            </span>
-
-            <span className="text-xs text-gray-500 font-medium">
-              VS
-            </span>
-
-            <span className="truncate max-w-[40%] text-right">
-              {match.team2}
-            </span>
-          </div>
-
-          {/* Footer */}
-          <div className="mt-4 flex items-center justify-between 
-                          border-t border-gray-700/60 pt-3 text-[11px]">
-            <span className="text-cyan-400 font-medium">
-              {match.info}
-            </span>
-
-            <span className="flex items-center gap-1 text-gray-400">
-              🕒 {match.matchTime}
-            </span>
-          </div>
-        </div>
-      ))}
-    </div>
-  </div>
-)}
-
+        {/* Hot Matches Removed */}
 
         <div className="bg-[#111827] p-4 rounded-xl border border-gray-800">
           <div className="mb-4 relative"><input type="text" placeholder="Search for a channel..." className="w-full bg-[#1f2937] text-white text-sm px-4 py-2.5 pl-10 rounded-lg border border-gray-700 focus:outline-none focus:border-cyan-500" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} /><span className="absolute left-3 top-2.5 text-gray-500"></span></div>
           {loading ? <div className="text-center text-gray-500 py-10 animate-pulse">Loading Channels...</div> : (
-            <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-3">
-              {filteredChannels.map(ch => <div key={ch.id} onClick={() => setCurrentChannel(ch)} className={`group relative flex flex-col items-center gap-2 cursor-pointer p-2 rounded-lg transition-all ${currentChannel?.id === ch.id ? "bg-gray-800 ring-1 ring-cyan-500" : "bg-[#1f2937] hover:bg-gray-800"}`}><div className="w-10 h-10 sm:w-12 sm:h-12 bg-black rounded p-1 overflow-hidden shadow-lg relative border border-gray-700">{ch.logo ? <img src={ch.logo} alt={ch.name} className="w-full h-full object-contain" /> : <div className="w-full h-full flex items-center justify-center text-[10px] text-gray-500">TV</div>}</div><span className={`text-[10px] sm:text-xs text-center font-medium line-clamp-1 w-full ${currentChannel?.id === ch.id ? "text-cyan-400" : "text-gray-400 group-hover:text-gray-200"}`}>{ch.name}</span></div>)}
+            // Scrollable Grid Container
+            <div 
+                id="channel-grid-container"
+                className="max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar" 
+                onScroll={handleScroll}
+            >
+                <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-3">
+                {channelsToDisplay.map(ch => <div key={ch.id} onClick={() => setCurrentChannel(ch)} className={`group relative flex flex-col items-center gap-2 cursor-pointer p-2 rounded-lg transition-all ${currentChannel?.id === ch.id ? "bg-gray-800 ring-1 ring-cyan-500" : "bg-[#1f2937] hover:bg-gray-800"}`}><div className="w-10 h-10 sm:w-12 sm:h-12 bg-black rounded p-1 overflow-hidden shadow-lg relative border border-gray-700">{ch.logo ? <img src={ch.logo} alt={ch.name} className="w-full h-full object-contain" /> : <div className="w-full h-full flex items-center justify-center text-[10px] text-gray-500">TV</div>}</div><span className={`text-[10px] sm:text-xs text-center font-medium line-clamp-1 w-full ${currentChannel?.id === ch.id ? "text-cyan-400" : "text-gray-400 group-hover:text-gray-200"}`}>{ch.name}</span></div>)}
+                </div>
             </div>
           )}
         </div>
