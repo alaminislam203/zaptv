@@ -90,7 +90,7 @@ export default function GuidePage() {
       {/* --- HEADER --- */}
       <header className="sticky top-0 z-50 bg-[#0f172a]/80 backdrop-blur border-b border-gray-800">
         <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
-          <Link href="/livetv" className="flex items-center gap-2 group">
+          <Link href="https://toffeetvlive.vercel.app/livesports" className="flex items-center gap-2 group">
             <span className="text-xl">⬅️</span>
             <span className="font-bold text-gray-300 group-hover:text-cyan-400 transition">Back to Live TV</span>
           </Link>
