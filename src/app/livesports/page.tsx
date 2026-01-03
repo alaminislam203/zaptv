@@ -11,6 +11,8 @@ import {
 // নোট: আপনার firebase ফাইলটি কোথায় আছে তা নিশ্চিত করুন
 import { db, rtdb } from "../firebase"; 
 import Link from "next/link";
+// --- নতুন ইমপোর্ট (URL প্যারামিটার পড়ার জন্য) ---
+import { useSearchParams } from "next/navigation"; 
 
 // 2. Dynamic Imports
 import dynamic from "next/dynamic";
@@ -72,9 +74,11 @@ interface AdData {
 }
 
 export default function Home() {
+  // --- নতুন হুক (URL প্যারামিটার পড়ার জন্য) ---
+  const searchParams = useSearchParams();
+
   // Data States
   const [channels, setChannels] = useState<Channel[]>([]);
-  // Matches State Removed
   const [ads, setAds] = useState<AdData[]>([]);
   const [siteConfig, setSiteConfig] = useState<any>({});
   const [onlineUsers, setOnlineUsers] = useState(0);
@@ -101,11 +105,31 @@ export default function Home() {
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const { scrollTop, clientHeight, scrollHeight } = e.currentTarget;
     if (scrollHeight - scrollTop <= clientHeight + 50) {
-        if (visibleCount < filteredChannels.length) {
+        if (visibleCount < channels.length) { // filteredChannels এর বদলে channels ব্যবহার করা হলো simplicity-র জন্য
             setVisibleCount((prev) => prev + 24);
         }
     }
   };
+
+  // --- নতুন লজিক: URL থেকে চ্যানেল প্লে করা ---
+  useEffect(() => {
+    // URL থেকে 'play' প্যারামিটারটি নিবে (যেমন: ?play=sony_ten_2)
+    const channelIdToPlay = searchParams.get("play");
+
+    if (channelIdToPlay && channels.length > 0) {
+      // চ্যানেল লিস্টের মধ্যে ওই ID বা Name এর চ্যানেলটি খুঁজবে
+      const targetChannel = channels.find(
+        (ch) => ch.id === channelIdToPlay || ch.name === channelIdToPlay
+      );
+
+      if (targetChannel) {
+        setCurrentChannel(targetChannel);
+        // অপশনাল: চ্যানেল চালু হওয়ার পর URL ক্লিন করতে চাইলে নিচের লাইনটি আনকমেন্ট করুন
+        // window.history.replaceState(null, "", "/livetv");
+      }
+    }
+  }, [channels, searchParams]);
+
 
   // Random Direct Link Logic
   useEffect(() => {
