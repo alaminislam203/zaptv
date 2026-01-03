@@ -25,7 +25,7 @@ const LoadingPlayer = () => (
 const PlyrPlayer = dynamic(() => import("../../../components/PlyrPlayer"), { 
   ssr: false, loading: () => <LoadingPlayer /> 
 });
-const VideoJSPlayer = dynamic(() => import("../../../../components/VideoJSPlayer"), { 
+const VideoJSPlayer = dynamic(() => import("../../../components/VideoJSPlayer"), { 
   ssr: false, loading: () => <LoadingPlayer /> 
 });
 const NativePlayer = dynamic(() => import("../../../components/NativePlayer"), { 
