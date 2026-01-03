@@ -10,8 +10,7 @@ import {
   ref, onValue, off, set, onDisconnect, serverTimestamp 
 } from "firebase/database";
 
-// Path fix: Assuming firebase.ts is in src/app
-import { db, rtdb } from "../firebase"; 
+import { db, rtdb } from "../firebase"; // Path check: ensure firebase.ts is in src/app
 
 import Link from "next/link";
 import dynamic from "next/dynamic";
@@ -73,7 +72,7 @@ interface AdData {
   link?: string;
 }
 
-// --- M3U Parser Function ---
+// --- M3U Parser Function (Fallback) ---
 const parseM3U = (content: string): Channel[] => {
   const lines = content.split('\n');
   const result: Channel[] = [];
@@ -128,9 +127,6 @@ export default function Home() {
   const [hideReported, setHideReported] = useState(false);
   const [reportedChannelNames, setReportedChannelNames] = useState<Set<string>>(new Set());
 
-  // Infinite Scroll State
-  const [visibleCount, setVisibleCount] = useState(48); // Start with 48 channels
-
   // Player & User States
   const [currentChannel, setCurrentChannel] = useState<Channel | null>(null);
   const [activeSourceIndex, setActiveSourceIndex] = useState<number>(0);
@@ -143,42 +139,18 @@ export default function Home() {
 
   // --- HOOKS ---
 
-  // Calculate unique categories
   const categories = useMemo(() => {
     const uniqueCats = Array.from(new Set(channels.map(ch => ch.category || "Others")));
     return ["All", ...uniqueCats.sort()];
   }, [channels]);
 
-  // Filter Channels logic
-  const filteredChannels = useMemo(() => {
-    return channels.filter(ch => {
-      const matchesSearch = ch.name.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesCategory = selectedCategory === "All" || ch.category === selectedCategory;
-      const matchesStatus = hideReported ? !reportedChannelNames.has(ch.name) : true;
-      return matchesSearch && matchesCategory && matchesStatus;
-    });
-  }, [channels, searchQuery, selectedCategory, hideReported, reportedChannelNames]);
+  const filteredChannels = channels.filter(ch => {
+    const matchesSearch = ch.name.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory = selectedCategory === "All" || ch.category === selectedCategory;
+    const matchesStatus = hideReported ? !reportedChannelNames.has(ch.name) : true;
+    return matchesSearch && matchesCategory && matchesStatus;
+  });
 
-  // Reset visible count when filters change
-  useEffect(() => {
-    setVisibleCount(48);
-    // Scroll the container to top when filter changes (optional, handled via ref if needed)
-    const container = document.getElementById('channel-grid-container');
-    if (container) container.scrollTop = 0;
-  }, [searchQuery, selectedCategory, hideReported]);
-
-  // Handle Scroll to Load More
-  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    const { scrollTop, clientHeight, scrollHeight } = e.currentTarget;
-    // If scrolled to bottom (with 50px buffer)
-    if (scrollHeight - scrollTop <= clientHeight + 50) {
-        if (visibleCount < filteredChannels.length) {
-            setVisibleCount((prev) => prev + 24); // Load 24 more
-        }
-    }
-  };
-
-  // Random Direct Link Logic
   useEffect(() => {
     if (siteConfig?.directLinks && Array.isArray(siteConfig.directLinks) && siteConfig.directLinks.length > 0) {
         const randomIndex = Math.floor(Math.random() * siteConfig.directLinks.length);
@@ -215,27 +187,62 @@ export default function Home() {
     };
   }, []);
 
-  // --- DATA FETCHING ---
+  // --- HYBRID DATA FETCHING (JSON or M3U) ---
   useEffect(() => {
-    const fetchM3UPlaylist = async () => {
+    const fetchPlaylist = async () => {
+      // 1. Playlist URL (এটি M3U বা JSON যেকোনো কিছু হতে পারে)
+      const PLAYLIST_URL = "https://raw.githubusercontent.com/alaminislam203/my_playlist/refs/heads/main/dash.json"; 
+      
       try {
         setLoading(true);
-        const response = await fetch("https://raw.githubusercontent.com/geekyhimanshu/Khu/refs/heads/main/WorldSports.m3u");
+        const response = await fetch(PLAYLIST_URL);
         if (!response.ok) throw new Error("Failed to fetch playlist");
-        const text = await response.text();
-        const parsedChannels = parseM3U(text);
+        
+        const rawText = await response.text();
+        let parsedChannels: Channel[] = [];
+
+        try {
+            // A. Try parsing as JSON first
+            const jsonData = JSON.parse(rawText);
+            
+            // Map JSON to internal Channel structure
+            if (Array.isArray(jsonData)) {
+                parsedChannels = jsonData.map((item: any, idx: number) => ({
+                    id: item.id || `json-${idx}`,
+                    name: item.name || "Unknown",
+                    logo: item.logo || "",
+                    category: item.category || "Others",
+                    is_embed: item.is_embed || false,
+                    // Support both 'sources' array OR simple 'url' field
+                    sources: item.sources || [{ 
+                        label: "Stream 1", 
+                        url: item.url,
+                        drm: item.drm // Optional DRM config in JSON
+                    }] 
+                }));
+                console.log("Loaded as JSON Playlist");
+            } else {
+                throw new Error("Not a JSON array");
+            }
+        } catch (e) {
+            // B. If JSON parse fails, Fallback to M3U parser
+            console.log("Not JSON, trying M3U Parser...");
+            parsedChannels = parseM3U(rawText);
+        }
         
         setChannels(parsedChannels);
         setTotalChannels(parsedChannels.length);
         setLoading(false);
+
       } catch (error) {
-        console.error("Error loading M3U playlist:", error);
+        console.error("Error loading playlist:", error);
         setLoading(false);
       }
     };
 
-    fetchM3UPlaylist();
+    fetchPlaylist();
 
+    // Firebase Listeners
     const unsubAds = onSnapshot(collection(db, "ads"), (snapshot) => {
       const list = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })) as AdData[];
       setAds(list);
@@ -243,7 +250,6 @@ export default function Home() {
     const unsubSettings = onSnapshot(doc(db, "settings", "config"), (docSnap) => {
       if (docSnap.exists()) setSiteConfig(docSnap.data());
     });
-    
     const unsubReports = onSnapshot(collection(db, "reports"), (snapshot) => {
       const reportedSet = new Set<string>();
       snapshot.docs.forEach(doc => {
@@ -394,9 +400,6 @@ export default function Home() {
     );
   }
 
-  // --- RENDERING ---
-  const channelsToDisplay = filteredChannels.slice(0, visibleCount);
-
   return (
     <main className="min-h-screen bg-[#0b1120] text-gray-200 font-sans pb-10 select-none">
       <header className="sticky top-0 z-50 bg-gradient-to-b from-slate-950 to-slate-900 
@@ -503,13 +506,11 @@ export default function Home() {
 
         <div className="bg-[#111827] p-4 rounded-xl border border-gray-800">
           
-          {/* Search Bar */}
           <div className="mb-4 relative">
             <input type="text" placeholder="Search for a channel..." className="w-full bg-[#1f2937] text-white text-sm px-4 py-2.5 pl-10 rounded-lg border border-gray-700 focus:outline-none focus:border-cyan-500" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
             <span className="absolute left-3 top-2.5 text-gray-500">🔍</span>
           </div>
 
-          {/* Controls: Categories + Status Toggle */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
               <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar max-w-full sm:max-w-[70%]">
                 {categories.map((cat) => (
@@ -519,7 +520,6 @@ export default function Home() {
                 ))}
               </div>
               
-              {/* Status Toggle */}
               <label className="flex items-center gap-2 cursor-pointer bg-[#1f2937] px-3 py-1.5 rounded-lg border border-gray-700 hover:bg-gray-800 transition select-none">
                   <div className="relative">
                       <input type="checkbox" className="sr-only" checked={hideReported} onChange={(e) => setHideReported(e.target.checked)} />
@@ -531,32 +531,23 @@ export default function Home() {
           </div>
 
           {loading ? <div className="text-center text-gray-500 py-10 animate-pulse">Loading Channels...</div> : (
-            // --- SCROLLABLE GRID CONTAINER ---
-            <div 
-                id="channel-grid-container"
-                className="max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar" 
-                onScroll={handleScroll}
-            >
-                <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-3">
-                {channelsToDisplay.length > 0 ? (
-                    channelsToDisplay.map(ch => {
-                    const isReported = reportedChannelNames.has(ch.name);
-                    return (
-                        <div key={ch.id} onClick={() => setCurrentChannel(ch)} className={`group relative flex flex-col items-center gap-2 cursor-pointer p-2 rounded-lg transition-all ${currentChannel?.id === ch.id ? "bg-gray-800 ring-1 ring-cyan-500" : "bg-[#1f2937] hover:bg-gray-800"}`}>
-                            {/* Status Dot */}
-                            <div className={`absolute top-2 right-2 w-2 h-2 rounded-full z-10 ${isReported ? "bg-red-500 animate-pulse" : "bg-green-500"}`} title={isReported ? "Reported Issues" : "Online"}></div>
-                            
-                            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-black rounded p-1 overflow-hidden shadow-lg relative border border-gray-700">
-                            {ch.logo ? <img src={ch.logo} alt={ch.name} className="w-full h-full object-contain" /> : <div className="w-full h-full flex items-center justify-center text-[10px] text-gray-500">TV</div>}
-                            </div>
-                            <span className={`text-[10px] sm:text-xs text-center font-medium line-clamp-1 w-full ${currentChannel?.id === ch.id ? "text-cyan-400" : "text-gray-400 group-hover:text-gray-200"}`}>{ch.name}</span>
+            <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-3">
+              {filteredChannels.length > 0 ? (
+                filteredChannels.map(ch => {
+                  const isReported = reportedChannelNames.has(ch.name);
+                  return (
+                    <div key={ch.id} onClick={() => setCurrentChannel(ch)} className={`group relative flex flex-col items-center gap-2 cursor-pointer p-2 rounded-lg transition-all ${currentChannel?.id === ch.id ? "bg-gray-800 ring-1 ring-cyan-500" : "bg-[#1f2937] hover:bg-gray-800"}`}>
+                        <div className={`absolute top-2 right-2 w-2 h-2 rounded-full z-10 ${isReported ? "bg-red-500 animate-pulse" : "bg-green-500"}`} title={isReported ? "Reported Issues" : "Online"}></div>
+                        <div className="w-10 h-10 sm:w-12 sm:h-12 bg-black rounded p-1 overflow-hidden shadow-lg relative border border-gray-700">
+                        {ch.logo ? <img src={ch.logo} alt={ch.name} className="w-full h-full object-contain" /> : <div className="w-full h-full flex items-center justify-center text-[10px] text-gray-500">TV</div>}
                         </div>
-                    );
-                    })
-                ) : (
-                    <div className="col-span-full text-center py-8 text-gray-500 text-sm">No channels found in this category.</div>
-                )}
-                </div>
+                        <span className={`text-[10px] sm:text-xs text-center font-medium line-clamp-1 w-full ${currentChannel?.id === ch.id ? "text-cyan-400" : "text-gray-400 group-hover:text-gray-200"}`}>{ch.name}</span>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="col-span-full text-center py-8 text-gray-500 text-sm">No channels found in this category.</div>
+              )}
             </div>
           )}
         </div>
