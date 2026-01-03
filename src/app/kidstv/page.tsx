@@ -125,8 +125,11 @@ export default function Home() {
   // Filter States
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const [searchQuery, setSearchQuery] = useState("");
-  const [hideReported, setHideReported] = useState(false); // New Filter State
+  const [hideReported, setHideReported] = useState(false);
   const [reportedChannelNames, setReportedChannelNames] = useState<Set<string>>(new Set());
+
+  // Infinite Scroll State
+  const [visibleCount, setVisibleCount] = useState(48); // Start with 48 channels
 
   // Player & User States
   const [currentChannel, setCurrentChannel] = useState<Channel | null>(null);
@@ -146,16 +149,34 @@ export default function Home() {
     return ["All", ...uniqueCats.sort()];
   }, [channels]);
 
-  // Filter Channels logic (Search + Category + Reported Status)
-  const filteredChannels = channels.filter(ch => {
-    const matchesSearch = ch.name.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = selectedCategory === "All" || ch.category === selectedCategory;
-    
-    // Status Filter: If "Hide Reported" is true, exclude channels that are in the reported set
-    const matchesStatus = hideReported ? !reportedChannelNames.has(ch.name) : true;
+  // Filter Channels logic
+  const filteredChannels = useMemo(() => {
+    return channels.filter(ch => {
+      const matchesSearch = ch.name.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesCategory = selectedCategory === "All" || ch.category === selectedCategory;
+      const matchesStatus = hideReported ? !reportedChannelNames.has(ch.name) : true;
+      return matchesSearch && matchesCategory && matchesStatus;
+    });
+  }, [channels, searchQuery, selectedCategory, hideReported, reportedChannelNames]);
 
-    return matchesSearch && matchesCategory && matchesStatus;
-  });
+  // Reset visible count when filters change
+  useEffect(() => {
+    setVisibleCount(48);
+    // Scroll the container to top when filter changes (optional, handled via ref if needed)
+    const container = document.getElementById('channel-grid-container');
+    if (container) container.scrollTop = 0;
+  }, [searchQuery, selectedCategory, hideReported]);
+
+  // Handle Scroll to Load More
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const { scrollTop, clientHeight, scrollHeight } = e.currentTarget;
+    // If scrolled to bottom (with 50px buffer)
+    if (scrollHeight - scrollTop <= clientHeight + 50) {
+        if (visibleCount < filteredChannels.length) {
+            setVisibleCount((prev) => prev + 24); // Load 24 more
+        }
+    }
+  };
 
   // Random Direct Link Logic
   useEffect(() => {
@@ -196,7 +217,6 @@ export default function Home() {
 
   // --- DATA FETCHING ---
   useEffect(() => {
-    // 1. Fetch M3U Playlist
     const fetchM3UPlaylist = async () => {
       try {
         setLoading(true);
@@ -216,7 +236,6 @@ export default function Home() {
 
     fetchM3UPlaylist();
 
-    // 2. Fetch Firebase Data
     const unsubAds = onSnapshot(collection(db, "ads"), (snapshot) => {
       const list = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })) as AdData[];
       setAds(list);
@@ -225,12 +244,10 @@ export default function Home() {
       if (docSnap.exists()) setSiteConfig(docSnap.data());
     });
     
-    // 3. Fetch Reports to identify "Offline/Bad" channels
     const unsubReports = onSnapshot(collection(db, "reports"), (snapshot) => {
       const reportedSet = new Set<string>();
       snapshot.docs.forEach(doc => {
         const data = doc.data();
-        // If status is pending, consider it having issues
         if (data.status === "pending" && data.channelName) {
             reportedSet.add(data.channelName);
         }
@@ -377,6 +394,9 @@ export default function Home() {
     );
   }
 
+  // --- RENDERING ---
+  const channelsToDisplay = filteredChannels.slice(0, visibleCount);
+
   return (
     <main className="min-h-screen bg-[#0b1120] text-gray-200 font-sans pb-10 select-none">
       <header className="sticky top-0 z-50 bg-gradient-to-b from-slate-950 to-slate-900 
@@ -511,25 +531,32 @@ export default function Home() {
           </div>
 
           {loading ? <div className="text-center text-gray-500 py-10 animate-pulse">Loading Channels...</div> : (
-            <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-3">
-              {filteredChannels.length > 0 ? (
-                filteredChannels.map(ch => {
-                  const isReported = reportedChannelNames.has(ch.name);
-                  return (
-                    <div key={ch.id} onClick={() => setCurrentChannel(ch)} className={`group relative flex flex-col items-center gap-2 cursor-pointer p-2 rounded-lg transition-all ${currentChannel?.id === ch.id ? "bg-gray-800 ring-1 ring-cyan-500" : "bg-[#1f2937] hover:bg-gray-800"}`}>
-                        {/* Status Dot */}
-                        <div className={`absolute top-2 right-2 w-2 h-2 rounded-full z-10 ${isReported ? "bg-red-500 animate-pulse" : "bg-green-500"}`} title={isReported ? "Reported Issues" : "Online"}></div>
-                        
-                        <div className="w-10 h-10 sm:w-12 sm:h-12 bg-black rounded p-1 overflow-hidden shadow-lg relative border border-gray-700">
-                        {ch.logo ? <img src={ch.logo} alt={ch.name} className="w-full h-full object-contain" /> : <div className="w-full h-full flex items-center justify-center text-[10px] text-gray-500">TV</div>}
+            // --- SCROLLABLE GRID CONTAINER ---
+            <div 
+                id="channel-grid-container"
+                className="max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar" 
+                onScroll={handleScroll}
+            >
+                <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-3">
+                {channelsToDisplay.length > 0 ? (
+                    channelsToDisplay.map(ch => {
+                    const isReported = reportedChannelNames.has(ch.name);
+                    return (
+                        <div key={ch.id} onClick={() => setCurrentChannel(ch)} className={`group relative flex flex-col items-center gap-2 cursor-pointer p-2 rounded-lg transition-all ${currentChannel?.id === ch.id ? "bg-gray-800 ring-1 ring-cyan-500" : "bg-[#1f2937] hover:bg-gray-800"}`}>
+                            {/* Status Dot */}
+                            <div className={`absolute top-2 right-2 w-2 h-2 rounded-full z-10 ${isReported ? "bg-red-500 animate-pulse" : "bg-green-500"}`} title={isReported ? "Reported Issues" : "Online"}></div>
+                            
+                            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-black rounded p-1 overflow-hidden shadow-lg relative border border-gray-700">
+                            {ch.logo ? <img src={ch.logo} alt={ch.name} className="w-full h-full object-contain" /> : <div className="w-full h-full flex items-center justify-center text-[10px] text-gray-500">TV</div>}
+                            </div>
+                            <span className={`text-[10px] sm:text-xs text-center font-medium line-clamp-1 w-full ${currentChannel?.id === ch.id ? "text-cyan-400" : "text-gray-400 group-hover:text-gray-200"}`}>{ch.name}</span>
                         </div>
-                        <span className={`text-[10px] sm:text-xs text-center font-medium line-clamp-1 w-full ${currentChannel?.id === ch.id ? "text-cyan-400" : "text-gray-400 group-hover:text-gray-200"}`}>{ch.name}</span>
-                    </div>
-                  );
-                })
-              ) : (
-                <div className="col-span-full text-center py-8 text-gray-500 text-sm">No channels found in this category.</div>
-              )}
+                    );
+                    })
+                ) : (
+                    <div className="col-span-full text-center py-8 text-gray-500 text-sm">No channels found in this category.</div>
+                )}
+                </div>
             </div>
           )}
         </div>
