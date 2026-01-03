@@ -220,7 +220,7 @@ export default function Home() {
     const fetchM3UPlaylist = async () => {
       try {
         setLoading(true);
-        const response = await fetch("https://raw.githubusercontent.com/geekyhimanshu/Khu/refs/heads/main/WorldSports.m3u");
+        const response = await fetch("https://raw.githubusercontent.com/alaminislam203/my_playlist/refs/heads/main/dash.m3u");
         if (!response.ok) throw new Error("Failed to fetch playlist");
         const text = await response.text();
         const parsedChannels = parseM3U(text);
