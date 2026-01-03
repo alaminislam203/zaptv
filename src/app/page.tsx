@@ -63,12 +63,20 @@ export default function GuidePage() {
       color: "from-pink-500 to-rose-500"
     },
     {
-      id: 4,
+      id: 5,
       title: "Arabic Playlist",
       desc: "বেইন স্পোর্টস,শারজাহ স্পোর্টস।",
       icon: "🧸",
       link: "/arabictv",
       color: "from-red-500 to-orange-500"
+    },
+    {
+      id: 6,
+      title: "BDIX Playlist",
+      desc: "Bangladeshi, Indian Channel",
+      icon: "🧸",
+      link: "bdixplaylist",
+      color: "from-amber-200 to-yellow-500"
     }
   ];
 
