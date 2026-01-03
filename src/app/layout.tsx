@@ -7,7 +7,6 @@ const geistSans = Geist({
   subsets: ["latin"],
 });
 
-
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
@@ -20,7 +19,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "ToffeePro Live TV",
     description: "Watch unlimited live TV channels for free.",
-    images: ["https://your-domain.com/logo.png"], // এখানে real domain দেবে
+    images: ["https://your-domain.com/logo.png"], 
   },
 };
 
@@ -31,6 +30,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      <head>
+        {/* Mixed Content Error (6006) ফিক্স করার জন্য এই লাইনটি যুক্ত করা হয়েছে */}
+        <meta httpEquiv="Content-Security-Policy" content="upgrade-insecure-requests" />
+      </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         {children}
       </body>
