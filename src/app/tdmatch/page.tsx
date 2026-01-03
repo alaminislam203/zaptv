@@ -118,7 +118,7 @@ export default function MatchPage() {
         {/* --- হিরো সেকশন / ব্যানার --- */}
         <div className="text-center mb-10 space-y-2">
           <h2 className="text-2xl md:text-3xl font-extrabold text-white">
-            Upcoming & Live Matches (${currentDate})
+            Upcoming & Live Matches ({currentDate})
           </h2>
           <p className="text-gray-400 text-sm">
             ফুটবল, ক্রিকেট এবং অন্যান্য খেলার লাইভ আপডেট এবং স্ট্রিমিং লিঙ্ক
