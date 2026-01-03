@@ -25,22 +25,22 @@ const LoadingPlayer = () => (
 );
 
 // Dynamic Player Imports
-const PlyrPlayer = dynamic(() => import("../../components/PlyrPlayer"), { 
+const PlyrPlayer = dynamic(() => import("../../../components/PlyrPlayer"), { 
   ssr: false, loading: () => <LoadingPlayer /> 
 });
-const VideoJSPlayer = dynamic(() => import("../../components/VideoJSPlayer"), { 
+const VideoJSPlayer = dynamic(() => import("../../../components/VideoJSPlayer"), { 
   ssr: false, loading: () => <LoadingPlayer /> 
 });
-const NativePlayer = dynamic(() => import("../../components/NativePlayer"), { 
+const NativePlayer = dynamic(() => import("../../../components/NativePlayer"), { 
   ssr: false, loading: () => <LoadingPlayer /> 
 });
-const ShakaPlayer = dynamic(() => import("../../components/ShakaPlayer"), { 
+const ShakaPlayer = dynamic(() => import("../../../components/ShakaPlayer"), { 
   ssr: false, loading: () => <LoadingPlayer /> 
 });
-const IframePlayer = dynamic(() => import("../../components/IframePlayer"), { 
+const IframePlayer = dynamic(() => import("../../../components/IframePlayer"), { 
   ssr: false 
 });
-const PlayerJSPlayer = dynamic(() => import("../../components/PlayerJSPlayer"), { 
+const PlayerJSPlayer = dynamic(() => import("../../../components/PlayerJSPlayer"), { 
   ssr: false, loading: () => <LoadingPlayer /> 
 });
 
