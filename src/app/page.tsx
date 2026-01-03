@@ -44,7 +44,7 @@ export default function GuidePage() {
       desc: "সনি, স্টার স্পোর্টস, এবং টি-স্পোর্টস এর সব চ্যানেল।",
       icon: "🏆",
       link: "/livesports2",
-      color: "from-blue-500 to-cyan-500"
+      color: "from-teal-200 to-teal-500"
     },
     {
       id: 3,
@@ -61,6 +61,14 @@ export default function GuidePage() {
       icon: "🧸",
       link: "/kidstv",
       color: "from-pink-500 to-rose-500"
+    },
+    {
+      id: 4,
+      title: "Arabic Playlist",
+      desc: "বেইন স্পোর্টস,শারজাহ স্পোর্টস।",
+      icon: "🧸",
+      link: "/arabictv",
+      color: "from-red-500 to-orange-500"
     }
   ];
 
