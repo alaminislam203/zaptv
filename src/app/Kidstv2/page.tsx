@@ -191,7 +191,7 @@ export default function Home() {
   useEffect(() => {
     const fetchPlaylist = async () => {
       // 1. Playlist URL (এটি M3U বা JSON যেকোনো কিছু হতে পারে)
-      const PLAYLIST_URL = "https://raw.githubusercontent.com/atanuroy22/iptv/refs/heads/main/output/kids.m3u"; 
+      const PLAYLIST_URL ="https://raw.githubusercontent.com/atanuroy22/iptv/refs/heads/main/output/kids.m3u"; 
       
       try {
         setLoading(true);
