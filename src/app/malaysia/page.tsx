@@ -191,7 +191,7 @@ export default function Home() {
   useEffect(() => {
     const fetchPlaylist = async () => {
       // 1. Playlist URL (এটি M3U বা JSON যেকোনো কিছু হতে পারে)
-      const PLAYLIST_URL ="https://raw.githubusercontent.com/atanuroy22/iptv/refs/heads/main/output/kids.m3u"; 
+      const PLAYLIST_URL = "https://raw.githubusercontent.com/bugsfreeweb/LiveTVCollector/refs/heads/main/LiveTV/Malaysia/LiveTV.m3u"; 
       
       try {
         setLoading(true);
@@ -458,4 +458,111 @@ export default function Home() {
             <div key={`${currentChannel?.id}-${activeSourceIndex}-${playerType}`} className="w-full h-full">{renderPlayer()}</div>
           </div>
           
-          <div className="bg-[#0f172a] px-3 py-2 flex flex-wrap items-center justify-between gap-
+          <div className="bg-[#0f172a] px-3 py-2 flex flex-wrap items-center justify-between gap-2 text-xs border-t border-gray-800">
+            {currentChannel?.sources[activeSourceIndex]?.url.includes(".m3u8") && !currentChannel.is_embed && (
+                <div className="flex items-center gap-2">
+                  <span className="text-gray-500 hidden sm:block">Engine:</span>
+                  {["plyr", "videojs", "native", "playerjs"].map((type) => (
+                      <button key={type} onClick={() => setPlayerType(type as any)} className={`px-2 py-1 rounded border capitalize ${playerType === type ? "bg-cyan-600 border-cyan-500 text-white" : "bg-gray-800 border-gray-700 text-gray-400"}`}>{type}</button>
+                  ))}
+                </div>
+            )}
+            <div className="flex items-center gap-2 ml-auto">
+              <button onClick={() => document.querySelector("video")?.requestPictureInPicture()} className="px-3 py-1 rounded-md bg-gray-800/60 hover:text-cyan-400 transition" title="PiP">⛶</button>
+              <button onClick={toggleFavorite} className={`px-3 py-1 rounded-md bg-gray-800/60 transition ${isFavorite ? "text-pink-500" : "text-gray-300 hover:text-pink-400"}`} title="Favorite">{isFavorite ? "♥" : "♡"}</button>
+              <button onClick={handleReport} className="px-3 py-1 rounded-md bg-red-900/20 border border-red-500/20 text-red-400 hover:bg-red-900/30 transition" title="Report">⚠ Report</button>
+            </div>
+          </div>
+        </div>
+
+        {activeDirectLink && (
+            <div className="flex justify-center mt-6">
+                <a href={activeDirectLink.url} target="_blank" rel="noopener noreferrer" className="group relative inline-flex items-center gap-2 rounded-full px-8 py-3 font-semibold text-white bg-gradient-to-r from-emerald-600 via-blue-700 to-emerald-700 shadow-lg shadow-emerald-900/40 border border-emerald-400/30 transition-all hover:scale-[1.04]">
+                    <span className="relative tracking-wide">{activeDirectLink.label}</span>
+                </a>
+            </div>
+        )}
+
+        <div className="bg-[#1e293b] p-4 rounded-lg border border-gray-700 flex items-center gap-4">
+           <div className="w-12 h-12 rounded-full bg-black border border-gray-600 overflow-hidden flex-shrink-0">{currentChannel?.logo ? <img src={currentChannel.logo} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-xl">📡</div>}</div>
+           <div className="flex-1">
+             <h2 className="text-lg font-bold text-white">{currentChannel?.name || "Select a Channel"}</h2>
+             <div className="flex items-center gap-2 mt-1">
+                {currentChannel && reportedChannelNames.has(currentChannel.name) ? (
+                    <span className="text-[10px] bg-red-500/10 text-red-400 px-2 py-0.5 rounded border border-red-500/30 flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-red-500"></span> Reported / Unstable</span>
+                ) : (
+                    <span className="text-[10px] bg-green-500/10 text-green-400 px-2 py-0.5 rounded border border-green-500/30 flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-green-500"></span> Online</span>
+                )}
+             </div>
+           </div>
+           {currentChannel && currentChannel.sources.length > 1 && (
+             <div className="flex gap-2 flex-wrap justify-end">
+               {currentChannel.sources.map((src, idx) => <button key={idx} onClick={() => setActiveSourceIndex(idx)} className={`text-xs px-3 py-1.5 rounded font-bold border transition-all ${activeSourceIndex === idx ? "bg-cyan-600 border-cyan-500 text-white" : "bg-gray-800 border-gray-600 hover:bg-gray-700 text-gray-300"}`}>{src.label || `Server ${idx+1}`}</button>)}
+             </div>
+           )}
+        </div>
+
+        {middleAd && <div className="w-full min-h-[40px] bg-[#1e293b] rounded flex flex-col items-center justify-center overflow-hidden border border-gray-800 relative mt-2"><span className="absolute top-0 right-0 bg-gray-700 text-[8px] px-1 text-white">Ad</span>{middleAd.imageUrl ? <a href={middleAd.link || "#"} target="_blank" className="w-full"><img src={middleAd.imageUrl} alt="Ad" className="w-full h-auto object-cover max-h-24" /></a> : <div className="text-center p-2 text-gray-300 text-xs">{middleAd.text}</div>}</div>}
+
+        <div className="bg-[#111827] p-4 rounded-xl border border-gray-800">
+          
+          <div className="mb-4 relative">
+            <input type="text" placeholder="Search for a channel..." className="w-full bg-[#1f2937] text-white text-sm px-4 py-2.5 pl-10 rounded-lg border border-gray-700 focus:outline-none focus:border-cyan-500" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+            <span className="absolute left-3 top-2.5 text-gray-500">🔍</span>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
+              <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar max-w-full sm:max-w-[70%]">
+                {categories.map((cat) => (
+                  <button key={cat} onClick={() => setSelectedCategory(cat)} className={`px-4 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap border transition-all ${selectedCategory === cat ? "bg-gradient-to-r from-cyan-600 to-blue-600 border-cyan-500 text-white" : "bg-[#1f2937] border-gray-700 text-gray-400 hover:bg-gray-800"}`}>
+                    {cat}
+                  </button>
+                ))}
+              </div>
+              
+              <label className="flex items-center gap-2 cursor-pointer bg-[#1f2937] px-3 py-1.5 rounded-lg border border-gray-700 hover:bg-gray-800 transition select-none">
+                  <div className="relative">
+                      <input type="checkbox" className="sr-only" checked={hideReported} onChange={(e) => setHideReported(e.target.checked)} />
+                      <div className={`w-8 h-4 rounded-full shadow-inner transition ${hideReported ? 'bg-green-500' : 'bg-gray-600'}`}></div>
+                      <div className={`dot absolute w-2.5 h-2.5 bg-white rounded-full shadow left-0.5 top-0.5 transition transform ${hideReported ? 'translate-x-4' : 'translate-x-0'}`}></div>
+                  </div>
+                  <span className="text-xs text-gray-300 font-medium whitespace-nowrap">Show Stable Only</span>
+              </label>
+          </div>
+
+          {loading ? <div className="text-center text-gray-500 py-10 animate-pulse">Loading Channels...</div> : (
+            <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-3">
+              {filteredChannels.length > 0 ? (
+                filteredChannels.map(ch => {
+                  const isReported = reportedChannelNames.has(ch.name);
+                  return (
+                    <div key={ch.id} onClick={() => setCurrentChannel(ch)} className={`group relative flex flex-col items-center gap-2 cursor-pointer p-2 rounded-lg transition-all ${currentChannel?.id === ch.id ? "bg-gray-800 ring-1 ring-cyan-500" : "bg-[#1f2937] hover:bg-gray-800"}`}>
+                        <div className={`absolute top-2 right-2 w-2 h-2 rounded-full z-10 ${isReported ? "bg-red-500 animate-pulse" : "bg-green-500"}`} title={isReported ? "Reported Issues" : "Online"}></div>
+                        <div className="w-10 h-10 sm:w-12 sm:h-12 bg-black rounded p-1 overflow-hidden shadow-lg relative border border-gray-700">
+                        {ch.logo ? <img src={ch.logo} alt={ch.name} className="w-full h-full object-contain" /> : <div className="w-full h-full flex items-center justify-center text-[10px] text-gray-500">TV</div>}
+                        </div>
+                        <span className={`text-[10px] sm:text-xs text-center font-medium line-clamp-1 w-full ${currentChannel?.id === ch.id ? "text-cyan-400" : "text-gray-400 group-hover:text-gray-200"}`}>{ch.name}</span>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="col-span-full text-center py-8 text-gray-500 text-sm">No channels found in this category.</div>
+              )}
+            </div>
+          )}
+        </div>
+
+        <div className="bg-[#1e293b] rounded-lg p-3 border border-gray-800 flex flex-col items-center justify-center mb-8 space-y-2">
+            <div className="flex items-center space-x-6 text-xs text-gray-400">
+                <div className="text-center"><p className="font-bold text-lg text-green-400">{onlineUsers}</p><p className="text-gray-500">Online</p></div>
+                <div className="border-l border-gray-600 h-8"></div>
+                <div className="text-center"><p className="font-bold text-lg text-cyan-400">{totalVisitors}</p><p className="text-gray-500">Visitors</p></div>
+              <div className="border-l border-gray-600 h-8"></div>
+               <div className="text-center"><p className="font-bold text-lg text-cyan-400">{totalChannels}</p><p className="text-gray-500">Channels</p></div>
+            </div>
+            <div className="text-[10px] text-gray-400 text-center pt-2 border-t border-gray-700 w-full mt-2">&copy; 2026 ToffeePro Streaming. All rights reserved.</div>
+        </div>
+      </div>
+    </main>
+  );
+}
