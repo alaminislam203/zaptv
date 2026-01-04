@@ -24,22 +24,22 @@ const LoadingPlayer = () => (
 );
 
 // Dynamic Player Imports
-const PlyrPlayer = dynamic(() => import("../../../components/PlyrPlayer"), { 
+const PlyrPlayer = dynamic(() => import("../../components/PlyrPlayer"), { 
   ssr: false, loading: () => <LoadingPlayer /> 
 });
-const VideoJSPlayer = dynamic(() => import("../../../components/VideoJSPlayer"), { 
+const VideoJSPlayer = dynamic(() => import("../../components/VideoJSPlayer"), { 
   ssr: false, loading: () => <LoadingPlayer /> 
 });
-const NativePlayer = dynamic(() => import("../../../components/NativePlayer"), { 
+const NativePlayer = dynamic(() => import("../../components/NativePlayer"), { 
   ssr: false, loading: () => <LoadingPlayer /> 
 });
-const ShakaPlayer = dynamic(() => import("../../../components/ShakaPlayer"), { 
+const ShakaPlayer = dynamic(() => import("../../components/ShakaPlayer"), { 
   ssr: false, loading: () => <LoadingPlayer /> 
 });
-const IframePlayer = dynamic(() => import("../../../components/IframePlayer"), { 
+const IframePlayer = dynamic(() => import("../../components/IframePlayer"), { 
   ssr: false 
 });
-const PlayerJSPlayer = dynamic(() => import("../../../components/PlayerJSPlayer"), { 
+const PlayerJSPlayer = dynamic(() => import("../../components/PlayerJSPlayer"), { 
   ssr: false, loading: () => <LoadingPlayer /> 
 });
 
@@ -530,24 +530,27 @@ export default function Home() {
               </label>
           </div>
 
+          {/* SCROLLABLE GRID CONTAINER ADDED HERE */}
           {loading ? <div className="text-center text-gray-500 py-10 animate-pulse">Loading Channels...</div> : (
-            <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-3">
-              {filteredChannels.length > 0 ? (
-                filteredChannels.map(ch => {
-                  const isReported = reportedChannelNames.has(ch.name);
-                  return (
-                    <div key={ch.id} onClick={() => setCurrentChannel(ch)} className={`group relative flex flex-col items-center gap-2 cursor-pointer p-2 rounded-lg transition-all ${currentChannel?.id === ch.id ? "bg-gray-800 ring-1 ring-cyan-500" : "bg-[#1f2937] hover:bg-gray-800"}`}>
-                        <div className={`absolute top-2 right-2 w-2 h-2 rounded-full z-10 ${isReported ? "bg-red-500 animate-pulse" : "bg-green-500"}`} title={isReported ? "Reported Issues" : "Online"}></div>
-                        <div className="w-10 h-10 sm:w-12 sm:h-12 bg-black rounded p-1 overflow-hidden shadow-lg relative border border-gray-700">
-                        {ch.logo ? <img src={ch.logo} alt={ch.name} className="w-full h-full object-contain" /> : <div className="w-full h-full flex items-center justify-center text-[10px] text-gray-500">TV</div>}
+            <div className="max-h-[500px] sm:max-h-[600px] overflow-y-auto pr-1 custom-scrollbar">
+                <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-3">
+                {filteredChannels.length > 0 ? (
+                    filteredChannels.map(ch => {
+                    const isReported = reportedChannelNames.has(ch.name);
+                    return (
+                        <div key={ch.id} onClick={() => setCurrentChannel(ch)} className={`group relative flex flex-col items-center gap-2 cursor-pointer p-2 rounded-lg transition-all ${currentChannel?.id === ch.id ? "bg-gray-800 ring-1 ring-cyan-500" : "bg-[#1f2937] hover:bg-gray-800"}`}>
+                            <div className={`absolute top-2 right-2 w-2 h-2 rounded-full z-10 ${isReported ? "bg-red-500 animate-pulse" : "bg-green-500"}`} title={isReported ? "Reported Issues" : "Online"}></div>
+                            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-black rounded p-1 overflow-hidden shadow-lg relative border border-gray-700">
+                            {ch.logo ? <img src={ch.logo} alt={ch.name} className="w-full h-full object-contain" /> : <div className="w-full h-full flex items-center justify-center text-[10px] text-gray-500">TV</div>}
+                            </div>
+                            <span className={`text-[10px] sm:text-xs text-center font-medium line-clamp-1 w-full ${currentChannel?.id === ch.id ? "text-cyan-400" : "text-gray-400 group-hover:text-gray-200"}`}>{ch.name}</span>
                         </div>
-                        <span className={`text-[10px] sm:text-xs text-center font-medium line-clamp-1 w-full ${currentChannel?.id === ch.id ? "text-cyan-400" : "text-gray-400 group-hover:text-gray-200"}`}>{ch.name}</span>
-                    </div>
-                  );
-                })
-              ) : (
-                <div className="col-span-full text-center py-8 text-gray-500 text-sm">No channels found in this category.</div>
-              )}
+                    );
+                    })
+                ) : (
+                    <div className="col-span-full text-center py-8 text-gray-500 text-sm">No channels found in this category.</div>
+                )}
+                </div>
             </div>
           )}
         </div>
