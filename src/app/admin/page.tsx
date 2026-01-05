@@ -5,6 +5,7 @@ import {
   onSnapshot, query, orderBy 
 } from "firebase/firestore";
 import { db } from "../firebase";
+// Recharts for Dashboard Analytics
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell } from 'recharts';
 
 // --- ICONS (SVG Components) ---
@@ -170,13 +171,13 @@ export default function AdminPanel() {
                     </div>
                 </div>
                 <div className="lg:col-span-2 space-y-4">
-                     <div className="flex flex-col sm:flex-row justify-between items-center gap-3 bg-[#1e293b] p-3 rounded-xl border border-gray-700">
-                         <h2 className="text-lg font-bold text-white">All Channels <span className="text-gray-500 text-sm">({channels.length})</span></h2>
-                         <div className="relative w-full sm:w-64"><input className="w-full bg-gray-900 border border-gray-700 py-2 px-3 pl-9 rounded-lg text-sm focus:border-cyan-500 outline-none transition" placeholder="Search by name or category..." value={searchTerm} onChange={e=>setSearchTerm(e.target.value)} /><span className="absolute left-3 top-2.5 text-gray-500"><Icons.Search/></span>{searchTerm && (<button onClick={()=>setSearchTerm("")} className="absolute right-3 top-2.5 text-gray-500 hover:text-white">✖</button>)}</div>
-                     </div>
-                     <div className="grid grid-cols-1 gap-3 max-h-[80vh] overflow-y-auto custom-scrollbar pr-2">
+                      <div className="flex flex-col sm:flex-row justify-between items-center gap-3 bg-[#1e293b] p-3 rounded-xl border border-gray-700">
+                          <h2 className="text-lg font-bold text-white">All Channels <span className="text-gray-500 text-sm">({channels.length})</span></h2>
+                          <div className="relative w-full sm:w-64"><input className="w-full bg-gray-900 border border-gray-700 py-2 px-3 pl-9 rounded-lg text-sm focus:border-cyan-500 outline-none transition" placeholder="Search by name or category..." value={searchTerm} onChange={e=>setSearchTerm(e.target.value)} /><span className="absolute left-3 top-2.5 text-gray-500"><Icons.Search/></span>{searchTerm && (<button onClick={()=>setSearchTerm("")} className="absolute right-3 top-2.5 text-gray-500 hover:text-white">✖</button>)}</div>
+                      </div>
+                      <div className="grid grid-cols-1 gap-3 max-h-[80vh] overflow-y-auto custom-scrollbar pr-2">
                         {filteredChannels.length > 0 ? (filteredChannels.map(ch => (<div key={ch.id} className="bg-[#1e293b] p-4 rounded-xl border border-gray-700 flex justify-between items-center hover:border-gray-500 transition group"><div className="flex items-center gap-4"><div className="w-12 h-12 bg-black rounded-lg p-1 border border-gray-600 overflow-hidden"><img src={ch.logo} alt="logo" className="w-full h-full object-contain"/></div><div><h3 className="font-bold text-gray-200 group-hover:text-cyan-400 transition">{ch.name}</h3><div className="flex gap-2 mt-1"><span className="text-[10px] bg-gray-700 px-2 py-0.5 rounded text-gray-300">{ch.category}</span><span className="text-[10px] text-gray-500 border border-gray-700 px-2 py-0.5 rounded">{ch.sources.length} Links</span></div></div></div><div className="flex gap-2"><button onClick={()=>{ setEditingId(ch.id!); setChannelForm(ch); }} className="p-2 bg-blue-600/20 text-blue-400 rounded-lg hover:bg-blue-600 hover:text-white transition" title="Edit"><Icons.Edit/></button><button onClick={()=>handleDelete("channels", ch.id!)} className="p-2 bg-red-600/20 text-red-400 rounded-lg hover:bg-red-600 hover:text-white transition" title="Delete"><Icons.Delete/></button></div></div>))) : (<div className="text-center py-10 text-gray-500 bg-[#1e293b] rounded-xl border border-gray-800">No channels found matching "{searchTerm}"</div>)}
-                     </div>
+                      </div>
                 </div>
              </div>
         )}
