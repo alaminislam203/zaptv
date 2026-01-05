@@ -246,6 +246,9 @@ export default function HomePage() {
                             </div>
                         </div>
                     </div>
+                  <p className="text-xs text-gray-400 mt-2">
+                        *আমরা থার্ড পার্টি লিংক ব্যবহার করি, তাই এডের ওপর আমাদের পূর্ণ নিয়ন্ত্রণ নেই। দয়া করে এসব এডে ক্লিক করা থেকে বিরত থাকুন।
+                    </p>
                 </div>
             </div>
         </section>
