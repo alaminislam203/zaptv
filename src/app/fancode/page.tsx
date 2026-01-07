@@ -55,7 +55,7 @@ export default function FanCodePage() {
   useEffect(() => {
     const fetchEvents = async () => {
       try {
-        const res = await fetch("https://raw.githubusercontent.com/drmlive/fancode-live-events/refs/heads/main/fancode.json");
+        const res = await fetch("https://raw.githubusercontent.com/alaminislam203/my_playlist/refs/heads/main/fancode.json");
         const data = await res.json();
         // নিশ্চিত করি data একটি অ্যারে
         if (Array.isArray(data)) {
