@@ -14,8 +14,8 @@ const LoadingPlayer = () => (
 );
 
 // আপনার তৈরি করা কাস্টম প্লেয়ারগুলো ইমপোর্ট করুন
-const PlyrPlayer = dynamic(() => import("../../components/PlyrPlayer"), { ssr: false, loading: () => <LoadingPlayer /> });
-const NativePlayer = dynamic(() => import("../../components/NativePlayer"), { ssr: false, loading: () => <LoadingPlayer /> });
+const PlyrPlayer = dynamic(() => import("../../../components/PlyrPlayer"), { ssr: false, loading: () => <LoadingPlayer /> });
+const NativePlayer = dynamic(() => import("../../../components/NativePlayer"), { ssr: false, loading: () => <LoadingPlayer /> });
 
 // --- ICONS ---
 const Icons = {
