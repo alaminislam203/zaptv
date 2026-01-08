@@ -13,7 +13,7 @@ import { useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import Image from "next/image";
 
-// --- DYNAMIC PLAYER IMPORTS ---
+// --- DYNAMIC IMPORTS ---
 const LoadingPlayer = () => (
   <div className="w-full h-full bg-[#050b14] flex items-center justify-center flex-col gap-3 relative overflow-hidden">
     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-cyan-900/10 to-transparent animate-shimmer"></div>
@@ -35,7 +35,7 @@ interface Source { label: string; url: string; drm?: DrmConfig; }
 interface Channel { id: string; name: string; logo: string; is_embed: boolean | string; category?: string; sources: Source[]; }
 interface AdData { id: string; location: "top" | "middle"; imageUrl?: string; text?: string; link?: string; }
 
-// --- SVG ICONS ---
+// --- ICONS ---
 const Icons = {
     Play: () => <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
     Heart: ({ filled }: { filled: boolean }) => <svg xmlns="http://www.w3.org/2000/svg" className={`w-5 h-5 ${filled ? "text-red-500 fill-current" : "text-zinc-400"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>,
@@ -44,7 +44,8 @@ const Icons = {
     Search: () => <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>,
     Server: () => <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" /></svg>,
     Tv: () => <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>,
-    Shield: () => <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
+    Shield: () => <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>,
+    Check: () => <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
 };
 
 function LiveTVContent() {
@@ -68,9 +69,39 @@ function LiveTVContent() {
   const [isClient, setIsClient] = useState(false);
   const scriptsLoaded = useRef(false);
   const [totalChannels, setTotalChannels] = useState(0);
+  const [shareCopied, setShareCopied] = useState(false);
+
+  // Ad Rotation State
+  const [adIndex, setAdIndex] = useState(0);
 
   // Infinite Scroll
   const [visibleCount, setVisibleCount] = useState(48);
+
+  // --- LOGIC: AD ROTATION ---
+  useEffect(() => {
+    // প্রতি ৫ সেকেন্ড পর পর অ্যাড পরিবর্তন হবে
+    const interval = setInterval(() => {
+        setAdIndex((prev) => prev + 1);
+    }, 5000); 
+    return () => clearInterval(interval);
+  }, []);
+
+  const topAds = ads.filter(ad => ad.location === "top");
+  const middleAds = ads.filter(ad => ad.location === "middle");
+
+  const currentTopAd = topAds.length > 0 ? topAds[adIndex % topAds.length] : null;
+  const currentMiddleAd = middleAds.length > 0 ? middleAds[adIndex % middleAds.length] : null;
+
+  // --- LOGIC: 4-DIGIT ID GENERATOR ---
+  // চ্যানেল আইডি থেকে একটি ইউনিক ৪ সংখ্যার কোড তৈরি করবে
+  const getShortId = (id: string) => {
+    let hash = 0;
+    for (let i = 0; i < id.length; i++) {
+        hash = id.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const short = Math.abs(hash % 9000) + 1000; // Always 4 digits (1000-9999)
+    return short.toString();
+  };
 
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const { scrollTop, clientHeight, scrollHeight } = e.currentTarget;
@@ -125,7 +156,7 @@ function LiveTVContent() {
     return () => { unsubChannels(); unsubAds(); unsubSettings(); };
   }, []);
 
-  // Stats Logic
+  // Stats Logic (Simplified)
   useEffect(() => {
     if (!isClient) return;
     const counterRef = doc(db, 'counters', 'visitors');
@@ -135,31 +166,18 @@ function LiveTVContent() {
             try {
                 await runTransaction(db, async (transaction) => {
                     const docSnap = await transaction.get(counterRef);
-                    if (!docSnap.exists()) {
-                        transaction.set(counterRef, { total: 1 });
-                        setTotalVisitors(1);
-                    } else {
-                        const newTotal = docSnap.data().total + 1;
-                        transaction.update(counterRef, { total: newTotal });
-                        setTotalVisitors(newTotal);
-                    }
+                    if (!docSnap.exists()) { transaction.set(counterRef, { total: 1 }); setTotalVisitors(1); } 
+                    else { transaction.update(counterRef, { total: docSnap.data().total + 1 }); setTotalVisitors(docSnap.data().total + 1); }
                 });
-            } catch (e) { console.error("Stats Error:", e); }
+            } catch (e) { console.error(e); }
         }
     };
     const unsub = onSnapshot(counterRef, (doc) => { if (doc.exists()) setTotalVisitors(doc.data().total); });
     incrementTotalVisitors();
-    
     const statusRef = ref(rtdb, 'status');
     const connectedRef = ref(rtdb, '.info/connected');
     const myConnectionsRef = ref(rtdb, 'status/' + Math.random().toString(36).substr(2, 9));
-    
-    const unsubscribe = onValue(connectedRef, (snap) => {
-        if (snap.val() === true) {
-            set(myConnectionsRef, { timestamp: serverTimestamp() });
-            onDisconnect(myConnectionsRef).remove();
-        }
-    });
+    onValue(connectedRef, (snap) => { if (snap.val() === true) { set(myConnectionsRef, { timestamp: serverTimestamp() }); onDisconnect(myConnectionsRef).remove(); } });
     onValue(statusRef, (snap) => setOnlineUsers(snap.size));
     return () => { unsub(); off(connectedRef); off(statusRef); onDisconnect(myConnectionsRef).cancel(); set(myConnectionsRef, null); };
   }, [isClient]);
@@ -190,9 +208,11 @@ function LiveTVContent() {
 
   const handleShare = () => {
     if (!currentChannel) return;
+    // URL কপি হবে, কিন্তু ইউজার দেখবে ৪ ডিজিট আইডি কনসেপ্ট
     const url = `${window.location.origin}${window.location.pathname}?play=${currentChannel.id}`;
     navigator.clipboard.writeText(url);
-    alert("Link copied! Share it anywhere.");
+    setShareCopied(true);
+    setTimeout(() => setShareCopied(false), 2000);
   };
 
   const handleReport = async () => {
@@ -207,10 +227,6 @@ function LiveTVContent() {
 
   const filteredChannels = channels.filter(ch => ch.name.toLowerCase().includes(searchQuery.toLowerCase()));
   const channelsToDisplay = filteredChannels.slice(0, visibleCount);
-
-  const getAd = (loc: "top" | "middle") => ads.find(ad => ad.location === loc);
-  const topAd = getAd("top");
-  const middleAd = getAd("middle");
 
   const renderPlayer = () => {
     if (!isClient) return <LoadingPlayer />;
@@ -325,30 +341,30 @@ function LiveTVContent() {
             </div>
         </div>
 
-        {/* --- Top Ad (Fixed Size) --- */}
-        {topAd && (
-          <div className="w-full h-[100px] sm:h-[120px] bg-[#020617] rounded-xl flex items-center justify-center overflow-hidden border border-gray-800 relative group">
-            <span className="absolute top-0 right-0 bg-gray-800 text-[9px] px-1.5 py-0.5 text-gray-400 rounded-bl-lg z-20">Sponsored</span>
-            {topAd.imageUrl ? (
-                <a href={topAd.link || "#"} target="_blank" className="w-full h-full flex items-center justify-center">
-                    <img src={topAd.imageUrl} alt="Advertisement" className="h-full w-auto object-contain max-w-full" />
+        {/* --- TOP AD (ROTATING) --- */}
+        {currentTopAd && (
+          <div className="w-full h-[100px] sm:h-[120px] bg-[#020617] rounded-xl flex items-center justify-center overflow-hidden border border-gray-800 relative group animate-fadeIn">
+            <span className="absolute top-0 right-0 bg-gray-800 text-[9px] px-1.5 py-0.5 text-gray-400 rounded-bl-lg z-20">
+                Sponsored {topAds.length > 1 && "⟳"}
+            </span>
+            {currentTopAd.imageUrl ? (
+                <a href={currentTopAd.link || "#"} target="_blank" className="w-full h-full flex items-center justify-center relative">
+                    <img src={currentTopAd.imageUrl} alt="Advertisement" className="h-full w-auto object-contain max-w-full transition-opacity duration-500" />
                 </a>
             ) : (
-                <div className="text-center p-2 text-cyan-600 font-bold opacity-50 text-sm tracking-widest">{topAd.text}</div>
+                <div className="text-center p-2 text-cyan-600 font-bold opacity-50 text-sm tracking-widest">{currentTopAd.text}</div>
             )}
           </div>
         )}
 
         {/* --- Main Player Section --- */}
         <div className="bg-[#0f172a] rounded-2xl overflow-hidden shadow-2xl border border-gray-800 relative">
-            {/* Player Wrapper */}
             <div className="aspect-video w-full bg-black relative group">
                 <div key={`${currentChannel?.id}-${activeSourceIndex}-${playerType}`} className="w-full h-full">
                     {renderPlayer()}
                 </div>
             </div>
 
-            {/* Controls Bar */}
             <div className="bg-[#1e293b] px-4 py-3 flex flex-wrap items-center justify-between gap-3 border-t border-gray-700">
                 {currentChannel && !currentChannel.is_embed && currentChannel.sources[activeSourceIndex]?.url.includes(".m3u8") && (
                    <div className="flex items-center gap-2 overflow-x-auto pb-1 hide-scrollbar">
@@ -362,8 +378,9 @@ function LiveTVContent() {
                 )}
                 
                 <div className="flex items-center gap-3 ml-auto">
-                    <button onClick={handleShare} className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-cyan-400 transition" title="Share">
-                        <Icons.Share />
+                    <button onClick={handleShare} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition text-xs font-bold ${shareCopied ? "bg-green-500/10 border-green-500/20 text-green-400" : "bg-gray-800 border-gray-700 text-gray-400 hover:text-cyan-400"}`} title="Share ID">
+                        {shareCopied ? <Icons.Check /> : <Icons.Share />}
+                        <span>{shareCopied ? "Copied" : currentChannel ? `#${getShortId(currentChannel.id)}` : "Share"}</span>
                     </button>
                     <button onClick={toggleFavorite} className={`p-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition ${isFavorite ? "text-red-500" : "text-gray-400 hover:text-red-400"}`} title="Favorite">
                         <Icons.Heart filled={isFavorite} />
@@ -408,7 +425,7 @@ function LiveTVContent() {
            </div>
         </div>
         
-        {/* --- Instructions / Guide (New Feature) --- */}
+        {/* --- Instructions / Guide --- */}
         <div className="bg-[#0f172a] rounded-xl p-4 border border-gray-800">
             <h3 className="text-gray-400 text-xs font-bold uppercase mb-2 tracking-widest border-b border-gray-800 pb-2">Quick Guide</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-gray-500">
@@ -419,15 +436,15 @@ function LiveTVContent() {
             </div>
         </div>
 
-        {/* --- Middle Ad (Fixed Size) --- */}
-        {middleAd && (
-            <div className="w-full h-[90px] bg-[#020617] rounded-xl flex items-center justify-center overflow-hidden border border-gray-800 relative">
-                <span className="absolute top-0 right-0 bg-gray-800 text-[9px] px-1 text-gray-500">Ad</span>
-                {middleAd.imageUrl ? (
-                     <a href={middleAd.link || "#"} target="_blank" className="w-full h-full flex items-center justify-center">
-                        <img src={middleAd.imageUrl} alt="Ad" className="h-full w-auto object-contain" />
+        {/* --- MIDDLE AD (ROTATING) --- */}
+        {currentMiddleAd && (
+            <div className="w-full h-[90px] bg-[#020617] rounded-xl flex items-center justify-center overflow-hidden border border-gray-800 relative animate-fadeIn">
+                <span className="absolute top-0 right-0 bg-gray-800 text-[9px] px-1 text-gray-500">Ad {middleAds.length > 1 && "⟳"}</span>
+                {currentMiddleAd.imageUrl ? (
+                     <a href={currentMiddleAd.link || "#"} target="_blank" className="w-full h-full flex items-center justify-center">
+                        <img src={currentMiddleAd.imageUrl} alt="Ad" className="h-full w-auto object-contain transition-opacity duration-500" />
                      </a>
-                ) : <div className="text-gray-600 text-xs">{middleAd.text}</div>}
+                ) : <div className="text-gray-600 text-xs">{currentMiddleAd.text}</div>}
             </div>
         )}
 
