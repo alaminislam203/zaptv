@@ -9,7 +9,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGri
 
 // --- ICONS (SVG) ---
 const Icons = {
-  Dashboard: () => <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>,
+  Dashboard: () => <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>,
   Money: () => <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
   Ads: () => <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" /></svg>,
   Check: () => <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>,
@@ -44,19 +44,17 @@ export default function AdAdminPanel() {
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState<{msg: string, type: 'success' | 'error'} | null>(null);
   
-  // Auth State
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
 
-  // Data States
   const [deposits, setDeposits] = useState<any[]>([]);
   const [pendingCampaigns, setPendingCampaigns] = useState<any[]>([]);
   const [config, setConfig] = useState({
     min_deposit: 100,
     rates: { min_cpc: 2.0, min_cpv: 0.20 },
     fraud_protection: { click_cooldown: 10, block_vpn: true },
-    payment_info: { bkash: "", nagad: "", binance: "" } // Added Binance
+    payment_info: { bkash: "", nagad: "", binance: "" }
   });
 
   const showToast = (msg: string, type: 'success' | 'error' = 'success') => {
@@ -64,7 +62,6 @@ export default function AdAdminPanel() {
     setTimeout(() => setToast(null), 3000);
   };
 
-  // --- 1. AUTH CHECK & PERSISTENCE ---
   useEffect(() => {
     const session = localStorage.getItem("admin_session");
     if(session === "valid_token_secure_v1") {
@@ -73,7 +70,6 @@ export default function AdAdminPanel() {
   }, []);
 
   const handleLogin = () => {
-    // Hardcoded Secure Login (You can change credentials here)
     if(username === "admin" && password === "sajid@1234") {
         localStorage.setItem("admin_session", "valid_token_secure_v1");
         setIsAuthenticated(true);
@@ -88,27 +84,22 @@ export default function AdAdminPanel() {
     setIsAuthenticated(false);
   };
 
-  // --- 2. FETCH DATA ---
   useEffect(() => {
     if(!isAuthenticated) return;
 
-    // Fetch Config
     const unsubConfig = onSnapshot(doc(db, "ad_config", "global_settings"), (doc) => {
       if (doc.exists()) setConfig(doc.data() as any);
     });
 
-    // Fetch Pending Deposits
     const qDep = query(collection(db, "deposits"), orderBy("timestamp", "desc"));
     const unsubDep = onSnapshot(qDep, (snap) => setDeposits(snap.docs.map(d => ({id: d.id, ...d.data()}))));
 
-    // Fetch Pending Campaigns
     const qCam = query(collection(db, "campaigns"), orderBy("created_at", "desc"));
     const unsubCam = onSnapshot(qCam, (snap) => setPendingCampaigns(snap.docs.map(d => ({id: d.id, ...d.data()}))));
 
     return () => { unsubConfig(); unsubDep(); unsubCam(); };
   }, [isAuthenticated]);
 
-  // --- ACTIONS ---
   const saveConfig = async () => {
     setLoading(true);
     try {
@@ -120,45 +111,51 @@ export default function AdAdminPanel() {
     setLoading(false);
   };
 
+  // --- FIXED PROCESS DEPOSIT FUNCTION ---
   const processDeposit = async (deposit: any, action: 'approved' | 'rejected') => {
     if(!confirm(`Confirm ${action} for ${deposit.amount} TK?`)) return;
     
+    setLoading(true);
     try {
       await runTransaction(db, async (transaction) => {
         const depositRef = doc(db, "deposits", deposit.id);
-        const currentDeposit = await transaction.get(depositRef);
-        
-        if (currentDeposit.data()?.status !== 'pending' && action === 'approved') {
-            throw new Error("Already processed!");
-        }
+        const depositDoc = await transaction.get(depositRef);
 
-        transaction.update(depositRef, { status: action });
+        if (!depositDoc.exists()) throw "Deposit document missing!";
+        if (depositDoc.data().status !== 'pending' && action === 'approved') throw "Already processed!";
 
         if (action === 'approved') {
-          const userRef = doc(db, "users", deposit.user_id);
+          const userId = deposit.user_id || deposit.uid;
+          if (!userId) throw "User ID missing!";
+
+          const userRef = doc(db, "users", userId);
           const userDoc = await transaction.get(userRef);
-          
+          const amount = Number(deposit.amount);
+
           if (!userDoc.exists()) {
              transaction.set(userRef, { 
-                uid: deposit.user_id,
-                wallet: { current_balance: Number(deposit.amount), total_deposited: Number(deposit.amount), total_spent: 0 }
+                uid: userId,
+                email: deposit.email || "unknown",
+                wallet: { current_balance: amount, total_deposited: amount, total_spent: 0 }
              });
           } else {
              const userData = userDoc.data();
-             const newBalance = (userData.wallet?.current_balance || 0) + Number(deposit.amount);
-             const newTotal = (userData.wallet?.total_deposited || 0) + Number(deposit.amount);
+             const newBalance = (userData.wallet?.current_balance || 0) + amount;
+             const newTotal = (userData.wallet?.total_deposited || 0) + amount;
              transaction.update(userRef, { 
                 "wallet.current_balance": newBalance,
                 "wallet.total_deposited": newTotal
              });
           }
         }
+        transaction.update(depositRef, { status: action });
       });
       showToast(`Deposit ${action} successfully!`, "success");
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      showToast("Error processing transaction.", "error");
+      showToast(`Error: ${e.message || e}`, "error");
     }
+    setLoading(false);
   };
 
   const processCampaign = async (id: string, status: 'active' | 'rejected') => {
@@ -170,7 +167,6 @@ export default function AdAdminPanel() {
     }
   };
 
-  // --- LOGIN UI ---
   if(!isAuthenticated) {
     return (
         <div className="min-h-screen bg-[#050b14] flex items-center justify-center p-4">
@@ -190,12 +186,10 @@ export default function AdAdminPanel() {
     )
   }
 
-  // --- DASHBOARD UI ---
   return (
     <div className="min-h-screen bg-[#09090b] text-gray-200 font-sans flex flex-col md:flex-row">
       {toast && <Toast msg={toast.msg} type={toast.type} onClose={()=>setToast(null)}/>}
       
-      {/* Sidebar */}
       <aside className="w-full md:w-64 bg-[#121215] border-r border-gray-800 flex flex-col md:h-screen sticky top-0 z-50">
          <div className="p-6 border-b border-gray-800"><h2 className="text-2xl font-black text-white">Ads<span className="text-indigo-500">Panel</span></h2></div>
          <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
@@ -214,10 +208,8 @@ export default function AdAdminPanel() {
          <div className="p-4 border-t border-gray-800"><button onClick={handleLogout} className="w-full flex items-center justify-center gap-2 text-red-400 hover:bg-red-900/30 p-3 rounded-xl transition text-sm font-bold"><Icons.Logout /> Logout</button></div>
       </aside>
 
-      {/* Main Content */}
       <main className="flex-1 p-6 md:p-10 overflow-y-auto">
         
-        {/* --- DASHBOARD OVERVIEW --- */}
         {activeTab === 'dashboard' && (
             <div className="space-y-8 animate-fadeIn">
                 <h2 className="text-2xl font-bold text-white mb-4">Network Overview</h2>
@@ -240,7 +232,6 @@ export default function AdAdminPanel() {
                     </div>
                 </div>
 
-                {/* Advanced Charts (Recharts) */}
                 <div className="grid lg:grid-cols-2 gap-6 h-80">
                     <div className="bg-[#18181b] p-6 rounded-2xl border border-gray-800">
                         <h3 className="text-zinc-400 font-bold mb-4">Content Distribution</h3>
@@ -255,7 +246,6 @@ export default function AdAdminPanel() {
                         </ResponsiveContainer>
                     </div>
                     
-                    {/* Recent Activities Log */}
                     <div className="bg-[#18181b] rounded-2xl border border-gray-800 p-6 overflow-y-auto">
                         <h3 className="text-sm font-bold text-white mb-4">Recent Activities</h3>
                         <div className="space-y-3">
@@ -271,7 +261,6 @@ export default function AdAdminPanel() {
             </div>
         )}
 
-        {/* --- SETTINGS TAB --- */}
         {activeTab === 'settings' && (
             <div className="max-w-2xl bg-[#18181b] p-8 rounded-2xl border border-gray-800 animate-fadeIn">
             <h2 className="text-xl font-bold text-indigo-400 mb-6 flex items-center gap-2"><Icons.Settings /> Configuration</h2>
@@ -297,7 +286,6 @@ export default function AdAdminPanel() {
                         <span className="w-20 text-xs text-orange-500 font-bold">Nagad</span>
                         <input className="flex-1 bg-black border border-gray-700 p-3 rounded-lg text-white text-sm outline-none" value={config.payment_info.nagad} onChange={e=>setConfig({...config, payment_info: {...config.payment_info, nagad: e.target.value}})}/>
                     </div>
-                    {/* BINANCE ADDED HERE */}
                     <div className="flex items-center gap-3">
                         <span className="w-20 text-xs text-yellow-500 font-bold flex gap-1"><Icons.Crypto/> Binance</span>
                         <input className="flex-1 bg-black border border-gray-700 p-3 rounded-lg text-white text-sm outline-none" placeholder="Binance Pay ID / Wallet Address" value={config.payment_info.binance} onChange={e=>setConfig({...config, payment_info: {...config.payment_info, binance: e.target.value}})}/>
@@ -312,7 +300,6 @@ export default function AdAdminPanel() {
             </div>
         )}
 
-        {/* --- DEPOSITS TAB --- */}
         {activeTab === 'deposits' && (
             <div className="space-y-4 animate-fadeIn">
                 <h2 className="text-xl font-bold text-white mb-4">Transaction History</h2>
@@ -340,7 +327,6 @@ export default function AdAdminPanel() {
             </div>
         )}
 
-        {/* --- CAMPAIGNS TAB --- */}
         {activeTab === 'campaigns' && (
             <div className="space-y-4 animate-fadeIn">
                 <h2 className="text-xl font-bold text-white mb-4">Ad Campaign Requests</h2>
