@@ -1,11 +1,11 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { db } from "../../firebase";
+import { db } from "../../../firebase";
 import { 
   collection, doc, onSnapshot, updateDoc, 
   runTransaction, setDoc, query, where, orderBy 
 } from "firebase/firestore";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell, PieChart, Pie, Legend, LineChart, Line } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell, PieChart, Pie, Legend } from 'recharts';
 
 // --- ICONS (SVG) ---
 const Icons = {
@@ -240,16 +240,32 @@ export default function AdAdminPanel() {
                     </div>
                 </div>
 
-                {/* Recent Activities Log */}
-                <div className="bg-[#18181b] rounded-2xl border border-gray-800 p-6">
-                    <h3 className="text-sm font-bold text-white mb-4">Recent Activities</h3>
-                    <div className="space-y-3">
-                        {deposits.slice(0, 5).map(dep => (
-                            <div key={dep.id} className="flex justify-between items-center text-sm border-b border-gray-800 pb-2 last:border-0">
-                                <span className="text-gray-400">New deposit request of <strong>{dep.amount} TK</strong> via {dep.method}</span>
-                                <span className={`text-[10px] px-2 py-1 rounded ${dep.status==='pending'?'bg-orange-500/20 text-orange-400':'bg-green-500/20 text-green-400'}`}>{dep.status}</span>
-                            </div>
-                        ))}
+                {/* Advanced Charts (Recharts) */}
+                <div className="grid lg:grid-cols-2 gap-6 h-80">
+                    <div className="bg-[#18181b] p-6 rounded-2xl border border-gray-800">
+                        <h3 className="text-zinc-400 font-bold mb-4">Content Distribution</h3>
+                        <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={[ {name:'Active Ads', v:pendingCampaigns.filter(c=>c.status==='active').length}, {name:'Pending', v:pendingCampaigns.filter(c=>c.status==='pending').length} ]}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
+                                <XAxis dataKey="name" stroke="#71717a" />
+                                <YAxis stroke="#71717a" />
+                                <Tooltip contentStyle={{backgroundColor: '#18181b', border: '1px solid #3f3f46', borderRadius: '8px'}} />
+                                <Bar dataKey="v" fill="#6366f1" radius={[4, 4, 0, 0]} />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </div>
+                    
+                    {/* Recent Activities Log */}
+                    <div className="bg-[#18181b] rounded-2xl border border-gray-800 p-6 overflow-y-auto">
+                        <h3 className="text-sm font-bold text-white mb-4">Recent Activities</h3>
+                        <div className="space-y-3">
+                            {deposits.slice(0, 5).map(dep => (
+                                <div key={dep.id} className="flex justify-between items-center text-sm border-b border-gray-800 pb-2 last:border-0">
+                                    <span className="text-gray-400">New deposit request of <strong>{dep.amount} TK</strong> via {dep.method}</span>
+                                    <span className={`text-[10px] px-2 py-1 rounded ${dep.status==='pending'?'bg-orange-500/20 text-orange-400':'bg-green-500/20 text-green-400'}`}>{dep.status}</span>
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 </div>
             </div>
