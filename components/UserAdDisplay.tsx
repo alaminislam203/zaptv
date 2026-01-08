@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState, useRef } from "react";
-import { db } from "../app/firebase"; // পাথ ঠিক আছে কিনা চেক করবেন
+import { db } from "../../app/firebase"; // পাথ ঠিক আছে কিনা চেক করবেন
 import { 
   collection, query, where, getDocs, updateDoc, doc, increment 
 } from "firebase/firestore";
