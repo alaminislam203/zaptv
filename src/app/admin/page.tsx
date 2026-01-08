@@ -141,24 +141,32 @@ export default function AdminPanel() {
     setLoading(false); showToast("Settings updated");
   };
 
-  // --- Status Check Logic (Fixed) ---
+  // ** FIXED MISSING FUNCTIONS **
+  const addDirectLink = () => {
+    if(!tempLink.label || !tempLink.url) return showToast("Fill all fields", "error");
+    const newConfig = { ...siteConfig, directLinks: [...(siteConfig.directLinks || []), tempLink] };
+    setSiteConfig(newConfig); setTempLink({ label: "", url: "" }); 
+    saveSettings(newConfig);
+  };
+
+  const removeDirectLink = (idx: number) => {
+    if(!confirm("Remove link?")) return;
+    const newConfig = { ...siteConfig, directLinks: siteConfig.directLinks.filter((_, i) => i !== idx) };
+    setSiteConfig(newConfig);
+    saveSettings(newConfig);
+  };
+
+  // --- Status Check Logic ---
   const checkStreamStatus = async (url: string) => { try { await fetch(url, { method: 'HEAD', mode: 'no-cors' }); return "online"; } catch (error) { return "offline"; } };
 
-  // **Missing Function Added Here**
   const checkSingleChannel = async (channelId: string) => {
-    // UI Update: Set to checking
     setChannels(prev => prev.map(ch => ch.id === channelId ? { ...ch, sources: ch.sources.map(s => ({ ...s, status: "checking" as any })) } : ch));
-    
     const target = channels.find(c => c.id === channelId);
     if (!target) return;
-
-    // Check Sources
     const newSources = await Promise.all(target.sources.map(async (src) => {
         const status = src.url.startsWith("http") ? await checkStreamStatus(src.url) : "unknown";
         return { ...src, status: status as any };
     }));
-
-    // Update State
     setChannels(prev => prev.map(ch => ch.id === channelId ? { ...ch, sources: newSources } : ch));
     showToast(`Checked ${target.name}`, "success");
   };
