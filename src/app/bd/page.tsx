@@ -22,16 +22,16 @@ const LoadingPlayer = () => (
   </div>
 );
 
-const PlyrPlayer = dynamic(() => import("../../../components/PlyrPlayer"), { ssr: false, loading: () => <LoadingPlayer /> });
-const VideoJSPlayer = dynamic(() => import("../../../components/VideoJSPlayer"), { ssr: false, loading: () => <LoadingPlayer /> });
-const NativePlayer = dynamic(() => import("../../../components/NativePlayer"), { ssr: false, loading: () => <LoadingPlayer /> });
-const ShakaPlayer = dynamic(() => import("../../../components/ShakaPlayer"), { ssr: false, loading: () => <LoadingPlayer /> });
-const IframePlayer = dynamic(() => import("../../../components/IframePlayer"), { ssr: false });
-const PlayerJSPlayer = dynamic(() => import("../../../components/PlayerJSPlayer"), { ssr: false, loading: () => <LoadingPlayer /> });
+const PlyrPlayer = dynamic(() => import("../../components/PlyrPlayer"), { ssr: false, loading: () => <LoadingPlayer /> });
+const VideoJSPlayer = dynamic(() => import("../../components/VideoJSPlayer"), { ssr: false, loading: () => <LoadingPlayer /> });
+const NativePlayer = dynamic(() => import("../../components/NativePlayer"), { ssr: false, loading: () => <LoadingPlayer /> });
+const ShakaPlayer = dynamic(() => import("../../components/ShakaPlayer"), { ssr: false, loading: () => <LoadingPlayer /> });
+const IframePlayer = dynamic(() => import("../../components/IframePlayer"), { ssr: false });
+const PlayerJSPlayer = dynamic(() => import("../../components/PlayerJSPlayer"), { ssr: false, loading: () => <LoadingPlayer /> });
 
 // --- INTERFACES ---
 interface DrmConfig { type: "clearkey" | "widevine"; keyId?: string; key?: string; licenseUrl?: string; }
-interface Source { label: string; url: string; drm?: DrmConfig; status?: "online" | "offline" | "checking" | "unknown"; }
+interface Source { label: string; url: string; drm?: DrmConfig; }
 interface Channel { id: string; name: string; logo: string; is_embed: boolean | string; category?: string; sources: Source[]; }
 interface AdData { id: string; location: "top" | "middle"; imageUrl?: string; text?: string; link?: string; }
 
@@ -48,6 +48,32 @@ const Icons = {
     Check: () => <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
 };
 
+// --- M3U Parser ---
+const parseM3U = (content: string): Channel[] => {
+  const lines = content.split('\n');
+  const result: Channel[] = [];
+  let currentName = "", currentLogo = "", currentCategory = "";
+
+  lines.forEach((line, index) => {
+    line = line.trim();
+    if (line.startsWith('#EXTINF:')) {
+      const logoMatch = line.match(/tvg-logo="([^"]*)"/);
+      currentLogo = logoMatch ? logoMatch[1] : "";
+      const groupMatch = line.match(/group-title="([^"]*)"/);
+      currentCategory = groupMatch ? groupMatch[1] : "Others";
+      const nameParts = line.split(',');
+      currentName = nameParts[nameParts.length - 1].trim();
+    } else if (line.length > 0 && !line.startsWith('#')) {
+      if (currentName) {
+        // Generating a pseudo-ID based on index to keep consistent
+        result.push({ id: `ch-${index}`, name: currentName, logo: currentLogo, category: currentCategory, is_embed: false, sources: [{ label: "Stream 1", url: line }] });
+        currentName = ""; currentLogo = "";
+      }
+    }
+  });
+  return result;
+};
+
 function LiveTVContent() {
   const searchParams = useSearchParams();
 
@@ -59,11 +85,16 @@ function LiveTVContent() {
   const [totalVisitors, setTotalVisitors] = useState(0);
   const [activeDirectLink, setActiveDirectLink] = useState<{url: string, label: string} | null>(null);
 
+  // Filter States
+  const [selectedCategory, setSelectedCategory] = useState<string>("All");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [hideReported, setHideReported] = useState(false);
+  const [reportedChannelNames, setReportedChannelNames] = useState<Set<string>>(new Set());
+
   // Player & User States
   const [currentChannel, setCurrentChannel] = useState<Channel | null>(null);
   const [activeSourceIndex, setActiveSourceIndex] = useState<number>(0);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
   const [isFavorite, setIsFavorite] = useState(false);
   const [playerType, setPlayerType] = useState<"plyr" | "videojs" | "native" | "playerjs">("plyr");
   const [isClient, setIsClient] = useState(false);
@@ -73,21 +104,32 @@ function LiveTVContent() {
 
   // Ad Rotation State
   const [adIndex, setAdIndex] = useState(0);
-
+  
   // Infinite Scroll
   const [visibleCount, setVisibleCount] = useState(48);
+
+  const categories = useMemo(() => {
+    const uniqueCats = Array.from(new Set(channels.map(ch => ch.category || "Others")));
+    return ["All", ...uniqueCats.sort()];
+  }, [channels]);
+
+  const filteredChannels = channels.filter(ch => {
+    const matchesSearch = ch.name.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory = selectedCategory === "All" || ch.category === selectedCategory;
+    const matchesStatus = hideReported ? !reportedChannelNames.has(ch.name) : true;
+    return matchesSearch && matchesCategory && matchesStatus;
+  });
 
   // --- LOGIC: AD ROTATION ---
   useEffect(() => {
     const interval = setInterval(() => {
         setAdIndex((prev) => prev + 1);
-    }, 5000); // 5 Seconds Rotation
+    }, 5000); 
     return () => clearInterval(interval);
   }, []);
 
   const topAds = ads.filter(ad => ad.location === "top");
   const middleAds = ads.filter(ad => ad.location === "middle");
-
   const currentTopAd = topAds.length > 0 ? topAds[adIndex % topAds.length] : null;
   const currentMiddleAd = middleAds.length > 0 ? middleAds[adIndex % middleAds.length] : null;
 
@@ -105,11 +147,11 @@ function LiveTVContent() {
     }
   };
 
-  // URL Play Logic
+  // URL Play Logic (Supports both full ID and short ID matching if implemented fully)
   useEffect(() => {
     const channelIdToPlay = searchParams.get("play");
     if (channelIdToPlay && channels.length > 0) {
-      // Find by ID or Short ID logic (simplified here to ID/Name)
+      // Trying to match by ID or Name
       const targetChannel = channels.find((ch) => ch.id === channelIdToPlay || ch.name === channelIdToPlay);
       if (targetChannel) setCurrentChannel(targetChannel);
     }
@@ -132,14 +174,42 @@ function LiveTVContent() {
     }
   }, [currentChannel]);
 
-  // Firebase Fetch
+  // Data Fetching (Updated to support JSON)
   useEffect(() => {
-    const unsubChannels = onSnapshot(collection(db, "channels"), (snapshot) => {
-      const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Channel[];
-      setChannels(list);
-      setTotalChannels(snapshot.docs.length);
-      setLoading(false);
-    });
+    const fetchPlaylist = async () => {
+      const PLAYLIST_URL = "https://raw.githubusercontent.com/alaminislam203/my_playlist/refs/heads/main/bd.json"; 
+      try {
+        setLoading(true);
+        const response = await fetch(PLAYLIST_URL);
+        if (!response.ok) throw new Error("Failed to fetch playlist");
+        const rawText = await response.text();
+        let parsedChannels: Channel[] = [];
+
+        try {
+            const jsonData = JSON.parse(rawText);
+            if (Array.isArray(jsonData)) {
+                parsedChannels = jsonData.map((item: any, idx: number) => ({
+                    id: item.id || `json-${idx}`,
+                    name: item.name || "Unknown",
+                    logo: item.logo || "",
+                    category: item.category || "Others",
+                    is_embed: item.is_embed || false,
+                    sources: item.sources || [{ label: "Stream 1", url: item.url, drm: item.drm }] 
+                }));
+            } else throw new Error("Not a JSON array");
+        } catch (e) {
+            parsedChannels = parseM3U(rawText);
+        }
+        setChannels(parsedChannels);
+        setTotalChannels(parsedChannels.length);
+        setLoading(false);
+      } catch (error) {
+        console.error("Error loading playlist:", error);
+        setLoading(false);
+      }
+    };
+    fetchPlaylist();
+
     const unsubAds = onSnapshot(collection(db, "ads"), (snapshot) => {
       const list = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })) as AdData[];
       setAds(list);
@@ -147,23 +217,29 @@ function LiveTVContent() {
     const unsubSettings = onSnapshot(doc(db, "settings", "config"), (docSnap) => {
       if (docSnap.exists()) setSiteConfig(docSnap.data());
     });
-    return () => { unsubChannels(); unsubAds(); unsubSettings(); };
+    const unsubReports = onSnapshot(collection(db, "reports"), (snapshot) => {
+      const reportedSet = new Set<string>();
+      snapshot.docs.forEach(doc => {
+        const data = doc.data();
+        if (data.status === "pending" && data.channelName) reportedSet.add(data.channelName);
+      });
+      setReportedChannelNames(reportedSet);
+    });
+    return () => { unsubAds(); unsubSettings(); unsubReports(); };
   }, []);
 
-  // Stats Logic (Simplified)
+  // Stats Logic
   useEffect(() => {
     if (!isClient) return;
     const counterRef = doc(db, 'counters', 'visitors');
     const incrementTotalVisitors = async () => {
         if (!sessionStorage.getItem('visitedThisSession')) {
             sessionStorage.setItem('visitedThisSession', 'true');
-            try {
-                await runTransaction(db, async (transaction) => {
-                    const docSnap = await transaction.get(counterRef);
-                    if (!docSnap.exists()) { transaction.set(counterRef, { total: 1 }); setTotalVisitors(1); } 
-                    else { transaction.update(counterRef, { total: docSnap.data().total + 1 }); setTotalVisitors(docSnap.data().total + 1); }
-                });
-            } catch (e) { console.error(e); }
+            try { await runTransaction(db, async (transaction) => {
+                const docSnap = await transaction.get(counterRef);
+                if (!docSnap.exists()) { transaction.set(counterRef, { total: 1 }); setTotalVisitors(1); } 
+                else { transaction.update(counterRef, { total: docSnap.data().total + 1 }); setTotalVisitors(docSnap.data().total + 1); }
+            }); } catch (e) { console.error(e); }
         }
     };
     const unsub = onSnapshot(counterRef, (doc) => { if (doc.exists()) setTotalVisitors(doc.data().total); });
@@ -174,21 +250,9 @@ function LiveTVContent() {
     const myConnectionsRef = ref(rtdb, 'status/' + Math.random().toString(36).substr(2, 9));
     onValue(connectedRef, (snap) => { if (snap.val() === true) { set(myConnectionsRef, { timestamp: serverTimestamp() }); onDisconnect(myConnectionsRef).remove(); } });
     onValue(statusRef, (snap) => setOnlineUsers(snap.size));
+    
     return () => { unsub(); off(connectedRef); off(statusRef); onDisconnect(myConnectionsRef).cancel(); set(myConnectionsRef, null); };
   }, [isClient]);
-
-  // Anti-Adblock
-  useEffect(() => {
-    if (!scriptsLoaded.current) {
-      const detectAdBlock = async () => {
-          let adBlockEnabled = false;
-          try { await fetch(new Request("https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js", { method: 'HEAD', mode: 'no-cors' })); } catch (e) { adBlockEnabled = true; }
-          if (adBlockEnabled) console.log("Adblock Detected");
-      };
-      setTimeout(detectAdBlock, 2000);
-    }
-    scriptsLoaded.current = true;
-  }, [siteConfig]);
 
   const checkIfFavorite = (id: string) => setIsFavorite(JSON.parse(localStorage.getItem("favorites") || '[]').some((c: Channel) => c.id === id));
   
@@ -203,7 +267,7 @@ function LiveTVContent() {
 
   const handleShare = () => {
     if (!currentChannel) return;
-    // URL কপি হবে, কিন্তু ইউজার দেখবে ৪ ডিজিট আইডি কনসেপ্ট
+    // URL with ID
     const url = `${window.location.origin}${window.location.pathname}?play=${currentChannel.id}`;
     navigator.clipboard.writeText(url);
     setShareCopied(true);
@@ -215,13 +279,10 @@ function LiveTVContent() {
     if (confirm(`Report "${currentChannel.name}"?`)) {
       try {
         await addDoc(collection(db, "reports"), { channelName: currentChannel.name, channelId: currentChannel.id, sourceLabel: currentChannel.sources[activeSourceIndex]?.label || "Default", timestamp: new Date(), status: "pending", issue: "Stream not working" });
-        alert("Report submitted! We will check soon.");
+        alert("Report submitted successfully!");
       } catch (e) { console.error("Error reporting:", e); }
     }
   };
-
-  const filteredChannels = channels.filter(ch => ch.name.toLowerCase().includes(searchQuery.toLowerCase()));
-  const channelsToDisplay = filteredChannels.slice(0, visibleCount);
 
   const renderPlayer = () => {
     if (!isClient) return <LoadingPlayer />;
@@ -307,7 +368,7 @@ function LiveTVContent() {
             </div>
         </div>
    
-        {/* --- Action Buttons Grid --- */}
+        {/* --- Action Buttons --- */}
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             <Link href="https://t.me/toffeepro" target="_blank" className="bg-[#1e293b] hover:bg-[#263349] border border-gray-700 p-3 rounded-xl flex items-center justify-between group transition">
                 <span className="text-xs text-gray-400">Join Telegram</span>
@@ -323,15 +384,13 @@ function LiveTVContent() {
             </Link>
         </div>
 
-        {/* --- Gambling Warning (জুয়া বিরোধী সতর্কবার্তা) --- */}
+        {/* --- Warning --- */}
         <div className="bg-red-950/30 border border-red-500/30 rounded-xl p-4 flex gap-4 items-start">
-            <div className="shrink-0 text-red-500 p-1 bg-red-500/10 rounded-full mt-1">
-                <Icons.Shield />
-            </div>
+            <div className="shrink-0 text-red-500 p-1 bg-red-500/10 rounded-full mt-1"><Icons.Shield /></div>
             <div>
                 <h3 className="text-red-400 font-bold text-sm uppercase tracking-wide mb-1">সতর্কবার্তা</h3>
                 <p className="text-[11px] md:text-xs text-gray-400 leading-relaxed">
-                    এই সাইটটি শুধুমাত্র খেলা দেখার জন্য। আমরা কোনো ধরনের <strong className="text-gray-300">বেটিং (Betting), জুয়া বা প্রেডিকশন</strong> অ্যাপ প্রমোট করি না। খেলার মাঝে কোনো জুয়ার বিজ্ঞাপন আসলে দয়া করে তাতে ক্লিক করবেন না। জুয়া আর্থিক এবং ধর্মীয় উভয়ভাবেই ক্ষতিকর।
+                    এই সাইটটি শুধুমাত্র খেলা দেখার জন্য। আমরা কোনো ধরনের <strong className="text-gray-300">বেটিং (Betting), জুয়া বা প্রেডিকশন</strong> অ্যাপ প্রমোট করি না। খেলার মাঝে কোনো জুয়ার বিজ্ঞাপন আসলে দয়া করে তাতে ক্লিক করবেন না।
                 </p>
             </div>
         </div>
@@ -387,18 +446,17 @@ function LiveTVContent() {
             </div>
         </div>
 
-        {/* --- Direct Link Button --- */}
+        {/* --- Direct Link --- */}
         {activeDirectLink && (
             <div className="flex justify-center">
                 <a href={activeDirectLink.url} target="_blank" rel="noopener noreferrer" className="group relative inline-flex items-center gap-2 rounded-full px-8 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold shadow-lg shadow-emerald-500/20 hover:scale-105 transition-all overflow-hidden">
                     <div className="absolute inset-0 bg-white/20 group-hover:translate-x-full transition-transform duration-500 ease-in-out"></div>
-                    <Icons.Play />
-                    <span>{activeDirectLink.label}</span>
+                    <Icons.Play /> <span>{activeDirectLink.label}</span>
                 </a>
             </div>
         )}
 
-        {/* --- Channel Info Card --- */}
+        {/* --- Channel Info --- */}
         <div className="bg-[#1e293b] p-5 rounded-2xl border border-gray-700 flex flex-col md:flex-row items-center gap-5 md:gap-6 shadow-lg">
            <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-[#0f172a] border-2 border-gray-600 p-1 flex-shrink-0 relative">
                 {currentChannel?.logo ? <img src={currentChannel.logo} className="w-full h-full object-cover rounded-full" /> : <div className="w-full h-full flex items-center justify-center text-gray-600"><Icons.Tv /></div>}
@@ -406,8 +464,12 @@ function LiveTVContent() {
            </div>
            <div className="flex-1 text-center md:text-left space-y-2">
              <h2 className="text-xl md:text-2xl font-bold text-white">{currentChannel?.name || "No Channel Selected"}</h2>
-             <p className="text-xs text-cyan-400 font-mono tracking-wide">{currentChannel ? "● Streaming Live in HD" : "Select a channel to begin"}</p>
-             {/* Source Switcher */}
+             <div className="flex items-center justify-center md:justify-start gap-2">
+                <span className="text-xs text-cyan-400 font-mono tracking-wide">{currentChannel ? "● Streaming Live in HD" : "Select a channel to begin"}</span>
+                {currentChannel && reportedChannelNames.has(currentChannel.name) && (
+                   <span className="text-[10px] bg-red-500/20 text-red-400 px-2 rounded border border-red-500/30">⚠ Reported</span>
+                )}
+             </div>
              {currentChannel && currentChannel.sources.length > 1 && (
                <div className="flex gap-2 flex-wrap justify-center md:justify-start mt-2">
                  {currentChannel.sources.map((src, idx) => (
@@ -420,7 +482,7 @@ function LiveTVContent() {
            </div>
         </div>
         
-        {/* --- Instructions / Guide --- */}
+        {/* --- Quick Guide --- */}
         <div className="bg-[#0f172a] rounded-xl p-4 border border-gray-800">
             <h3 className="text-gray-400 text-xs font-bold uppercase mb-2 tracking-widest border-b border-gray-800 pb-2">Quick Guide</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-gray-500">
@@ -447,6 +509,15 @@ function LiveTVContent() {
         <div className="bg-[#111827] p-5 rounded-2xl border border-gray-800 shadow-xl">
           <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
               <h3 className="text-lg font-bold text-white flex items-center gap-2"><Icons.Tv /> Live Channels</h3>
+              
+              <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar max-w-full md:max-w-[40%]">
+                 {categories.map((cat) => (
+                  <button key={cat} onClick={() => setSelectedCategory(cat)} className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border whitespace-nowrap transition ${selectedCategory === cat ? "bg-cyan-900/50 border-cyan-500 text-cyan-400" : "bg-gray-800 border-gray-700 text-gray-400 hover:bg-gray-700"}`}>
+                    {cat}
+                  </button>
+                 ))}
+              </div>
+
               <div className="relative w-full md:w-64">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-500"><Icons.Search /></div>
                 <input type="text" placeholder="Search channels..." className="w-full bg-[#1f2937] text-white text-sm py-2 pl-10 pr-4 rounded-lg border border-gray-700 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
@@ -456,7 +527,7 @@ function LiveTVContent() {
           {loading ? <div className="grid grid-cols-4 md:grid-cols-6 gap-4 animate-pulse">{[...Array(12)].map((_,i) => <div key={i} className="h-24 bg-gray-800 rounded-lg"></div>)}</div> : (
             <div id="channel-grid-container" className="max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar" onScroll={handleScroll}>
                 <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3">
-                {channelsToDisplay.map(ch => (
+                {filteredChannels.length > 0 ? filteredChannels.map(ch => (
                     <div key={ch.id} onClick={() => setCurrentChannel(ch)} className={`group relative flex flex-col items-center gap-2 cursor-pointer p-3 rounded-xl transition-all border ${currentChannel?.id === ch.id ? "bg-[#1e293b] border-cyan-500/50 shadow-[0_0_15px_rgba(6,182,212,0.15)]" : "bg-[#1f2937]/50 border-gray-800 hover:bg-[#1f2937] hover:border-gray-600 hover:-translate-y-1"}`}>
                         <div className="w-12 h-12 bg-[#0b1120] rounded-full p-1.5 overflow-hidden shadow-inner relative ring-1 ring-white/5">
                             {ch.logo ? <img src={ch.logo} alt={ch.name} className="w-full h-full object-contain transition-transform group-hover:scale-110" /> : <div className="w-full h-full flex items-center justify-center text-gray-600"><Icons.Tv /></div>}
@@ -464,34 +535,25 @@ function LiveTVContent() {
                         <span className={`text-[10px] font-bold text-center line-clamp-1 w-full ${currentChannel?.id === ch.id ? "text-cyan-400" : "text-gray-400 group-hover:text-gray-200"}`}>{ch.name}</span>
                         {currentChannel?.id === ch.id && <div className="absolute top-2 right-2 w-2 h-2 bg-cyan-500 rounded-full animate-pulse shadow-[0_0_5px_#06b6d4]"></div>}
                     </div>
-                ))}
+                )) : <div className="col-span-full text-center text-gray-500 text-sm py-10">No channels found.</div>}
                 </div>
             </div>
           )}
         </div>
 
-        {/* --- Footer Stats --- */}
-        <div className="bg-[#1e293b] rounded-xl p-6 border border-gray-800 flex flex-col items-center text-center space-y-4 shadow-lg mb-8">
-            <h4 className="text-gray-500 text-xs font-bold uppercase tracking-widest">Realtime Stats</h4>
-            <div className="flex items-center justify-center gap-8 md:gap-16 w-full">
-                <div>
-                    <p className="text-2xl font-black text-green-400 tabular-nums">{onlineUsers}</p>
-                    <p className="text-[10px] uppercase text-gray-500 font-bold tracking-wider">Online</p>
-                </div>
-                <div className="w-px h-8 bg-gray-700"></div>
-                <div>
-                    <p className="text-2xl font-black text-cyan-400 tabular-nums">{totalVisitors}</p>
-                    <p className="text-[10px] uppercase text-gray-500 font-bold tracking-wider">Visits</p>
-                </div>
-                <div className="w-px h-8 bg-gray-700"></div>
-                <div>
-                    <p className="text-2xl font-black text-purple-400 tabular-nums">{totalChannels}</p>
-                    <p className="text-[10px] uppercase text-gray-500 font-bold tracking-wider">Channels</p>
-                </div>
+        {/* --- Footer (Simple & Clean) --- */}
+        <footer className="text-center py-8 border-t border-gray-800 mt-8">
+            <div className="flex justify-center gap-6 mb-4 text-xs text-gray-400">
+                <span>Online: <strong className="text-green-400">{onlineUsers}</strong></span>
+                <span>Visits: <strong className="text-cyan-400">{totalVisitors}</strong></span>
+                <span>Channels: <strong className="text-purple-400">{totalChannels}</strong></span>
             </div>
-            <div className="w-full h-px bg-gray-800"></div>
-            <p className="text-[10px] text-gray-500">&copy; 2026 ToffeePro Streaming. Use responsibly.</p>
-        </div>
+            <p className="text-[10px] text-gray-600">
+                &copy; 2026 ToffeePro Streaming. <br/> 
+                Built for Sports Lovers.
+            </p>
+        </footer>
+
       </div>
     </main>
   );
