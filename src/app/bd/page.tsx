@@ -22,12 +22,12 @@ const LoadingPlayer = () => (
   </div>
 );
 
-const PlyrPlayer = dynamic(() => import("../../components/PlyrPlayer"), { ssr: false, loading: () => <LoadingPlayer /> });
-const VideoJSPlayer = dynamic(() => import("../../components/VideoJSPlayer"), { ssr: false, loading: () => <LoadingPlayer /> });
-const NativePlayer = dynamic(() => import("../../components/NativePlayer"), { ssr: false, loading: () => <LoadingPlayer /> });
-const ShakaPlayer = dynamic(() => import("../../components/ShakaPlayer"), { ssr: false, loading: () => <LoadingPlayer /> });
-const IframePlayer = dynamic(() => import("../../components/IframePlayer"), { ssr: false });
-const PlayerJSPlayer = dynamic(() => import("../../components/PlayerJSPlayer"), { ssr: false, loading: () => <LoadingPlayer /> });
+const PlyrPlayer = dynamic(() => import("../../../components/PlyrPlayer"), { ssr: false, loading: () => <LoadingPlayer /> });
+const VideoJSPlayer = dynamic(() => import("../../../components/VideoJSPlayer"), { ssr: false, loading: () => <LoadingPlayer /> });
+const NativePlayer = dynamic(() => import("../../../components/NativePlayer"), { ssr: false, loading: () => <LoadingPlayer /> });
+const ShakaPlayer = dynamic(() => import("../../../components/ShakaPlayer"), { ssr: false, loading: () => <LoadingPlayer /> });
+const IframePlayer = dynamic(() => import("../../../components/IframePlayer"), { ssr: false });
+const PlayerJSPlayer = dynamic(() => import("../../../components/PlayerJSPlayer"), { ssr: false, loading: () => <LoadingPlayer /> });
 
 // --- INTERFACES ---
 interface DrmConfig { type: "clearkey" | "widevine"; keyId?: string; key?: string; licenseUrl?: string; }
