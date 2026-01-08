@@ -1,7 +1,7 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 import { getDatabase } from "firebase/database";
-import { getAuth } from "firebase/auth"; // Auth ইমপোর্ট করা হলো
+import { getAuth } from "firebase/auth";
 import { getAnalytics, isSupported } from "firebase/analytics";
 
 const firebaseConfig = {
@@ -21,13 +21,17 @@ const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 // Export the necessary Firebase services
 export const db = getFirestore(app);
 export const rtdb = getDatabase(app);
-export const auth = getAuth(app); // Auth এক্সপোর্ট করা হলো
+export const auth = getAuth(app);
 
-// Analytics (optional)
-let analytics;
-if (typeof window !== 'undefined' && isSupported()) {
+// Analytics (Fixed Logic)
+let analytics: any;
+
+if (typeof window !== 'undefined') {
     isSupported().then((supported) => {
-        if (supported) analytics = getAnalytics(app);
+        if (supported) {
+            analytics = getAnalytics(app);
+        }
     });
 }
+
 export { analytics };
