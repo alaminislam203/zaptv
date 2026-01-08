@@ -12,6 +12,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation"; 
 import dynamic from "next/dynamic";
 import Image from "next/image";
+import UserAdDisplay from "../../../components/UserAdDisplay"; // পাথ চেক করুন
 
 // --- DYNAMIC IMPORTS ---
 const LoadingPlayer = () => (
@@ -411,6 +412,8 @@ function LiveTVContent() {
           </div>
         )}
 
+        
+
         {/* --- Main Player Section --- */}
         <div className="bg-[#0f172a] rounded-2xl overflow-hidden shadow-2xl border border-gray-800 relative">
             <div className="aspect-video w-full bg-black relative group">
@@ -445,7 +448,7 @@ function LiveTVContent() {
                 </div>
             </div>
         </div>
-
+<UserAdDisplay location="top" />
         {/* --- Direct Link --- */}
         {activeDirectLink && (
             <div className="flex justify-center">
