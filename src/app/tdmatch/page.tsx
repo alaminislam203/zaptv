@@ -270,7 +270,7 @@ export default function MatchPage() {
                     </div>
 
                     {!isEnded && (
-                        <Link href={`/livesports?play=${match.channelName}`} className="block mt-3">
+                        <Link href={`{match.channelName}`} className="block mt-3">
                           <button className="w-full bg-white text-black py-3 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-cyan-400 transition-colors flex items-center justify-center gap-2 shadow-lg shadow-white/5">
                             <Icons.Play />
                             Watch Live
