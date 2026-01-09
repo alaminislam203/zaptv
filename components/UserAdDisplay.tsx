@@ -118,7 +118,7 @@ export default function UserAdDisplay({ location }: AdProps) {
        
        {/* Glassmorphism Badge */}
        <div className="absolute top-2 right-2 md:right-0 bg-white/10 backdrop-blur-md border border-white/20 text-[10px] px-2 py-1 text-white z-10 rounded-lg flex items-center gap-2 shadow-lg">
-         <span className="font-bold tracking-wider text-cyan-400">SPONSORED</span>
+         <span className="font-bold tracking-wider text-cyan-400">Ads by ToffePro</span>
          <button onClick={(e)=>{e.stopPropagation(); setIsVisible(false);}} className="text-white/60 hover:text-red-400 font-bold text-sm transition">✕</button>
        </div>
 
