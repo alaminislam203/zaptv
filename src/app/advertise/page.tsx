@@ -24,19 +24,37 @@ const Icons = {
   Trash: () => <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>,
   Edit: () => <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>,
   User: () => <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>,
-  Close: () => <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+  Close: () => <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>,
+  Copy: () => <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>,
+  Check: () => <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
 };
+
+// --- TOAST COMPONENT ---
+const Toast = ({ msg, type, onClose }: { msg: string, type: 'success' | 'error', onClose: () => void }) => (
+  <div className={`fixed bottom-5 right-5 px-6 py-4 rounded-xl border flex items-center gap-3 shadow-2xl animate-slideIn z-[200] ${type === 'success' ? 'bg-green-900/90 border-green-500/50 text-green-100' : 'bg-red-900/90 border-red-500/50 text-red-100'}`}>
+    <span>{type === 'success' ? '✅' : '⚠️'}</span>
+    <div>
+        <h4 className="font-bold text-sm">{type === 'success' ? 'Success' : 'Error'}</h4>
+        <p className="text-xs opacity-90">{msg}</p>
+    </div>
+    <button onClick={onClose} className="ml-4 opacity-50 hover:opacity-100">✕</button>
+  </div>
+);
 
 export default function AdvertiserDashboard() {
   const [user, setUser] = useState<any>(null);
-  const [userData, setUserData] = useState<any>({ wallet: { current_balance: 0 } });
+  const [userData, setUserData] = useState<any>({ wallet: { total_deposited: 0 } });
   const [activeTab, setActiveTab] = useState("dashboard");
   const [loading, setLoading] = useState(false);
+  const [toast, setToast] = useState<{msg: string, type: 'success' | 'error'} | null>(null);
   
   // Data State
   const [campaigns, setCampaigns] = useState<any[]>([]);
   const [deposits, setDeposits] = useState<any[]>([]);
   const [adminConfig, setAdminConfig] = useState<any>({});
+  
+  // Smart Balance Calculation
+  const [calculatedBalance, setCalculatedBalance] = useState(0);
 
   // Editing State
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -52,6 +70,16 @@ export default function AdvertiserDashboard() {
 
   const categories = ["Sports", "Betting", "E-commerce", "Technology", "Health", "Crypto", "Entertainment"];
 
+  const showToast = (msg: string, type: 'success' | 'error' = 'success') => {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 3000);
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    showToast("Copied to clipboard!", "success");
+  };
+
   // --- REALTIME DATA SYNC ---
   useEffect(() => {
     const unsubAuth = onAuthStateChanged(auth, async (currentUser) => {
@@ -63,12 +91,16 @@ export default function AdvertiserDashboard() {
             if(docSnap.exists()) {
                 const data = docSnap.data();
                 setUserData(data);
-                setProfileForm({ name: data.displayName || currentUser.displayName || "", phone: data.phoneNumber || "" });
+                // Profile Form Pre-fill
+                setProfileForm({ 
+                    name: data.displayName || currentUser.displayName || "", 
+                    phone: data.phoneNumber || "" 
+                });
             } else {
                 setDoc(userRef, { 
                     uid: currentUser.uid, 
                     email: currentUser.email, 
-                    wallet: { current_balance: 0 } 
+                    wallet: { total_deposited: 0, current_balance: 0 } 
                 });
             }
         });
@@ -89,13 +121,26 @@ export default function AdvertiserDashboard() {
       }
     });
 
-    // Admin Config
+    // Admin Config Fetch (Fix for Payment Info)
     onSnapshot(doc(db, "ad_config", "global_settings"), (doc) => {
-        if(doc.exists()) setAdminConfig(doc.data());
+        if(doc.exists()) {
+            setAdminConfig(doc.data());
+        } else {
+            console.log("Admin settings not found, creating default...");
+        }
     });
 
     return () => unsubAuth();
   }, []);
+
+  // --- SMART BALANCE CALCULATION ---
+  // Fix: Balance not updating issue. We calculate it dynamically.
+  useEffect(() => {
+      const totalDeposited = Number(userData?.wallet?.total_deposited || 0);
+      const totalSpent = campaigns.reduce((acc, curr) => acc + Number(curr.spent_amount || 0), 0);
+      setCalculatedBalance(totalDeposited - totalSpent);
+  }, [userData, campaigns]);
+
 
   // --- ACTIONS ---
   
@@ -103,11 +148,13 @@ export default function AdvertiserDashboard() {
   const toggleCampaignStatus = async (id: string, currentStatus: string) => {
     const newStatus = currentStatus === 'active' ? 'paused' : 'active';
     await updateDoc(doc(db, "campaigns", id), { status: newStatus });
+    showToast(`Campaign ${newStatus}`, "success");
   };
 
   const deleteCampaign = async (id: string) => {
     if(confirm("Are you sure? This action cannot be undone.")) {
         await deleteDoc(doc(db, "campaigns", id));
+        showToast("Campaign Deleted", "success");
     }
   };
 
@@ -126,11 +173,10 @@ export default function AdvertiserDashboard() {
 
   // 3. Create OR Update Ad
   const handleAdSubmit = async () => {
-    const currentBal = Number(userData?.wallet?.current_balance || 0);
     const budget = Number(adForm.budget);
     
-    // For new ads, check balance. For edit, we assume budget adjustment is handled or strictly check if increasing budget.
-    if(!editingId && currentBal < budget) return alert("Insufficient Balance! Please deposit first.");
+    // For new ads, check balance.
+    if(!editingId && calculatedBalance < budget) return showToast("Insufficient Balance! Please deposit.", "error");
     
     setLoading(true);
     try {
@@ -143,13 +189,13 @@ export default function AdvertiserDashboard() {
             bid_rate: Number(adForm.rate),
             total_budget: budget,
             category: adForm.category,
-            targeting: { countries: ["All"], devices: ["All"] }, // Can be enhanced later
-            status: editingId ? "active" : "pending", // If editing, keep active (or admin policy)
+            targeting: { countries: ["All"], devices: ["All"] },
+            status: editingId ? "active" : "pending", 
         };
 
         if(editingId) {
             await updateDoc(doc(db, "campaigns", editingId), payload);
-            alert("Campaign Updated Successfully!");
+            showToast("Campaign Updated Successfully!", "success");
             setEditingId(null);
         } else {
             await addDoc(collection(db, "campaigns"), {
@@ -158,13 +204,13 @@ export default function AdvertiserDashboard() {
                 analytics: { views: 0, clicks: 0, ctr: "0%" },
                 created_at: serverTimestamp()
             });
-            alert("Campaign Created Successfully!");
+            showToast("Campaign Created Successfully!", "success");
         }
         
         // Reset Form
         setAdForm({ title: "", imageUrl: "", link: "", type: "CPC", rate: "2.0", budget: "500", category: "Sports", countries: [], devices: [] });
         setActiveTab("campaigns");
-    } catch(e) { alert("Operation Failed"); }
+    } catch(e) { showToast("Operation Failed", "error"); }
     setLoading(false);
   };
 
@@ -176,12 +222,12 @@ export default function AdvertiserDashboard() {
           phoneNumber: profileForm.phone
       });
       setShowProfileModal(false);
-      alert("Profile Updated!");
+      showToast("Profile Updated!", "success");
   };
 
   // 5. Deposit
   const handleDeposit = async () => {
-    if(!depositForm.amount || !depositForm.trnxId) return alert("Fill all fields");
+    if(!depositForm.amount || !depositForm.trnxId) return showToast("Fill all fields", "error");
     setLoading(true);
     try {
         await addDoc(collection(db, "deposits"), {
@@ -193,10 +239,10 @@ export default function AdvertiserDashboard() {
             status: "pending",
             timestamp: serverTimestamp()
         });
-        alert("Deposit Submitted!");
+        showToast("Deposit Submitted! Wait for approval.", "success");
         setDepositForm({...depositForm, amount:"", trnxId:""});
         setActiveTab('transactions');
-    } catch(e) { alert("Error submitting deposit"); }
+    } catch(e) { showToast("Error submitting deposit", "error"); }
     setLoading(false);
   };
 
@@ -211,12 +257,14 @@ export default function AdvertiserDashboard() {
   return (
     <div className="min-h-screen bg-[#09090b] text-gray-200 font-sans flex flex-col md:flex-row relative">
       
+      {toast && <Toast msg={toast.msg} type={toast.type} onClose={()=>setToast(null)}/>}
+
       {/* PROFILE MODAL */}
       {showProfileModal && (
           <div className="fixed inset-0 bg-black/80 z-[100] flex items-center justify-center p-4">
-              <div className="bg-[#18181b] p-6 rounded-2xl border border-gray-700 w-full max-w-md">
+              <div className="bg-[#18181b] p-6 rounded-2xl border border-gray-700 w-full max-w-md animate-fadeIn">
                   <div className="flex justify-between items-center mb-6">
-                      <h2 className="text-xl font-bold text-white">Edit Profile</h2>
+                      <h2 className="text-xl font-bold text-white flex items-center gap-2"><Icons.User/> Edit Profile</h2>
                       <button onClick={()=>setShowProfileModal(false)} className="text-gray-400 hover:text-white"><Icons.Close/></button>
                   </div>
                   <div className="space-y-4">
@@ -228,7 +276,7 @@ export default function AdvertiserDashboard() {
                           <label className="text-xs text-gray-500 uppercase">Phone Number</label>
                           <input className="w-full bg-black border border-gray-700 p-3 rounded-lg text-white mt-1" value={profileForm.phone} onChange={e=>setProfileForm({...profileForm, phone: e.target.value})}/>
                       </div>
-                      <button onClick={handleUpdateProfile} className="w-full bg-cyan-600 py-3 rounded-lg font-bold text-white mt-2">Save Changes</button>
+                      <button onClick={handleUpdateProfile} className="w-full bg-cyan-600 py-3 rounded-lg font-bold text-white mt-2 hover:bg-cyan-500 transition">Save Changes</button>
                   </div>
               </div>
           </div>
@@ -236,14 +284,14 @@ export default function AdvertiserDashboard() {
 
       {/* SIDEBAR */}
       <aside className="w-full md:w-64 bg-[#121215] border-r border-gray-800 flex flex-col md:h-screen sticky top-0 z-50">
-         <div className="p-6 border-b border-gray-800 cursor-pointer hover:bg-gray-900/50 transition" onClick={()=>setShowProfileModal(true)}>
+         <div className="p-6 border-b border-gray-800 cursor-pointer hover:bg-gray-900/50 transition group" onClick={()=>setShowProfileModal(true)}>
              <div className="flex items-center gap-3">
-                 <div className="h-10 w-10 bg-gradient-to-tr from-cyan-600 to-blue-600 rounded-full flex items-center justify-center font-bold text-white">
-                    {user.email[0].toUpperCase()}
+                 <div className="h-10 w-10 bg-gradient-to-tr from-cyan-600 to-blue-600 rounded-full flex items-center justify-center font-bold text-white shadow-lg shadow-cyan-900/20">
+                    {profileForm.name ? profileForm.name[0].toUpperCase() : user.email[0].toUpperCase()}
                  </div>
-                 <div>
-                     <h2 className="text-sm font-bold text-white">My Account</h2>
-                     <p className="text-[10px] text-gray-500">Click to edit</p>
+                 <div className="overflow-hidden">
+                     <h2 className="text-sm font-bold text-white truncate">{profileForm.name || "User"}</h2>
+                     <p className="text-[10px] text-gray-500 truncate group-hover:text-cyan-400 transition">Edit Profile</p>
                  </div>
              </div>
          </div>
@@ -255,15 +303,15 @@ export default function AdvertiserDashboard() {
                {id: "deposit", label: "Add Funds", icon: <Icons.Wallet/>},
                {id: "transactions", label: "History", icon: <Icons.History/>}
              ].map(item => (
-                 <button key={item.id} onClick={() => setActiveTab(item.id)} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold text-sm ${activeTab === item.id ? "bg-cyan-600 text-white shadow-lg" : "text-gray-400 hover:bg-gray-800 hover:text-white"}`}>
+                 <button key={item.id} onClick={() => setActiveTab(item.id)} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold text-sm ${activeTab === item.id ? "bg-cyan-600 text-white shadow-lg shadow-cyan-900/20" : "text-gray-400 hover:bg-gray-800 hover:text-white"}`}>
                     {item.icon} {item.label}
                  </button>
              ))}
          </nav>
          <div className="p-4 border-t border-gray-800">
              <div className="bg-gray-900 p-4 rounded-xl mb-4 border border-gray-800">
-                 <p className="text-xs text-gray-400 uppercase">Current Balance</p>
-                 <p className="text-xl font-bold text-green-400">৳ {Number(userData?.wallet?.current_balance || 0).toFixed(2)}</p>
+                 <p className="text-xs text-gray-400 uppercase font-bold tracking-wider">Balance</p>
+                 <p className="text-2xl font-black text-green-400 mt-1">৳ {calculatedBalance.toFixed(2)}</p>
              </div>
              <button onClick={()=>signOut(auth)} className="w-full flex items-center justify-center gap-2 text-red-400 hover:bg-red-900/30 p-3 rounded-xl transition text-sm font-bold"><Icons.Logout /> Logout</button>
          </div>
@@ -311,7 +359,7 @@ export default function AdvertiserDashboard() {
             <div className="space-y-4">
                 <div className="flex justify-between items-center mb-6">
                     <h2 className="text-2xl font-bold text-white">Manage Campaigns</h2>
-                    <button onClick={()=>{setEditingId(null); setActiveTab('new_ad')}} className="bg-cyan-600 text-white px-4 py-2 rounded-lg font-bold text-sm">+ New Ad</button>
+                    <button onClick={()=>{setEditingId(null); setActiveTab('new_ad')}} className="bg-cyan-600 text-white px-4 py-2 rounded-lg font-bold text-sm hover:bg-cyan-500 transition">+ New Ad</button>
                 </div>
                 {campaigns.length === 0 ? <p className="text-gray-500">No campaigns found.</p> : campaigns.map(cam => (
                     <div key={cam.id} className="bg-[#18181b] p-6 rounded-2xl border border-gray-800 flex justify-between items-center group hover:border-gray-700 transition">
@@ -325,7 +373,7 @@ export default function AdvertiserDashboard() {
                                     </span>
                                 </h3>
                                 <div className="text-xs text-gray-500 mt-1 flex gap-3">
-                                    <span className="bg-gray-800 px-2 py-0.5 rounded">{cam.category}</span>
+                                    <span className="bg-gray-800 px-2 py-0.5 rounded border border-gray-700">{cam.category || "General"}</span>
                                     <span>Rate: <strong className="text-gray-300">{cam.bid_rate} TK</strong></span>
                                     <span>Spent: <strong className="text-gray-300">{cam.spent_amount} / {cam.total_budget} TK</strong></span>
                                 </div>
@@ -353,7 +401,7 @@ export default function AdvertiserDashboard() {
 
         {/* --- CREATE / EDIT AD FORM --- */}
         {activeTab === 'new_ad' && (
-            <div className="max-w-3xl bg-[#18181b] p-8 rounded-2xl border border-gray-800">
+            <div className="max-w-3xl bg-[#18181b] p-8 rounded-2xl border border-gray-800 animate-fadeIn">
                 <div className="flex justify-between items-center mb-6">
                     <h2 className="text-2xl font-bold text-white">{editingId ? "Edit Campaign" : "Start New Campaign"}</h2>
                     {editingId && <button onClick={()=>{setEditingId(null); setAdForm({...adForm, title: ""})}} className="text-xs text-red-400 hover:underline">Cancel Edit</button>}
@@ -363,27 +411,27 @@ export default function AdvertiserDashboard() {
                     <div className="grid grid-cols-2 gap-6">
                         <div>
                             <label className="text-xs font-bold text-gray-500 uppercase">Campaign Title</label>
-                            <input className="w-full bg-black border border-gray-700 p-3 rounded-lg text-white mt-1" value={adForm.title} onChange={e=>setAdForm({...adForm, title: e.target.value})}/>
+                            <input className="w-full bg-black border border-gray-700 p-3 rounded-lg text-white mt-1 outline-none focus:border-cyan-500 transition" value={adForm.title} onChange={e=>setAdForm({...adForm, title: e.target.value})}/>
                         </div>
                         <div>
                             <label className="text-xs font-bold text-gray-500 uppercase">Target URL</label>
-                            <input className="w-full bg-black border border-gray-700 p-3 rounded-lg text-white mt-1" placeholder="https://..." value={adForm.link} onChange={e=>setAdForm({...adForm, link: e.target.value})}/>
+                            <input className="w-full bg-black border border-gray-700 p-3 rounded-lg text-white mt-1 outline-none focus:border-cyan-500 transition" placeholder="https://..." value={adForm.link} onChange={e=>setAdForm({...adForm, link: e.target.value})}/>
                         </div>
                     </div>
                     <div>
                         <label className="text-xs font-bold text-gray-500 uppercase">Banner Image URL</label>
-                        <input className="w-full bg-black border border-gray-700 p-3 rounded-lg text-white mt-1" placeholder="https://imgur.com/..." value={adForm.imageUrl} onChange={e=>setAdForm({...adForm, imageUrl: e.target.value})}/>
+                        <input className="w-full bg-black border border-gray-700 p-3 rounded-lg text-white mt-1 outline-none focus:border-cyan-500 transition" placeholder="https://imgur.com/..." value={adForm.imageUrl} onChange={e=>setAdForm({...adForm, imageUrl: e.target.value})}/>
                     </div>
                     <div className="grid grid-cols-2 gap-6">
                         <div>
                             <label className="text-xs font-bold text-gray-500 uppercase">Category</label>
-                            <select className="w-full bg-black border border-gray-700 p-3 rounded-lg text-white mt-1" value={adForm.category} onChange={e=>setAdForm({...adForm, category: e.target.value})}>
+                            <select className="w-full bg-black border border-gray-700 p-3 rounded-lg text-white mt-1 outline-none focus:border-cyan-500 transition" value={adForm.category} onChange={e=>setAdForm({...adForm, category: e.target.value})}>
                                 {categories.map(c => <option key={c} value={c}>{c}</option>)}
                             </select>
                         </div>
                         <div>
                             <label className="text-xs font-bold text-gray-500 uppercase">Ad Model</label>
-                            <select className="w-full bg-black border border-gray-700 p-3 rounded-lg text-white mt-1" value={adForm.type} onChange={e=>setAdForm({...adForm, type: e.target.value})}>
+                            <select className="w-full bg-black border border-gray-700 p-3 rounded-lg text-white mt-1 outline-none focus:border-cyan-500 transition" value={adForm.type} onChange={e=>setAdForm({...adForm, type: e.target.value})}>
                                 <option value="CPC">CPC (Per Click)</option>
                                 <option value="PPV">PPV (Per View)</option>
                             </select>
@@ -392,36 +440,37 @@ export default function AdvertiserDashboard() {
                     <div className="grid grid-cols-2 gap-6">
                         <div>
                             <label className="text-xs font-bold text-gray-500 uppercase">Rate (TK)</label>
-                            <input type="number" className="w-full bg-black border border-gray-700 p-3 rounded-lg text-white mt-1" value={adForm.rate} onChange={e=>setAdForm({...adForm, rate: e.target.value})}/>
+                            <input type="number" className="w-full bg-black border border-gray-700 p-3 rounded-lg text-white mt-1 outline-none focus:border-cyan-500 transition" value={adForm.rate} onChange={e=>setAdForm({...adForm, rate: e.target.value})}/>
                         </div>
                         <div>
                             <label className="text-xs font-bold text-gray-500 uppercase">Total Budget</label>
-                            <input type="number" className="w-full bg-black border border-gray-700 p-3 rounded-lg text-white mt-1" value={adForm.budget} onChange={e=>setAdForm({...adForm, budget: e.target.value})}/>
+                            <input type="number" className="w-full bg-black border border-gray-700 p-3 rounded-lg text-white mt-1 outline-none focus:border-cyan-500 transition" value={adForm.budget} onChange={e=>setAdForm({...adForm, budget: e.target.value})}/>
                         </div>
                     </div>
-                    <button onClick={handleAdSubmit} disabled={loading} className="w-full bg-cyan-600 hover:bg-cyan-500 py-4 rounded-xl font-bold text-white transition">{loading?"Processing...": editingId ? "Update Campaign" : "Launch Campaign"}</button>
+                    <button onClick={handleAdSubmit} disabled={loading} className="w-full bg-cyan-600 hover:bg-cyan-500 py-4 rounded-xl font-bold text-white transition shadow-lg">{loading?"Processing...": editingId ? "Update Campaign" : "Launch Campaign"}</button>
                 </div>
             </div>
         )}
 
         {/* --- DEPOSIT & HISTORY --- */}
         {activeTab === 'deposit' && (
-            <div className="max-w-2xl bg-[#18181b] p-8 rounded-2xl border border-gray-800">
+            <div className="max-w-2xl bg-[#18181b] p-8 rounded-2xl border border-gray-800 animate-fadeIn">
                 <h2 className="text-2xl font-bold text-white mb-6">Add Funds</h2>
                 <div className="grid grid-cols-3 gap-4 mb-6">
                     {['bkash', 'nagad', 'binance'].map(m => (
-                        <div key={m} onClick={()=>setDepositForm({...depositForm, method: m})} className={`p-4 border rounded-xl cursor-pointer text-center capitalize font-bold ${depositForm.method===m ? 'border-cyan-500 bg-cyan-900/20 text-cyan-400' : 'border-gray-700 text-gray-400'}`}>
+                        <div key={m} onClick={()=>setDepositForm({...depositForm, method: m})} className={`p-4 border rounded-xl cursor-pointer text-center capitalize font-bold transition ${depositForm.method===m ? 'border-cyan-500 bg-cyan-900/20 text-cyan-400' : 'border-gray-700 text-gray-400 hover:bg-gray-900'}`}>
                             {m}
                         </div>
                     ))}
                 </div>
-                <div className="bg-gray-900 p-4 rounded-lg mb-6 border border-gray-800 text-center">
-                    <p className="text-xs text-gray-500 mb-1">Send Money To</p>
-                    <p className="text-lg font-mono text-white select-all">{adminConfig?.payment_info?.[depositForm.method] || "Contact Admin"}</p>
+                <div className="bg-gray-900 p-4 rounded-lg mb-6 border border-gray-800 text-center relative group">
+                    <p className="text-xs text-gray-500 mb-1 uppercase tracking-widest">Send Money To</p>
+                    <p className="text-xl font-mono text-white select-all">{adminConfig?.payment_info?.[depositForm.method] || "Loading..."}</p>
+                    <button onClick={()=>copyToClipboard(adminConfig?.payment_info?.[depositForm.method])} className="absolute right-4 top-4 text-gray-500 hover:text-white"><Icons.Copy/></button>
                 </div>
-                <input className="w-full bg-black border border-gray-700 p-4 rounded-xl text-white mb-4" placeholder="Amount (BDT)" type="number" onChange={e=>setDepositForm({...depositForm, amount: e.target.value})}/>
-                <input className="w-full bg-black border border-gray-700 p-4 rounded-xl text-white mb-6" placeholder="Transaction ID" onChange={e=>setDepositForm({...depositForm, trnxId: e.target.value})}/>
-                <button onClick={handleDeposit} disabled={loading} className="w-full bg-green-600 hover:bg-green-500 py-4 rounded-xl font-bold text-white">Confirm Deposit</button>
+                <input className="w-full bg-black border border-gray-700 p-4 rounded-xl text-white mb-4 outline-none focus:border-cyan-500 transition" placeholder="Amount (BDT)" type="number" onChange={e=>setDepositForm({...depositForm, amount: e.target.value})}/>
+                <input className="w-full bg-black border border-gray-700 p-4 rounded-xl text-white mb-6 outline-none focus:border-cyan-500 transition" placeholder="Transaction ID (TrxID)" onChange={e=>setDepositForm({...depositForm, trnxId: e.target.value})}/>
+                <button onClick={handleDeposit} disabled={loading} className="w-full bg-green-600 hover:bg-green-500 py-4 rounded-xl font-bold text-white transition shadow-lg">Confirm Deposit</button>
             </div>
         )}
 
@@ -429,10 +478,10 @@ export default function AdvertiserDashboard() {
             <div className="space-y-4">
                 <h2 className="text-2xl font-bold text-white mb-6">Transaction History</h2>
                 {deposits.map(dep => (
-                    <div key={dep.id} className="bg-[#18181b] p-4 rounded-xl border border-gray-800 flex justify-between items-center">
+                    <div key={dep.id} className="bg-[#18181b] p-4 rounded-xl border border-gray-800 flex justify-between items-center hover:border-gray-700 transition">
                         <div>
                             <p className="text-white font-bold text-lg">৳ {dep.amount}</p>
-                            <p className="text-gray-500 text-xs uppercase">{dep.method} • {dep.trx_id}</p>
+                            <p className="text-gray-500 text-xs uppercase font-mono">{dep.method} • {dep.trx_id}</p>
                         </div>
                         <span className={`px-3 py-1 rounded text-xs font-bold uppercase ${dep.status==='approved'?'bg-green-900 text-green-400':dep.status==='pending'?'bg-yellow-900 text-yellow-400':'bg-red-900 text-red-400'}`}>{dep.status}</span>
                     </div>
