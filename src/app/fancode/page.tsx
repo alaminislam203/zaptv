@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import dynamic from "next/dynamic";
+import UserAdDisplay from "../../../components/UserAdDisplay";
 
 // --- DYNAMIC IMPORTS ---
 const LoadingPlayer = () => (
@@ -220,7 +221,7 @@ export default function FanCodePage() {
                     </p>
                 </div>
             </div>
-
+<UserAdDisplay location="top" />
             {/* Guide Box */}
             <div className="bg-blue-900/10 border border-blue-500/20 rounded-xl p-4 flex gap-4">
                 <div className="p-2 bg-blue-500/10 rounded-lg text-blue-400 h-fit"><Icons.Info /></div>
