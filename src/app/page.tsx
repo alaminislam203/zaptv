@@ -124,7 +124,7 @@ export default function HomePage() {
       sub: "News & Entertainment",
       desc: "বাংলাদেশের সব খবর, নাটক এবং বিনোদনমূলক চ্যানেল।",
       icon: <Icons.Tv />,
-      link: "/livetv",
+      link: "/bd",
       color: "from-emerald-600 to-green-600",
       badge: "24/7"
     },
