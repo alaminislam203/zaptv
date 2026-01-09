@@ -94,7 +94,7 @@ export default function HomePage() {
       sub: currentDate,
       desc: "আজকের সমস্ত হাই-ভোল্টেজ ফুটবল এবং ক্রিকেট ম্যাচ।",
       icon: <Icons.Fire />,
-      link: "/tdmatch", 
+      link: "/fancode", 
       color: "from-orange-600 to-red-600",
       badge: "Live"
     },
