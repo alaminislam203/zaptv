@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import UserAdDisplay from "../../components/UserAdDisplay";
 
 export default function HomePage() {
   const [currentDate, setCurrentDate] = useState("");
@@ -252,7 +253,7 @@ export default function HomePage() {
                 </div>
             </div>
         </section>
-
+<UserAdDisplay location="top" />
         {/* --- PLAYLISTS GRID --- */}
         <section>
             <div className="flex items-end justify-between mb-8">
@@ -292,7 +293,7 @@ export default function HomePage() {
                 ))}
             </div>
         </section>
-
+<UserAdDisplay location="middle" />
         {/* --- SUPPORT / AD-FREE CTA --- */}
         <section className="relative rounded-3xl overflow-hidden bg-gradient-to-r from-indigo-950 to-blue-950 border border-indigo-500/30 text-center md:text-left">
             <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/10 rounded-full blur-[80px]"></div>
@@ -330,7 +331,7 @@ export default function HomePage() {
                 </div>
             </div>
         </section>
-
+<UserAdDisplay location="bottom" />
         {/* --- FAQ SECTION --- */}
         <section className="max-w-3xl mx-auto">
             <h2 className="text-2xl font-bold text-center text-white mb-8">সচরাচর জিজ্ঞাসিত প্রশ্নাবলী</h2>
