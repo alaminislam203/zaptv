@@ -221,7 +221,7 @@ export default function FanCodePage() {
                     </p>
                 </div>
             </div>
-<UserAdDisplay location="top" />
+
             {/* Guide Box */}
             <div className="bg-blue-900/10 border border-blue-500/20 rounded-xl p-4 flex gap-4">
                 <div className="p-2 bg-blue-500/10 rounded-lg text-blue-400 h-fit"><Icons.Info /></div>
@@ -235,7 +235,7 @@ export default function FanCodePage() {
                 </div>
             </div>
         </div>
-
+<UserAdDisplay location="top" />
         {/* Filters */}
         <div className="max-w-7xl mx-auto px-4 mt-8">
             <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
