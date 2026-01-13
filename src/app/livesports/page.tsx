@@ -81,19 +81,15 @@ function LiveTVContent() {
 
   // --- LOGIC: AD SCRIPT INTEGRATION ---
   useEffect(() => {
-    // Injecting the requested ad script
     const script = document.createElement("script");
     script.dataset.zone = "10282293";
     script.src = "https://al5sm.com/tag.min.js";
     
-    // Safety check and append
     const target = document.body || document.documentElement;
     if (target) {
         target.appendChild(script);
     }
-
     return () => {
-        // Cleanup if needed, though these scripts persist
         if (target && script.parentNode === target) {
             target.removeChild(script);
         }
@@ -102,7 +98,6 @@ function LiveTVContent() {
 
   // --- LOGIC: AD ROTATION ---
   useEffect(() => {
-    // প্রতি ৫ সেকেন্ড পর পর অ্যাড পরিবর্তন হবে
     const interval = setInterval(() => {
         setAdIndex((prev) => prev + 1);
     }, 5000); 
@@ -116,13 +111,12 @@ function LiveTVContent() {
   const currentMiddleAd = middleAds.length > 0 ? middleAds[adIndex % middleAds.length] : null;
 
   // --- LOGIC: 4-DIGIT ID GENERATOR ---
-  // চ্যানেল আইডি থেকে একটি ইউনিক ৪ সংখ্যার কোড তৈরি করবে
   const getShortId = (id: string) => {
     let hash = 0;
     for (let i = 0; i < id.length; i++) {
         hash = id.charCodeAt(i) + ((hash << 5) - hash);
     }
-    const short = Math.abs(hash % 9000) + 1000; // Always 4 digits (1000-9999)
+    const short = Math.abs(hash % 9000) + 1000;
     return short.toString();
   };
 
@@ -179,7 +173,7 @@ function LiveTVContent() {
     return () => { unsubChannels(); unsubAds(); unsubSettings(); };
   }, []);
 
-  // Stats Logic (Simplified)
+  // Stats Logic
   useEffect(() => {
     if (!isClient) return;
     const counterRef = doc(db, 'counters', 'visitors');
@@ -205,19 +199,6 @@ function LiveTVContent() {
     return () => { unsub(); off(connectedRef); off(statusRef); onDisconnect(myConnectionsRef).cancel(); set(myConnectionsRef, null); };
   }, [isClient]);
 
-  // Anti-Adblock
-  useEffect(() => {
-    if (!scriptsLoaded.current) {
-      const detectAdBlock = async () => {
-          let adBlockEnabled = false;
-          try { await fetch(new Request("https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js", { method: 'HEAD', mode: 'no-cors' })); } catch (e) { adBlockEnabled = true; }
-          if (adBlockEnabled) console.log("Adblock Detected");
-      };
-      setTimeout(detectAdBlock, 2000);
-    }
-    scriptsLoaded.current = true;
-  }, [siteConfig]);
-
   const checkIfFavorite = (id: string) => setIsFavorite(JSON.parse(localStorage.getItem("favorites") || '[]').some((c: Channel) => c.id === id));
    
   const toggleFavorite = () => {
@@ -231,7 +212,6 @@ function LiveTVContent() {
 
   const handleShare = () => {
     if (!currentChannel) return;
-    // URL কপি হবে, কিন্তু ইউজার দেখবে ৪ ডিজিট আইডি কনসেপ্ট
     const url = `${window.location.origin}${window.location.pathname}?play=${currentChannel.id}`;
     navigator.clipboard.writeText(url);
     setShareCopied(true);
@@ -297,8 +277,10 @@ function LiveTVContent() {
     );
   }
 
+  // --- UPDATED LAYOUT FIXES HERE ---
   return (
-    <main className="min-h-screen bg-[#050b14] text-gray-200 font-sans pb-0 select-none selection:bg-cyan-500/30">
+    // Added flex & flex-col to main to handle sticky footer properly
+    <main className="min-h-screen bg-[#050b14] text-gray-200 font-sans selection:bg-cyan-500/30 flex flex-col">
       
       {/* --- Header --- */}
       <header className="sticky top-0 z-50 bg-[#050b14]/80 backdrop-blur-md border-b border-white/5">
@@ -321,7 +303,8 @@ function LiveTVContent() {
         </div>
       </header>
 
-      <div className="max-w-5xl mx-auto px-2 md:px-4 mt-6 space-y-6">
+      {/* Added flex-grow and pb-20 to ensure content pushes footer down and leaves space */}
+      <div className="max-w-5xl mx-auto px-2 md:px-4 mt-6 space-y-6 flex-grow pb-24">
         
         {/* --- Marquee --- */}
         <div className="bg-[#0f172a] border border-gray-800 rounded-lg h-10 flex items-center overflow-hidden relative shadow-lg">
@@ -335,7 +318,7 @@ function LiveTVContent() {
             </div>
         </div>
    
-        {/* --- Action Buttons Grid --- */}
+        {/* --- Buttons --- */}
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             <Link href="https://t.me/toffeepro" target="_blank" className="bg-[#1e293b] hover:bg-[#263349] border border-gray-700 p-3 rounded-xl flex items-center justify-between group transition">
                 <span className="text-xs text-gray-400">Join Telegram</span>
@@ -351,7 +334,7 @@ function LiveTVContent() {
             </Link>
         </div>
 
-        {/* --- Gambling Warning (জুয়া বিরোধী সতর্কবার্তা) --- */}
+        {/* --- Warning --- */}
         <div className="bg-red-950/30 border border-red-500/30 rounded-xl p-4 flex gap-4 items-start">
             <div className="shrink-0 text-red-500 p-1 bg-red-500/10 rounded-full mt-1">
                 <Icons.Shield />
@@ -359,17 +342,15 @@ function LiveTVContent() {
             <div>
                 <h3 className="text-red-400 font-bold text-sm uppercase tracking-wide mb-1">সতর্কবার্তা</h3>
                 <p className="text-[11px] md:text-xs text-gray-400 leading-relaxed">
-                    এই সাইটটি শুধুমাত্র খেলা দেখার জন্য। আমরা কোনো ধরনের <strong className="text-gray-300">বেটিং (Betting), জুয়া বা প্রেডিকশন</strong> অ্যাপ প্রমোট করি না। খেলার মাঝে কোনো জুয়ার বিজ্ঞাপন আসলে দয়া করে তাতে ক্লিক করবেন না। জুয়া আর্থিক এবং ধর্মীয় উভয়ভাবেই ক্ষতিকর।
+                    এই সাইটটি শুধুমাত্র খেলা দেখার জন্য। আমরা কোনো ধরনের <strong className="text-gray-300">বেটিং (Betting), জুয়া বা প্রেডিকশন</strong> অ্যাপ প্রমোট করি না। খেলার মাঝে কোনো জুয়ার বিজ্ঞাপন আসলে দয়া করে তাতে ক্লিক করবেন না।
                 </p>
             </div>
         </div>
 
-        {/* --- TOP AD (ROTATING) --- */}
+        {/* --- TOP AD --- */}
         {currentTopAd && (
           <div className="w-full h-[100px] sm:h-[120px] bg-[#020617] rounded-xl flex items-center justify-center overflow-hidden border border-gray-800 relative group animate-fadeIn">
-            <span className="absolute top-0 right-0 bg-gray-800 text-[9px] px-1.5 py-0.5 text-gray-400 rounded-bl-lg z-20">
-                Sponsored {topAds.length > 1 && "⟳"}
-            </span>
+            <span className="absolute top-0 right-0 bg-gray-800 text-[9px] px-1.5 py-0.5 text-gray-400 rounded-bl-lg z-20">Sponsored</span>
             {currentTopAd.imageUrl ? (
                 <a href={currentTopAd.link || "#"} target="_blank" className="w-full h-full flex items-center justify-center relative">
                     <img src={currentTopAd.imageUrl} alt="Advertisement" className="h-full w-auto object-contain max-w-full transition-opacity duration-500" />
@@ -380,7 +361,7 @@ function LiveTVContent() {
           </div>
         )}
 
-        {/* --- Main Player Section --- */}
+        {/* --- Main Player --- */}
         <div className="bg-[#0f172a] rounded-2xl overflow-hidden shadow-2xl border border-gray-800 relative">
             <div className="aspect-video w-full bg-black relative group">
                 <div key={`${currentChannel?.id}-${activeSourceIndex}-${playerType}`} className="w-full h-full">
@@ -399,23 +380,22 @@ function LiveTVContent() {
                         ))}
                    </div>
                 )}
-                
                 <div className="flex items-center gap-3 ml-auto">
-                    <button onClick={handleShare} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition text-xs font-bold ${shareCopied ? "bg-green-500/10 border-green-500/20 text-green-400" : "bg-gray-800 border-gray-700 text-gray-400 hover:text-cyan-400"}`} title="Share ID">
+                    <button onClick={handleShare} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition text-xs font-bold ${shareCopied ? "bg-green-500/10 border-green-500/20 text-green-400" : "bg-gray-800 border-gray-700 text-gray-400 hover:text-cyan-400"}`}>
                         {shareCopied ? <Icons.Check /> : <Icons.Share />}
-                        <span>{shareCopied ? "Copied" : currentChannel ? `#${getShortId(currentChannel.id)}` : "Share"}</span>
+                        <span>{shareCopied ? "Copied" : "Share"}</span>
                     </button>
-                    <button onClick={toggleFavorite} className={`p-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition ${isFavorite ? "text-red-500" : "text-gray-400 hover:text-red-400"}`} title="Favorite">
+                    <button onClick={toggleFavorite} className={`p-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition ${isFavorite ? "text-red-500" : "text-gray-400 hover:text-red-400"}`}>
                         <Icons.Heart filled={isFavorite} />
                     </button>
-                    <button onClick={handleReport} className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 transition text-xs font-bold" title="Report Issue">
+                    <button onClick={handleReport} className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 transition text-xs font-bold">
                         <Icons.Report /> <span>Report</span>
                     </button>
                 </div>
             </div>
         </div>
 
-        {/* --- Direct Link Button --- */}
+        {/* --- Direct Link --- */}
         {activeDirectLink && (
             <div className="flex justify-center">
                 <a href={activeDirectLink.url} target="_blank" rel="noopener noreferrer" className="group relative inline-flex items-center gap-2 rounded-full px-8 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold shadow-lg shadow-emerald-500/20 hover:scale-105 transition-all overflow-hidden">
@@ -426,16 +406,14 @@ function LiveTVContent() {
             </div>
         )}
 
-        {/* --- Channel Info Card --- */}
+        {/* --- Info Card --- */}
         <div className="bg-[#1e293b] p-5 rounded-2xl border border-gray-700 flex flex-col md:flex-row items-center gap-5 md:gap-6 shadow-lg">
            <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-[#0f172a] border-2 border-gray-600 p-1 flex-shrink-0 relative">
                 {currentChannel?.logo ? <img src={currentChannel.logo} className="w-full h-full object-cover rounded-full" /> : <div className="w-full h-full flex items-center justify-center text-gray-600"><Icons.Tv /></div>}
-                {currentChannel && <div className="absolute bottom-0 right-0 w-5 h-5 bg-green-500 border-2 border-[#1e293b] rounded-full animate-bounce"></div>}
            </div>
            <div className="flex-1 text-center md:text-left space-y-2">
              <h2 className="text-xl md:text-2xl font-bold text-white">{currentChannel?.name || "No Channel Selected"}</h2>
              <p className="text-xs text-cyan-400 font-mono tracking-wide">{currentChannel ? "● Streaming Live in HD" : "Select a channel to begin"}</p>
-             {/* Source Switcher */}
              {currentChannel && currentChannel.sources.length > 1 && (
                <div className="flex gap-2 flex-wrap justify-center md:justify-start mt-2">
                  {currentChannel.sources.map((src, idx) => (
@@ -448,21 +426,20 @@ function LiveTVContent() {
            </div>
         </div>
         
-        {/* --- Instructions / Guide --- */}
+        {/* --- Quick Guide --- */}
         <div className="bg-[#0f172a] rounded-xl p-4 border border-gray-800">
             <h3 className="text-gray-400 text-xs font-bold uppercase mb-2 tracking-widest border-b border-gray-800 pb-2">Quick Guide</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-gray-500">
                 <p>1. Video লোড না হলে <strong>Server</strong> পরিবর্তন করে দেখুন।</p>
                 <p>2. প্লেয়ারে সমস্যা হলে <strong>Engine</strong> (Plyr/Native) চেঞ্জ করুন।</p>
                 <p>3. সাউন্ড না আসলে প্লেয়ারে ট্যাপ করে <strong>Unmute</strong> করুন।</p>
-                <p>4. বাফারিং এড়াতে ইন্টারনেট স্পিড চেক করুন।</p>
             </div>
         </div>
 
-        {/* --- MIDDLE AD (ROTATING) --- */}
+        {/* --- MIDDLE AD --- */}
         {currentMiddleAd && (
             <div className="w-full h-[90px] bg-[#020617] rounded-xl flex items-center justify-center overflow-hidden border border-gray-800 relative animate-fadeIn">
-                <span className="absolute top-0 right-0 bg-gray-800 text-[9px] px-1 text-gray-500">Ad {middleAds.length > 1 && "⟳"}</span>
+                <span className="absolute top-0 right-0 bg-gray-800 text-[9px] px-1 text-gray-500">Ad</span>
                 {currentMiddleAd.imageUrl ? (
                       <a href={currentMiddleAd.link || "#"} target="_blank" className="w-full h-full flex items-center justify-center">
                         <img src={currentMiddleAd.imageUrl} alt="Ad" className="h-full w-auto object-contain transition-opacity duration-500" />
@@ -477,7 +454,7 @@ function LiveTVContent() {
               <h3 className="text-lg font-bold text-white flex items-center gap-2"><Icons.Tv /> Live Channels</h3>
               <div className="relative w-full md:w-64">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-500"><Icons.Search /></div>
-                <input type="text" placeholder="Search channels..." className="w-full bg-[#1f2937] text-white text-sm py-2 pl-10 pr-4 rounded-lg border border-gray-700 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+                <input type="text" placeholder="Search..." className="w-full bg-[#1f2937] text-white text-sm py-2 pl-10 pr-4 rounded-lg border border-gray-700 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
               </div>
           </div>
 
@@ -497,30 +474,30 @@ function LiveTVContent() {
             </div>
           )}
         </div>
-
       </div>
 
-      {/* --- Beautiful Redesigned Footer --- */}
-      <footer className="mt-16 pt-8 pb-6 bg-[#020617] border-t border-gray-800 relative overflow-hidden">
+      {/* --- Footer --- */}
+      {/* Changed to mt-auto to stick at bottom, removed negative margins that caused overlap issues */}
+      <footer className="mt-auto pt-8 pb-6 bg-[#020617] border-t border-gray-800 relative overflow-visible">
         {/* Glow Effect */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full max-w-4xl bg-cyan-500/5 blur-[100px] rounded-full pointer-events-none"></div>
         
         <div className="max-w-6xl mx-auto px-4 relative z-10">
-            {/* Stats Cards (Floating Effect) */}
-            <div className="grid grid-cols-3 gap-4 mb-10 -mt-16">
+            {/* Stats Cards - Floating Effect Adjusted */}
+            <div className="grid grid-cols-3 gap-4 mb-10 -mt-20">
                 {[
-                    { label: "Live Users", value: onlineUsers, color: "text-green-400", border: "border-green-500/20", bg: "bg-green-500/5" },
-                    { label: "Total Visits", value: totalVisitors, color: "text-cyan-400", border: "border-cyan-500/20", bg: "bg-cyan-500/5" },
-                    { label: "Channels", value: totalChannels, color: "text-purple-400", border: "border-purple-500/20", bg: "bg-purple-500/5" }
+                    { label: "Live Users", value: onlineUsers, color: "text-green-400", border: "border-green-500/20", bg: "bg-[#020617]" },
+                    { label: "Total Visits", value: totalVisitors, color: "text-cyan-400", border: "border-cyan-500/20", bg: "bg-[#020617]" },
+                    { label: "Channels", value: totalChannels, color: "text-purple-400", border: "border-purple-500/20", bg: "bg-[#020617]" }
                 ].map((stat, i) => (
-                    <div key={i} className={`flex flex-col items-center justify-center p-4 rounded-xl backdrop-blur-md border ${stat.border} ${stat.bg} shadow-lg shadow-black/50 transition hover:-translate-y-1`}>
+                    <div key={i} className={`flex flex-col items-center justify-center p-4 rounded-xl backdrop-blur-xl border ${stat.border} ${stat.bg} shadow-2xl transition hover:-translate-y-1`}>
                         <span className={`text-xl md:text-3xl font-black ${stat.color} tabular-nums`}>{stat.value}</span>
                         <span className="text-[10px] md:text-xs uppercase font-bold text-gray-400 tracking-wider mt-1">{stat.label}</span>
                     </div>
                 ))}
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-10 mb-12">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-10 mb-12 pt-6">
                 {/* Brand */}
                 <div className="space-y-4">
                     <div className="flex items-center gap-2">
