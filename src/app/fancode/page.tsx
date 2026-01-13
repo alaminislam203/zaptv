@@ -56,7 +56,7 @@ export default function FanCodePage() {
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [copiedId, setCopiedId] = useState<number | null>(null);
-  
+   
   const [userRegion, setUserRegion] = useState<string | null>(null);
   const [showRegionModal, setShowRegionModal] = useState(false);
 
@@ -64,6 +64,26 @@ export default function FanCodePage() {
   const [playerType, setPlayerType] = useState<"native" | "plyr">("native");
 
   const fallbackImage = "https://placehold.co/600x400/1a1a1a/FFF?text=No+Image";
+
+  // --- AD SCRIPT INTEGRATION ---
+  useEffect(() => {
+    // WARNING: This script injects ads (Pop-under/Direct Link)
+    // These ads may contain gambling/betting content.
+    const script = document.createElement("script");
+    script.dataset.zone = "10282293";
+    script.src = "https://al5sm.com/tag.min.js";
+    script.async = true;
+    
+    // Append to body ensuring it executes
+    document.body.appendChild(script);
+
+    return () => {
+      // Cleanup logic if needed, though usually these scripts persist
+      if (document.body.contains(script)) {
+        document.body.removeChild(script);
+      }
+    };
+  }, []);
 
   // --- DATA FETCHING & DEEP LINK LOGIC ---
   useEffect(() => {
