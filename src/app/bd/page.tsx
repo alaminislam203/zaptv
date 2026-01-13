@@ -12,7 +12,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation"; 
 import dynamic from "next/dynamic";
 import Image from "next/image";
-import UserAdDisplay from "../../../components/UserAdDisplay"; // পাথ চেক করুন
+import UserAdDisplay from "../../../components/UserAdDisplay"; 
 
 // --- DYNAMIC IMPORTS ---
 const LoadingPlayer = () => (
@@ -46,7 +46,9 @@ const Icons = {
     Server: () => <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" /></svg>,
     Tv: () => <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>,
     Shield: () => <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>,
-    Check: () => <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+    Check: () => <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>,
+    Telegram: () => <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.446 1.394c-.16.16-.295.295-.605.295l.213-3.054 5.56-5.022c.242-.213-.054-.334-.373-.121l-6.869 4.326-2.96-.924c-.64-.203-.658-.64.135-.954l11.566-4.458c.538-.196 1.006.128.832.941z"/></svg>,
+    Globe: () => <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" /></svg>
 };
 
 // --- M3U Parser ---
@@ -105,7 +107,7 @@ function LiveTVContent() {
 
   // Ad Rotation State
   const [adIndex, setAdIndex] = useState(0);
-  
+   
   // Infinite Scroll
   const [visibleCount, setVisibleCount] = useState(48);
 
@@ -120,6 +122,25 @@ function LiveTVContent() {
     const matchesStatus = hideReported ? !reportedChannelNames.has(ch.name) : true;
     return matchesSearch && matchesCategory && matchesStatus;
   });
+
+  // --- LOGIC: AD SCRIPT INTEGRATION ---
+  useEffect(() => {
+    // Injecting the requested ad script
+    const script = document.createElement("script");
+    script.dataset.zone = "10282293";
+    script.src = "https://al5sm.com/tag.min.js";
+    
+    const target = document.body || document.documentElement;
+    if (target) {
+        target.appendChild(script);
+    }
+
+    return () => {
+        if (target && script.parentNode === target) {
+            target.removeChild(script);
+        }
+    };
+  }, []);
 
   // --- LOGIC: AD ROTATION ---
   useEffect(() => {
@@ -245,18 +266,18 @@ function LiveTVContent() {
     };
     const unsub = onSnapshot(counterRef, (doc) => { if (doc.exists()) setTotalVisitors(doc.data().total); });
     incrementTotalVisitors();
-    
+     
     const statusRef = ref(rtdb, 'status');
     const connectedRef = ref(rtdb, '.info/connected');
     const myConnectionsRef = ref(rtdb, 'status/' + Math.random().toString(36).substr(2, 9));
     onValue(connectedRef, (snap) => { if (snap.val() === true) { set(myConnectionsRef, { timestamp: serverTimestamp() }); onDisconnect(myConnectionsRef).remove(); } });
     onValue(statusRef, (snap) => setOnlineUsers(snap.size));
-    
+     
     return () => { unsub(); off(connectedRef); off(statusRef); onDisconnect(myConnectionsRef).cancel(); set(myConnectionsRef, null); };
   }, [isClient]);
 
   const checkIfFavorite = (id: string) => setIsFavorite(JSON.parse(localStorage.getItem("favorites") || '[]').some((c: Channel) => c.id === id));
-  
+   
   const toggleFavorite = () => {
     if (!currentChannel) return;
     let favs = JSON.parse(localStorage.getItem("favorites") || '[]');
@@ -332,7 +353,7 @@ function LiveTVContent() {
   }
 
   return (
-    <main className="min-h-screen bg-[#050b14] text-gray-200 font-sans pb-10 select-none selection:bg-cyan-500/30">
+    <main className="min-h-screen bg-[#050b14] text-gray-200 font-sans pb-0 select-none selection:bg-cyan-500/30 flex flex-col">
       
       {/* --- Header --- */}
       <header className="sticky top-0 z-50 bg-[#050b14]/80 backdrop-blur-md border-b border-white/5">
@@ -355,7 +376,7 @@ function LiveTVContent() {
         </div>
       </header>
 
-      <div className="max-w-5xl mx-auto px-2 md:px-4 mt-6 space-y-6">
+      <div className="max-w-5xl mx-auto px-2 md:px-4 mt-6 space-y-6 flex-grow pb-24">
         
         {/* --- Marquee --- */}
         <div className="bg-[#0f172a] border border-gray-800 rounded-lg h-10 flex items-center overflow-hidden relative shadow-lg">
@@ -385,13 +406,17 @@ function LiveTVContent() {
             </Link>
         </div>
 
-        {/* --- Warning --- */}
-        <div className="bg-red-950/30 border border-red-500/30 rounded-xl p-4 flex gap-4 items-start">
-            <div className="shrink-0 text-red-500 p-1 bg-red-500/10 rounded-full mt-1"><Icons.Shield /></div>
+        {/* --- STRICT WARNING SECTION (GAMBLING & ADULT) --- */}
+        <div className="bg-red-950/40 border border-red-500/40 rounded-xl p-4 flex gap-4 items-start animate-pulse-slow">
+            <div className="shrink-0 text-red-500 p-2 bg-red-500/10 rounded-full mt-1">
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+            </div>
             <div>
-                <h3 className="text-red-400 font-bold text-sm uppercase tracking-wide mb-1">সতর্কবার্তা</h3>
-                <p className="text-[11px] md:text-xs text-gray-400 leading-relaxed">
-                    এই সাইটটি শুধুমাত্র খেলা দেখার জন্য। আমরা কোনো ধরনের <strong className="text-gray-300">বেটিং (Betting), জুয়া বা প্রেডিকশন</strong> অ্যাপ প্রমোট করি না। খেলার মাঝে কোনো জুয়ার বিজ্ঞাপন আসলে দয়া করে তাতে ক্লিক করবেন না।
+                <h3 className="text-red-500 font-extrabold text-sm uppercase tracking-wide mb-1 flex items-center gap-2">
+                   ⚠️ সতর্কতা (Warning)
+                </h3>
+                <p className="text-xs text-gray-300 leading-relaxed text-justify">
+                   এই সাইটে প্রদর্শিত বিজ্ঞাপনগুলো <strong>থার্ড-পার্টি</strong> দ্বারা নিয়ন্ত্রিত। এখানে মাঝে মাঝে <strong>জুয়া (Gambling/Betting)</strong> অথবা <strong>অশ্লীল/এডাল্ট (18+)</strong> বিজ্ঞাপন আসতে পারে। আমরা এগুলো সমর্থন করি না। দয়া করে এসব বিজ্ঞাপনে ক্লিক করা থেকে বিরত থাকুন এবং নিজ দায়িত্বে এড়িয়ে চলুন।
                 </p>
             </div>
         </div>
@@ -412,7 +437,8 @@ function LiveTVContent() {
           </div>
         )}
 
-        
+        {/* --- USER AD DISPLAY --- */}
+        <UserAdDisplay location="top" />
 
         {/* --- Main Player Section --- */}
         <div className="bg-[#0f172a] rounded-2xl overflow-hidden shadow-2xl border border-gray-800 relative">
@@ -448,7 +474,7 @@ function LiveTVContent() {
                 </div>
             </div>
         </div>
-<UserAdDisplay location="top" />
+
         {/* --- Direct Link --- */}
         {activeDirectLink && (
             <div className="flex justify-center">
@@ -490,9 +516,9 @@ function LiveTVContent() {
             <h3 className="text-gray-400 text-xs font-bold uppercase mb-2 tracking-widest border-b border-gray-800 pb-2">Quick Guide</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-gray-500">
                 <p>1. Video লোড না হলে <strong>Server</strong> পরিবর্তন করে দেখুন।</p>
-                <p>2. প্লেয়ারে সমস্যা হলে <strong>Engine</strong> (Plyr/Native) চেঞ্জ করুন।</p>
-                <p>3. সাউন্ড না আসলে প্লেয়ারে ট্যাপ করে <strong>Unmute</strong> করুন।</p>
-                <p>4. বাফারিং এড়াতে ইন্টারনেট স্পিড চেক করুন।</p>
+                <p>2. প্লেয়ারে সমস্যা হলে <strong>Engine</strong> (Plyr/Native) চেঞ্জ করুন।</p>
+                <p>3. সাউন্ড না আসলে প্লেয়ারে ট্যাপ করে <strong>Unmute</strong> করুন।</p>
+                <p>4. বাফারিং এড়াতে ইন্টারনেট স্পিড চেক করুন।</p>
             </div>
         </div>
 
@@ -501,9 +527,9 @@ function LiveTVContent() {
             <div className="w-full h-[90px] bg-[#020617] rounded-xl flex items-center justify-center overflow-hidden border border-gray-800 relative animate-fadeIn">
                 <span className="absolute top-0 right-0 bg-gray-800 text-[9px] px-1 text-gray-500">Ad {middleAds.length > 1 && "⟳"}</span>
                 {currentMiddleAd.imageUrl ? (
-                     <a href={currentMiddleAd.link || "#"} target="_blank" className="w-full h-full flex items-center justify-center">
+                      <a href={currentMiddleAd.link || "#"} target="_blank" className="w-full h-full flex items-center justify-center">
                         <img src={currentMiddleAd.imageUrl} alt="Ad" className="h-full w-auto object-contain transition-opacity duration-500" />
-                     </a>
+                      </a>
                 ) : <div className="text-gray-600 text-xs">{currentMiddleAd.text}</div>}
             </div>
         )}
@@ -543,21 +569,75 @@ function LiveTVContent() {
             </div>
           )}
         </div>
-
-        {/* --- Footer (Simple & Clean) --- */}
-        <footer className="text-center py-8 border-t border-gray-800 mt-8">
-            <div className="flex justify-center gap-6 mb-4 text-xs text-gray-400">
-                <span>Online: <strong className="text-green-400">{onlineUsers}</strong></span>
-                <span>Visits: <strong className="text-cyan-400">{totalVisitors}</strong></span>
-                <span>Channels: <strong className="text-purple-400">{totalChannels}</strong></span>
-            </div>
-            <p className="text-[10px] text-gray-600">
-                &copy; 2026 ToffeePro Streaming. <br/> 
-                Built for Sports Lovers.
-            </p>
-        </footer>
-
       </div>
+
+      {/* --- Footer (Modern Redesigned) --- */}
+      <footer className="mt-auto pt-8 pb-6 bg-[#020617] border-t border-gray-800 relative overflow-visible">
+        {/* Glow Effect */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full max-w-4xl bg-cyan-500/5 blur-[100px] rounded-full pointer-events-none"></div>
+        
+        <div className="max-w-6xl mx-auto px-4 relative z-10">
+            {/* Stats Cards - Floating Effect Adjusted */}
+            <div className="grid grid-cols-3 gap-4 mb-10 -mt-20">
+                {[
+                    { label: "Live Users", value: onlineUsers, color: "text-green-400", border: "border-green-500/20", bg: "bg-[#020617]" },
+                    { label: "Total Visits", value: totalVisitors, color: "text-cyan-400", border: "border-cyan-500/20", bg: "bg-[#020617]" },
+                    { label: "Channels", value: totalChannels, color: "text-purple-400", border: "border-purple-500/20", bg: "bg-[#020617]" }
+                ].map((stat, i) => (
+                    <div key={i} className={`flex flex-col items-center justify-center p-4 rounded-xl backdrop-blur-xl border ${stat.border} ${stat.bg} shadow-2xl transition hover:-translate-y-1`}>
+                        <span className={`text-xl md:text-3xl font-black ${stat.color} tabular-nums`}>{stat.value}</span>
+                        <span className="text-[10px] md:text-xs uppercase font-bold text-gray-400 tracking-wider mt-1">{stat.label}</span>
+                    </div>
+                ))}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-10 mb-12 pt-6">
+                {/* Brand */}
+                <div className="space-y-4">
+                    <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded bg-gradient-to-br from-cyan-600 to-blue-700 flex items-center justify-center text-white font-bold text-lg">T</div>
+                        <h2 className="text-2xl font-bold text-white">Toffee<span className="text-cyan-400">Pro</span></h2>
+                    </div>
+                    <p className="text-sm text-gray-500 leading-relaxed">
+                        Enjoy buffer-free live streaming of your favorite sports and TV channels in HD quality. Free for everyone, forever.
+                    </p>
+                </div>
+
+                {/* Quick Links */}
+                <div className="flex flex-col gap-2">
+                    <h3 className="text-white font-bold text-sm mb-2 uppercase tracking-wide">Quick Links</h3>
+                    <Link href="/" className="text-sm text-gray-500 hover:text-cyan-400 transition w-fit">Home</Link>
+                    <Link href="/livetv" className="text-sm text-gray-500 hover:text-cyan-400 transition w-fit">All Channels</Link>
+                    <Link href="/dmca" className="text-sm text-gray-500 hover:text-cyan-400 transition w-fit">DMCA Policy</Link>
+                    <Link href="/contact" className="text-sm text-gray-500 hover:text-cyan-400 transition w-fit">Contact Us</Link>
+                </div>
+
+                {/* Socials */}
+                <div className="flex flex-col gap-4">
+                    <h3 className="text-white font-bold text-sm mb-2 uppercase tracking-wide">Connect With Us</h3>
+                    <div className="flex gap-4">
+                        <a href="https://t.me/toffeepro" target="_blank" className="w-10 h-10 rounded-lg bg-[#1e293b] flex items-center justify-center text-gray-400 hover:bg-blue-600 hover:text-white transition border border-gray-700 hover:border-blue-500">
+                            <Icons.Telegram />
+                        </a>
+                         <a href="#" className="w-10 h-10 rounded-lg bg-[#1e293b] flex items-center justify-center text-gray-400 hover:bg-cyan-600 hover:text-white transition border border-gray-700 hover:border-cyan-500">
+                            <Icons.Globe />
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            {/* Bottom Bar */}
+            <div className="border-t border-gray-800 pt-6 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-gray-600">
+                <p>&copy; {new Date().getFullYear()} ToffeePro Inc. All rights reserved.</p>
+                <div className="flex items-center gap-1">
+                    <span>Made with</span>
+                    <Icons.Heart filled={true} />
+                    <span>for Streamers</span>
+                </div>
+            </div>
+        </div>
+      </footer>
+
     </main>
   );
 }
