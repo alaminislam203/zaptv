@@ -227,9 +227,14 @@ export default function FanCodePage() {
                          <div className="absolute bottom-0 left-0 w-full p-6 flex flex-col items-center text-center">
                              <h3 className="text-2xl font-black text-white italic mb-1">WIN BIG TODAY!</h3>
                              <p className="text-green-400 text-sm font-bold mb-4">100% DEPOSIT BONUS</p>
-                             <button className="w-full bg-green-500 hover:bg-green-400 text-black font-black py-3 rounded-xl shadow-lg shadow-green-500/20 transform hover:scale-105 transition-all flex items-center justify-center gap-2">
-                                 CLAIM NOW <Icons.Check />
-                             </button>
+                             <a 
+  href="https://otieu.com/4/7249389"  // <-- এখানে আপনার লিংক দিন
+  target="_blank"                             // নতুন ট্যাবে ওপেন হওয়ার জন্য
+  rel="noopener noreferrer"                   // সিকিউরিটির জন্য
+  className="w-full bg-green-500 hover:bg-green-400 text-black font-black py-3 rounded-xl shadow-lg shadow-green-500/20 transform hover:scale-105 transition-all flex items-center justify-center gap-2 cursor-pointer"
+>
+    CLAIM NOW <Icons.Check />
+</a>
                              <p className="text-[9px] text-zinc-500 mt-3">Terms & Conditions Apply. 18+ Only.</p>
                          </div>
                     </div>
