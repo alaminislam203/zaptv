@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import UserAdDisplay from "../../../components/UserAdDisplay";
+import UserAdDisplay from "../../components/UserAdDisplay";
 
 // --- DYNAMIC IMPORTS ---
 const LoadingPlayer = () => (
