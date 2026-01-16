@@ -21,14 +21,15 @@ const NativePlayer = dynamic(() => import("../../../components/NativePlayer"), {
 const Icons = {
   Play: () => <svg xmlns="http://www.w3.org/2000/svg" className="w-12 h-12 text-white drop-shadow-lg" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>,
   Back: () => <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>,
-  Close: () => <svg xmlns="http://www.w3.org/2000/svg" className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>,
+  Close: () => <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>,
   Live: () => <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-white animate-pulse" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>,
   Calendar: () => <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>,
   Globe: () => <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
   Warning: () => <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>,
   Share: () => <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>,
   Check: () => <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>,
-  Info: () => <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+  Info: () => <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
+  Maximize: () => <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>
 };
 
 // --- INTERFACES ---
@@ -56,7 +57,7 @@ export default function FanCodePage() {
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [copiedId, setCopiedId] = useState<number | null>(null);
-   
+    
   const [userRegion, setUserRegion] = useState<string | null>(null);
   const [showRegionModal, setShowRegionModal] = useState(false);
 
@@ -68,17 +69,13 @@ export default function FanCodePage() {
   // --- AD SCRIPT INTEGRATION ---
   useEffect(() => {
     // WARNING: This script injects ads (Pop-under/Direct Link)
-    // These ads may contain gambling/betting content.
     const script = document.createElement("script");
     script.dataset.zone = "10282293";
     script.src = "https://al5sm.com/tag.min.js";
     script.async = true;
-    
-    // Append to body ensuring it executes
     document.body.appendChild(script);
 
     return () => {
-      // Cleanup logic if needed, though usually these scripts persist
       if (document.body.contains(script)) {
         document.body.removeChild(script);
       }
@@ -157,65 +154,105 @@ export default function FanCodePage() {
         </div>
       )}
 
-      {/* --- CINEMATIC PLAYER OVERLAY --- */}
+      {/* --- SPLIT LAYOUT PLAYER OVERLAY --- */}
       {activeMatch && (
-        <div className="fixed inset-0 z-[100] bg-black animate-fadeIn flex flex-col">
+        <div className="fixed inset-0 z-[100] bg-[#050505] animate-fadeIn flex flex-col lg:flex-row overflow-hidden">
             
-            {/* Header */}
-            <div className="bg-gradient-to-b from-black/90 via-black/60 to-transparent p-4 flex justify-between items-center z-20 absolute top-0 w-full pointer-events-none">
-                <div className="pointer-events-auto flex items-center gap-3 bg-black/40 backdrop-blur-md p-2 pr-4 rounded-full border border-white/5">
-                    <div className="w-8 h-8 rounded-full bg-red-600 flex items-center justify-center text-white shadow-lg"><Icons.Live /></div>
-                    <div>
-                        <h2 className="text-white font-bold text-xs md:text-sm line-clamp-1">{activeMatch.match_name}</h2>
-                        <p className="text-zinc-400 text-[9px] uppercase tracking-wider">{activeMatch.event_category} • {userRegion}</p>
+            {/* LEFT SIDE: VIDEO PLAYER (75%) */}
+            <div className="w-full lg:w-3/4 h-full flex flex-col relative bg-black">
+                
+                {/* Custom Header INSIDE Player Area */}
+                <div className="absolute top-0 left-0 w-full z-20 bg-gradient-to-b from-black/90 via-black/50 to-transparent p-4 flex justify-between items-start pointer-events-none">
+                     <div className="pointer-events-auto flex items-center gap-3 bg-black/40 backdrop-blur-md px-3 py-2 rounded-lg border border-white/5">
+                        <div className="w-2 h-2 rounded-full bg-red-600 animate-pulse shadow-[0_0_10px_red]"></div>
+                        <div>
+                            <h2 className="text-white font-bold text-sm md:text-lg line-clamp-1">{activeMatch.match_name}</h2>
+                            <p className="text-zinc-400 text-[10px] uppercase tracking-wider">{activeMatch.event_category} • {userRegion === "BD" ? "Bangladesh Server" : "International Server"}</p>
+                        </div>
+                    </div>
+
+                    <div className="pointer-events-auto flex gap-2">
+                        {/* Player Switcher */}
+                         <div className="hidden md:flex bg-black/60 backdrop-blur-md rounded-lg p-1 border border-white/10">
+                            <button onClick={() => setPlayerType("native")} className={`px-3 py-1 rounded text-[10px] font-bold transition ${playerType === 'native' ? 'bg-red-600 text-white' : 'text-zinc-400 hover:text-white'}`}>Native</button>
+                            <button onClick={() => setPlayerType("plyr")} className={`px-3 py-1 rounded text-[10px] font-bold transition ${playerType === 'plyr' ? 'bg-red-600 text-white' : 'text-zinc-400 hover:text-white'}`}>Plyr</button>
+                        </div>
+
+                        {/* Close Button */}
+                        <button 
+                            onClick={() => {
+                                setActiveMatch(null);
+                                window.history.pushState({}, '', window.location.pathname);
+                            }} 
+                            className="bg-red-600 hover:bg-red-500 text-white w-9 h-9 flex items-center justify-center rounded-lg shadow-lg transition-all"
+                        >
+                            <Icons.Close />
+                        </button>
                     </div>
                 </div>
-                <div className="pointer-events-auto flex items-center gap-3">
-                    <div className="hidden md:flex bg-black/60 backdrop-blur-md rounded-full p-1 border border-white/10">
-                        <button onClick={() => setPlayerType("native")} className={`px-3 py-1 rounded-full text-[10px] font-bold transition ${playerType === 'native' ? 'bg-red-600 text-white' : 'text-zinc-400 hover:text-white'}`}>Native</button>
-                        <button onClick={() => setPlayerType("plyr")} className={`px-3 py-1 rounded-full text-[10px] font-bold transition ${playerType === 'plyr' ? 'bg-red-600 text-white' : 'text-zinc-400 hover:text-white'}`}>Plyr</button>
-                    </div>
-                </div>
-            </div>
 
-            {/* FIXED CLOSE BUTTON */}
-            <button 
-                onClick={() => {
-                    setActiveMatch(null);
-                    // Remove query param without refresh
-                    window.history.pushState({}, '', window.location.pathname);
-                }} 
-                className="fixed top-4 right-4 z-[200] w-12 h-12 flex items-center justify-center rounded-full bg-red-600/90 hover:bg-red-500 text-white shadow-2xl hover:shadow-red-500/50 transition-all duration-300 group cursor-pointer border-2 border-white/10"
-                title="Close Player"
-            >
-                <span className="transform group-hover:rotate-90 transition-transform duration-300">
-                    <Icons.Close />
-                </span>
-            </button>
-
-            {/* Player */}
-            <div className="flex-1 flex items-center justify-center bg-black relative group">
-                <div className="w-full h-full max-h-screen aspect-video relative">
-                    {(() => {
+                {/* Main Player */}
+                <div className="flex-1 w-full h-full flex items-center justify-center bg-black">
+                     {(() => {
                         const url = getStreamUrl(activeMatch);
                         if (!url) return <div className="text-red-500 flex flex-col gap-2 items-center justify-center h-full"><Icons.Warning/><span>Stream Unavailable</span></div>;
                         return playerType === "native" ? <NativePlayer src={url} /> : <PlyrPlayer src={url} />;
                     })()}
                 </div>
+
+                {/* Mobile Controls (Only visible on small screens below player) */}
+                <div className="lg:hidden p-3 bg-zinc-900 border-t border-zinc-800">
+                     <div className="flex bg-zinc-800 rounded p-1 border border-white/5 w-full">
+                        <button onClick={() => setPlayerType("native")} className={`flex-1 py-2 rounded text-xs font-bold transition ${playerType === 'native' ? 'bg-zinc-700 text-white' : 'text-zinc-400'}`}>Native</button>
+                        <button onClick={() => setPlayerType("plyr")} className={`flex-1 py-2 rounded text-xs font-bold transition ${playerType === 'plyr' ? 'bg-zinc-700 text-white' : 'text-zinc-400'}`}>Plyr</button>
+                    </div>
+                </div>
             </div>
 
-            {/* Mobile Controls */}
-            <div className="md:hidden p-4 bg-zinc-900 pb-8 flex justify-center">
-                 <div className="flex bg-zinc-800 rounded-lg p-1 border border-white/5 w-full max-w-xs">
-                    <button onClick={() => setPlayerType("native")} className={`flex-1 py-2 rounded text-xs font-bold transition ${playerType === 'native' ? 'bg-zinc-700 text-white' : 'text-zinc-400'}`}>Native Player</button>
-                    <button onClick={() => setPlayerType("plyr")} className={`flex-1 py-2 rounded text-xs font-bold transition ${playerType === 'plyr' ? 'bg-zinc-700 text-white' : 'text-zinc-400'}`}>Plyr Engine</button>
+            {/* RIGHT SIDE: ADS / SIDEBAR (25%) */}
+            <div className="hidden lg:flex w-1/4 h-full bg-[#0a0a0a] border-l border-zinc-800 flex-col relative z-50">
+                {/* Sidebar Header */}
+                <div className="h-14 border-b border-zinc-800 flex items-center px-4 bg-[#0f0f11]">
+                    <span className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Sponsored Content</span>
+                </div>
+
+                {/* Ad Content Area */}
+                <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4">
+                    
+                    {/* Primary Ad Unit (Simulating the 'Claim' ad from screenshot) */}
+                    <div className="w-full aspect-[3/4] rounded-2xl overflow-hidden relative group border border-zinc-800 hover:border-green-500/50 transition-all">
+                         <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?q=80&w=1000&auto=format&fit=crop')] bg-cover bg-center opacity-40"></div>
+                         <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent"></div>
+                         
+                         <div className="absolute bottom-0 left-0 w-full p-6 flex flex-col items-center text-center">
+                             <h3 className="text-2xl font-black text-white italic mb-1">WIN BIG TODAY!</h3>
+                             <p className="text-green-400 text-sm font-bold mb-4">100% DEPOSIT BONUS</p>
+                             <button className="w-full bg-green-500 hover:bg-green-400 text-black font-black py-3 rounded-xl shadow-lg shadow-green-500/20 transform hover:scale-105 transition-all flex items-center justify-center gap-2">
+                                 CLAIM NOW <Icons.Check />
+                             </button>
+                             <p className="text-[9px] text-zinc-500 mt-3">Terms & Conditions Apply. 18+ Only.</p>
+                         </div>
+                    </div>
+
+                    {/* Secondary Ad Slot */}
+                    <div className="bg-zinc-900 rounded-xl p-4 border border-zinc-800">
+                        <UserAdDisplay location="sidebar" />
+                    </div>
+
+                     {/* Chat/Info Placeholder */}
+                     <div className="mt-auto bg-zinc-900/50 rounded-xl p-4 border border-zinc-800">
+                         <h4 className="text-white text-sm font-bold mb-2 flex items-center gap-2"><Icons.Info /> Stream Info</h4>
+                         <p className="text-xs text-zinc-400 leading-relaxed">
+                             Watching <strong>{activeMatch.match_name}</strong>. If playback issues occur, try switching the player engine or reloading the page.
+                         </p>
+                     </div>
                 </div>
             </div>
         </div>
       )}
 
       {/* --- MAIN PAGE CONTENT --- */}
-      <div className={`transition-all duration-700 ease-in-out ${activeMatch ? 'opacity-0 pointer-events-none blur-2xl scale-95 h-screen overflow-hidden' : 'opacity-100 scale-100'}`}>
+      <div className={`transition-all duration-700 ease-in-out ${activeMatch ? 'opacity-0 pointer-events-none blur-xl scale-95 h-screen overflow-hidden' : 'opacity-100 scale-100'}`}>
         
         {/* Navbar */}
         <header className="sticky top-0 z-40 bg-[#050505]/90 backdrop-blur-lg border-b border-white/5">
@@ -228,7 +265,7 @@ export default function FanCodePage() {
             </div>
         </header>
 
-        {/* --- ⚠️ WARNING & INFO SECTION (NEW) --- */}
+        {/* --- ⚠️ WARNING & INFO SECTION --- */}
         <div className="max-w-7xl mx-auto px-4 mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
             
             {/* Warning Box */}
@@ -255,7 +292,8 @@ export default function FanCodePage() {
                 </div>
             </div>
         </div>
-<UserAdDisplay location="top" />
+        <UserAdDisplay location="top" />
+        
         {/* Filters */}
         <div className="max-w-7xl mx-auto px-4 mt-8">
             <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
