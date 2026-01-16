@@ -93,7 +93,7 @@ export default function FanCodePage() {
 
     const fetchData = async () => {
       try {
-        const res = await fetch("https://raw.githubusercontent.com/drmlive/fancode-live-events/refs/heads/main/fancode.json", { cache: "no-store" });
+        const res = await fetch("https://raw.githubusercontent.com/drmlive/sliv-live-events/refs/heads/main/sonyliv.json", { cache: "no-store" });
         const data: JsonResponse = await res.json();
         if (data.matches && Array.isArray(data.matches)) {
             setMatches(data.matches);
