@@ -236,7 +236,7 @@ export default function FanCodePage() {
 
                     {/* Secondary Ad Slot */}
                     <div className="bg-zinc-900 rounded-xl p-4 border border-zinc-800">
-                        <UserAdDisplay location="sidebar" />
+                        
                     </div>
 
                      {/* Chat/Info Placeholder */}
