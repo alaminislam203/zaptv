@@ -118,7 +118,7 @@ export default function FanCodePage() {
 
   const handleShare = (e: React.MouseEvent, match: MatchData) => {
     e.stopPropagation();
-    const link = `${window.location.origin}/fancode?id=${match.match_id}`;
+    const link = `${window.location.origin}/?id=${match.match_id}`;
     navigator.clipboard.writeText(link);
     setCopiedId(match.match_id);
     setTimeout(() => setCopiedId(null), 2000);
@@ -264,7 +264,7 @@ export default function FanCodePage() {
             <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
                 <div className="flex items-center gap-4">
                     <Link href="/" className="flex items-center gap-2 text-zinc-400 hover:text-white transition group"><Icons.Back /> <span className="font-bold hidden sm:block">Back</span></Link>
-                    <div className="flex items-center gap-2"><div className="w-8 h-8 rounded bg-white flex items-center justify-center shadow-lg"><span className="text-black font-black text-xs">FC</span></div><h1 className="text-xl font-bold text-white tracking-tight">Fan<span className="text-red-600">Code</span></h1></div>
+                    <div className="flex items-center gap-2"><div className="w-8 h-8 rounded bg-white flex items-center justify-center shadow-lg"><span className="text-black font-black text-xs">FC</span></div><h1 className="text-xl font-bold text-white tracking-tight">Live<span className="text-red-600">Matches </span></h1></div>
                 </div>
                 <button onClick={() => setShowRegionModal(true)} className="flex items-center gap-2 text-xs font-bold bg-zinc-800 hover:bg-zinc-700 px-3 py-1.5 rounded-lg text-zinc-300 transition border border-white/5"><Icons.Globe /> {userRegion ? `Region: ${userRegion}` : "Select Region"}</button>
             </div>
