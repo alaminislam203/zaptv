@@ -33,6 +33,7 @@ export default function RootLayout({
       <head>
         {/* Mixed Content Error (6006) ফিক্স করার জন্য এই লাইনটি যুক্ত করা হয়েছে */}
         <meta httpEquiv="Content-Security-Policy" content="upgrade-insecure-requests" />
+        <script src="https://richinfo.co/richpartners/in-page/js/richads-ob.js?pubid=1000941&siteid=386686" async></script>
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         {children}
