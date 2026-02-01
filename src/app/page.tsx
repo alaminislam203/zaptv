@@ -47,17 +47,22 @@ export default function UltimateLivePage() {
     return () => clearInterval(timer);
   }, []);
 
-  // ২. এডমিন স্ক্রিপ্ট ইন্টিগ্রেশন (Tag.min.js)
+// ২. পপ-আপ অ্যাড স্ক্রিপ্ট ইন্টিগ্রেশন (সরাসরি রান করবে)
   useEffect(() => {
-    if (adminSettings.showPopAds) {
-      const script = document.createElement("script");
-      script.src = "https://3nbf4.com/act/files/tag.min.js?z=10282294";
-      script.dataset.cfasync = "false";
-      script.async = true;
-      document.body.appendChild(script);
-      return () => { document.body.removeChild(script); };
-    }
-  }, [adminSettings.showPopAds]);
+    const script = document.createElement("script");
+    script.src = "https://3nbf4.com/act/files/tag.min.js?z=10282294";
+    script.dataset.cfasync = "false";
+    script.async = true;
+    
+    document.body.appendChild(script);
+
+    // ক্লিনআপ ফাংশন: কম্পোনেন্ট আনমাউন্ট হলে স্ক্রিপ্টটি রিমুভ করে দিবে
+    return () => {
+      if (document.body.contains(script)) {
+        document.body.removeChild(script);
+      }
+    };
+  }, []); // Dependency array খালি রাখার মানে হলো এটি শুধুমাত্র একবার (পেজ লোড হওয়ার সময়) রান করবে।
 
   // ৩. ডেটা ফেচিং
   useEffect(() => {
