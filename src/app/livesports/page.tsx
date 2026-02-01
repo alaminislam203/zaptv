@@ -1,12 +1,7 @@
 "use client";
 import React, { useState, useEffect, useRef, Suspense } from "react";
-import { 
-  collection, onSnapshot, addDoc, doc, 
-  runTransaction 
-} from "firebase/firestore";
-import { 
-  ref, onValue, off, set, onDisconnect, serverTimestamp 
-} from "firebase/database";
+import { collection, onSnapshot, addDoc, doc, runTransaction } from "firebase/firestore";
+import { ref, onValue, off, set, onDisconnect, serverTimestamp } from "firebase/database";
 import { db, rtdb } from "../firebase"; 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation"; 
@@ -15,538 +10,262 @@ import Image from "next/image";
 
 // --- DYNAMIC IMPORTS ---
 const LoadingPlayer = () => (
-  <div className="w-full h-full bg-[#050b14] flex items-center justify-center flex-col gap-3 relative overflow-hidden">
+  <div className="w-full h-full bg-[#050b14] flex items-center justify-center flex-col gap-3 relative overflow-hidden rounded-3xl">
     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-cyan-900/10 to-transparent animate-shimmer"></div>
     <div className="w-10 h-10 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin z-10"></div>
-    <span className="text-xs text-cyan-400 font-mono animate-pulse z-10">Initializing Stream...</span>
+    <span className="text-[10px] text-cyan-400 font-mono animate-pulse z-10 uppercase tracking-widest">Initializing Secure Stream...</span>
   </div>
 );
 
 const PlyrPlayer = dynamic(() => import("../../../components/PlyrPlayer"), { ssr: false, loading: () => <LoadingPlayer /> });
-const VideoJSPlayer = dynamic(() => import("../../../components/VideoJSPlayer"), { ssr: false, loading: () => <LoadingPlayer /> });
 const NativePlayer = dynamic(() => import("../../../components/NativePlayer"), { ssr: false, loading: () => <LoadingPlayer /> });
 const ShakaPlayer = dynamic(() => import("../../../components/ShakaPlayer"), { ssr: false, loading: () => <LoadingPlayer /> });
 const IframePlayer = dynamic(() => import("../../../components/IframePlayer"), { ssr: false });
-const PlayerJSPlayer = dynamic(() => import("../../../components/PlayerJSPlayer"), { ssr: false, loading: () => <LoadingPlayer /> });
-
-// --- INTERFACES ---
-interface DrmConfig { type: "clearkey" | "widevine"; keyId?: string; key?: string; licenseUrl?: string; }
-interface Source { label: string; url: string; drm?: DrmConfig; }
-interface Channel { id: string; name: string; logo: string; is_embed: boolean | string; category?: string; sources: Source[]; }
-interface AdData { id: string; location: "top" | "middle"; imageUrl?: string; text?: string; link?: string; }
 
 // --- ICONS ---
 const Icons = {
-    Play: () => <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
-    Heart: ({ filled }: { filled: boolean }) => <svg xmlns="http://www.w3.org/2000/svg" className={`w-5 h-5 ${filled ? "text-red-500 fill-current" : "text-zinc-400"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>,
-    Share: () => <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>,
-    Report: () => <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>,
-    Search: () => <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>,
-    Server: () => <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" /></svg>,
-    Tv: () => <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>,
-    Shield: () => <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>,
-    Check: () => <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>,
-    Telegram: () => <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.446 1.394c-.16.16-.295.295-.605.295l.213-3.054 5.56-5.022c.242-.213-.054-.334-.373-.121l-6.869 4.326-2.96-.924c-.64-.203-.658-.64.135-.954l11.566-4.458c.538-.196 1.006.128.832.941z"/></svg>,
-    Globe: () => <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" /></svg>
+    Tv: () => <svg className="w-6 h-6 text-cyan-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>,
+    Shield: () => <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>,
+    Heart: ({ filled }: any) => <svg className={`w-5 h-5 ${filled ? "fill-red-500 text-red-500" : "text-zinc-500"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>,
 };
 
 function LiveTVContent() {
   const searchParams = useSearchParams();
-
-  // Data States
-  const [channels, setChannels] = useState<Channel[]>([]);
-  const [ads, setAds] = useState<AdData[]>([]);
+  const [channels, setChannels] = useState<any[]>([]);
   const [siteConfig, setSiteConfig] = useState<any>({});
   const [onlineUsers, setOnlineUsers] = useState(0);
-  const [totalVisitors, setTotalVisitors] = useState(0);
-  const [activeDirectLink, setActiveDirectLink] = useState<{url: string, label: string} | null>(null);
-
-  // Player & User States
-  const [currentChannel, setCurrentChannel] = useState<Channel | null>(null);
-  const [activeSourceIndex, setActiveSourceIndex] = useState<number>(0);
-  const [loading, setLoading] = useState(true);
+  const [currentChannel, setCurrentChannel] = useState<any | null>(null);
+  const [activeSourceIndex, setActiveSourceIndex] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
-  const [isFavorite, setIsFavorite] = useState(false);
-  const [playerType, setPlayerType] = useState<"plyr" | "videojs" | "native" | "playerjs">("plyr");
+  const [isAdBlockActive, setIsAdBlockActive] = useState(false);
   const [isClient, setIsClient] = useState(false);
-  const scriptsLoaded = useRef(false);
-  const [totalChannels, setTotalChannels] = useState(0);
-  const [shareCopied, setShareCopied] = useState(false);
 
-  // Ad Rotation State
-  const [adIndex, setAdIndex] = useState(0);
-
-  // Infinite Scroll
-  const [visibleCount, setVisibleCount] = useState(48);
-
-  // --- LOGIC: AD SCRIPT INTEGRATION ---
+  // ১. এন্টি অ্যাড-ব্লকার এবং অ্যাড ইনজেকশন
   useEffect(() => {
-    const script = document.createElement("script");
-    script.dataset.zone = "10282293";
-    script.src = "https://al5sm.com/tag.min.js";
-    
-    const target = document.body || document.documentElement;
-    if (target) {
-        target.appendChild(script);
-    }
-    return () => {
-        if (target && script.parentNode === target) {
-            target.removeChild(script);
-        }
+    setIsClient(true);
+    // অ্যাড স্ক্রিপ্ট ইনজেকশন
+    (function(s: any) {
+      s.dataset.zone = '10282293';
+      s.src = 'https://al5sm.com/tag.min.js';
+      const target = document.body || document.documentElement;
+      target?.appendChild(s);
+    })(document.createElement('script'));
+
+    // অ্যাড ব্লকার চেক
+    const checkAdBlock = async () => {
+      try {
+        await fetch("https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js", { method: "HEAD", mode: "no-cors" });
+      } catch (e) { setIsAdBlockActive(true); }
     };
+    checkAdBlock();
   }, []);
 
-  // --- LOGIC: AD ROTATION ---
+  // ২. রিয়েল-টাইম ডাটা কানেকশন
   useEffect(() => {
-    const interval = setInterval(() => {
-        setAdIndex((prev) => prev + 1);
-    }, 5000); 
-    return () => clearInterval(interval);
+    const unsub = onSnapshot(collection(db, "channels"), (snap) => {
+      setChannels(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    });
+    onSnapshot(doc(db, "settings", "config"), (d) => d.exists() && setSiteConfig(d.data()));
+    return () => unsub();
   }, []);
 
-  const topAds = ads.filter(ad => ad.location === "top");
-  const middleAds = ads.filter(ad => ad.location === "middle");
-
-  const currentTopAd = topAds.length > 0 ? topAds[adIndex % topAds.length] : null;
-  const currentMiddleAd = middleAds.length > 0 ? middleAds[adIndex % middleAds.length] : null;
-
-  // --- LOGIC: 4-DIGIT ID GENERATOR ---
-  const getShortId = (id: string) => {
-    let hash = 0;
-    for (let i = 0; i < id.length; i++) {
-        hash = id.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    const short = Math.abs(hash % 9000) + 1000;
-    return short.toString();
-  };
-
-  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    const { scrollTop, clientHeight, scrollHeight } = e.currentTarget;
-    if (scrollHeight - scrollTop <= clientHeight + 50) {
-        if (visibleCount < channels.length) {
-            setVisibleCount((prev) => prev + 24);
-        }
-    }
-  };
-
-  // URL Play Logic
-  useEffect(() => {
-    const channelIdToPlay = searchParams.get("play");
-    if (channelIdToPlay && channels.length > 0) {
-      const targetChannel = channels.find((ch) => ch.id === channelIdToPlay || ch.name === channelIdToPlay);
-      if (targetChannel) setCurrentChannel(targetChannel);
-    }
-  }, [channels, searchParams]);
-
-  useEffect(() => {
-    if (siteConfig?.directLinks && Array.isArray(siteConfig.directLinks) && siteConfig.directLinks.length > 0) {
-        setActiveDirectLink(siteConfig.directLinks[Math.floor(Math.random() * siteConfig.directLinks.length)]);
-    }
-  }, [siteConfig]);
-
-  useEffect(() => { setIsClient(true); }, []);
-
-  useEffect(() => {
-    setPlayerType("plyr");
-    setActiveSourceIndex(0);
-    if(currentChannel) {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      checkIfFavorite(currentChannel.id);
-    }
-  }, [currentChannel]);
-
-  // Firebase Fetch
-  useEffect(() => {
-    const unsubChannels = onSnapshot(collection(db, "channels"), (snapshot) => {
-      const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Channel[];
-      setChannels(list);
-      setTotalChannels(snapshot.docs.length);
-      setLoading(false);
-    });
-    const unsubAds = onSnapshot(collection(db, "ads"), (snapshot) => {
-      const list = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })) as AdData[];
-      setAds(list);
-    });
-    const unsubSettings = onSnapshot(doc(db, "settings", "config"), (docSnap) => {
-      if (docSnap.exists()) setSiteConfig(docSnap.data());
-    });
-    return () => { unsubChannels(); unsubAds(); unsubSettings(); };
-  }, []);
-
-  // Stats Logic
+  // ৩. ইউজার কাউন্টার লজিক (RTDB)
   useEffect(() => {
     if (!isClient) return;
-    const counterRef = doc(db, 'counters', 'visitors');
-    const incrementTotalVisitors = async () => {
-        if (!sessionStorage.getItem('visitedThisSession')) {
-            sessionStorage.setItem('visitedThisSession', 'true');
-            try {
-                await runTransaction(db, async (transaction) => {
-                    const docSnap = await transaction.get(counterRef);
-                    if (!docSnap.exists()) { transaction.set(counterRef, { total: 1 }); setTotalVisitors(1); } 
-                    else { transaction.update(counterRef, { total: docSnap.data().total + 1 }); setTotalVisitors(docSnap.data().total + 1); }
-                });
-            } catch (e) { console.error(e); }
-        }
-    };
-    const unsub = onSnapshot(counterRef, (doc) => { if (doc.exists()) setTotalVisitors(doc.data().total); });
-    incrementTotalVisitors();
     const statusRef = ref(rtdb, 'status');
-    const connectedRef = ref(rtdb, '.info/connected');
-    const myConnectionsRef = ref(rtdb, 'status/' + Math.random().toString(36).substr(2, 9));
-    onValue(connectedRef, (snap) => { if (snap.val() === true) { set(myConnectionsRef, { timestamp: serverTimestamp() }); onDisconnect(myConnectionsRef).remove(); } });
+    const myRef = ref(rtdb, 'status/' + Math.random().toString(36).substr(2, 9));
+    set(myRef, { online: true });
+    onDisconnect(myRef).remove();
     onValue(statusRef, (snap) => setOnlineUsers(snap.size));
-    return () => { unsub(); off(connectedRef); off(statusRef); onDisconnect(myConnectionsRef).cancel(); set(myConnectionsRef, null); };
   }, [isClient]);
 
-  const checkIfFavorite = (id: string) => setIsFavorite(JSON.parse(localStorage.getItem("favorites") || '[]').some((c: Channel) => c.id === id));
-   
-  const toggleFavorite = () => {
-    if (!currentChannel) return;
-    let favs = JSON.parse(localStorage.getItem("favorites") || '[]');
-    if (isFavorite) favs = favs.filter((c: Channel) => c.id !== currentChannel.id);
-    else favs.push(currentChannel);
-    localStorage.setItem("favorites", JSON.stringify(favs));
-    checkIfFavorite(currentChannel.id);
-  };
-
-  const handleShare = () => {
-    if (!currentChannel) return;
-    const url = `${window.location.origin}${window.location.pathname}?play=${currentChannel.id}`;
-    navigator.clipboard.writeText(url);
-    setShareCopied(true);
-    setTimeout(() => setShareCopied(false), 2000);
-  };
-
-  const handleReport = async () => {
-    if (!currentChannel) return;
-    if (confirm(`Report "${currentChannel.name}"?`)) {
-      try {
-        await addDoc(collection(db, "reports"), { channelName: currentChannel.name, channelId: currentChannel.id, sourceLabel: currentChannel.sources[activeSourceIndex]?.label || "Default", timestamp: new Date(), status: "pending", issue: "Stream not working" });
-        alert("Report submitted! We will check soon.");
-      } catch (e) { console.error("Error reporting:", e); }
-    }
-  };
-
   const filteredChannels = channels.filter(ch => ch.name.toLowerCase().includes(searchQuery.toLowerCase()));
-  const channelsToDisplay = filteredChannels.slice(0, visibleCount);
 
-  const renderPlayer = () => {
-    if (!isClient) return <LoadingPlayer />;
-    if (!currentChannel) return (
-        <div className="flex flex-col items-center justify-center h-full bg-[#050b14] relative overflow-hidden group">
-            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10"></div>
-            <div className="z-10 text-center space-y-4 p-6">
-                <div className="w-20 h-20 bg-cyan-500/10 rounded-full flex items-center justify-center mx-auto ring-1 ring-cyan-500/30 animate-pulse">
-                    <Icons.Tv />
-                </div>
-                <h2 className="text-xl md:text-2xl font-bold text-white tracking-widest">SELECT A CHANNEL</h2>
-                <p className="text-gray-500 text-sm">Choose from the list below to start watching</p>
-            </div>
-        </div>
-    );
-
-    if (!currentChannel.sources?.length) return <div className="text-white flex justify-center items-center h-full">No Source Available</div>;
-
-    const activeSource = currentChannel.sources[activeSourceIndex];
-    const { url, drm } = activeSource;
-    
-    if (currentChannel.is_embed) return <IframePlayer src={url} />;
-    if (url.includes(".mpd") || drm) return <ShakaPlayer src={url} drm={drm} />;
-    
-    if (url.includes(".m3u8")) {
-      switch (playerType) {
-          case "videojs": return <VideoJSPlayer src={url} />;
-          case "native": return <NativePlayer src={url} />;
-          case "playerjs": return <PlayerJSPlayer src={url} />;
-          default: return <PlyrPlayer src={url} />;
-      }
-    }
-    return <IframePlayer src={url} />;
-  };
-
-  if (siteConfig?.maintenanceMode === true) {
+  if (isAdBlockActive) {
     return (
-      <div className="min-h-screen bg-[#050b14] flex items-center justify-center px-6 text-white">
-        <div className="max-w-md w-full text-center bg-[#0f172a] border border-gray-800 rounded-2xl p-8 shadow-2xl relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-full h-1 bg-red-500"></div>
-            <h1 className="text-3xl font-bold tracking-wide text-red-500 mb-3">Site Under Maintenance</h1>
-            <p className="text-sm text-gray-400">We’re upgrading systems. Please check back shortly.</p>
+      <div className="fixed inset-0 z-[600] bg-black flex items-center justify-center p-6 text-center backdrop-blur-3xl">
+        <div className="bg-[#0f172a] border border-red-500/20 p-10 rounded-[2.5rem] max-w-sm shadow-2xl">
+          <div className="text-5xl mb-4">🚫</div>
+          <h2 className="text-xl font-black text-white italic uppercase">Ad-Blocker Detected</h2>
+          <p className="text-zinc-500 text-xs mt-3 leading-relaxed">আমাদের ফ্রি সার্ভিসটি সচল রাখতে দয়া করে আপনার অ্যাড-ব্লকারটি বন্ধ করুন।</p>
+          <button onClick={() => window.location.reload()} className="mt-8 bg-red-600 text-white px-8 py-3 rounded-2xl font-black text-[10px] tracking-widest uppercase">Reload Page</button>
         </div>
       </div>
     );
   }
 
-  // --- UPDATED LAYOUT FIXES HERE ---
   return (
-    // Added flex & flex-col to main to handle sticky footer properly
-    <main className="min-h-screen bg-[#050b14] text-gray-200 font-sans selection:bg-cyan-500/30 flex flex-col">
+    <main className="min-h-screen bg-[#020617] text-gray-200 flex flex-col">
       
-      {/* --- Header --- */}
-      <header className="sticky top-0 z-50 bg-[#050b14]/80 backdrop-blur-md border-b border-white/5">
-        <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-            <div onClick={() => setCurrentChannel(null)} className="flex items-center gap-2 cursor-pointer">
-                <Icons.Tv />
-                <div className="text-xl font-extrabold tracking-tight">
-                    <span className="text-white">Toffee</span><span className="text-cyan-400">Pro</span>
+      {/* --- HEADER --- */}
+      <header className="sticky top-0 z-50 bg-[#020617]/80 backdrop-blur-xl border-b border-white/5">
+        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+            <Link href="/" className="flex items-center gap-3 group">
+                <div className="w-10 h-10 bg-cyan-600 rounded-2xl flex items-center justify-center shadow-lg shadow-cyan-600/20 group-hover:rotate-12 transition-transform">
+                    <Icons.Tv />
                 </div>
-            </div>
-            <div className="flex items-center gap-3">
-                <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-500/10 border border-red-500/20 shadow-[0_0_10px_rgba(239,68,68,0.2)]">
-                    <span className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse"></span>
-                    <span className="text-[10px] font-bold tracking-wider text-red-400">LIVE</span>
+                <h1 className="text-2xl font-black tracking-tighter uppercase italic">Toffee<span className="text-cyan-500">Pro</span></h1>
+            </Link>
+            <div className="flex items-center gap-4">
+                <div className="hidden md:flex flex-col items-end border-r border-white/10 pr-4">
+                    <span className="text-[10px] font-black text-zinc-600 uppercase tracking-widest">Global Status</span>
+                    <span className="text-sm font-mono text-green-500 font-bold">{onlineUsers} Online</span>
                 </div>
-                <Link href="/admin">
-                    <button className="hidden sm:block text-xs font-bold px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/5 text-gray-300 transition">Login</button>
-                </Link>
+                <Link href="/admin" className="bg-white/5 hover:bg-white/10 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase border border-white/5 transition-all">Console</Link>
             </div>
         </div>
       </header>
 
-      {/* Added flex-grow and pb-20 to ensure content pushes footer down and leaves space */}
-      <div className="max-w-5xl mx-auto px-2 md:px-4 mt-6 space-y-6 flex-grow pb-24">
+      <div className="max-w-6xl mx-auto px-4 md:px-6 flex-grow pb-32 pt-8 space-y-8">
         
-        {/* --- Marquee --- */}
-        <div className="bg-[#0f172a] border border-gray-800 rounded-lg h-10 flex items-center overflow-hidden relative shadow-lg">
-            <div className="absolute left-0 top-0 h-full w-10 bg-gradient-to-r from-[#0f172a] to-transparent z-10"></div>
-            <div className="absolute right-0 top-0 h-full w-10 bg-gradient-to-l from-[#0f172a] to-transparent z-10"></div>
-            <div className="flex items-center whitespace-nowrap animate-marquee pl-6">
-                <span className="text-sm text-gray-300 font-mono tracking-wide flex items-center gap-2">
-                    <span className="text-cyan-400">📢 UPDATE:</span> 
-                    {siteConfig.marqueeText || "Welcome to ToffeePro — Please disable adblocker to support free streaming."}
-                </span>
-            </div>
-        </div>
-   
-        {/* --- Buttons --- */}
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            <Link href="https://t.me/toffeepro" target="_blank" className="bg-[#1e293b] hover:bg-[#263349] border border-gray-700 p-3 rounded-xl flex items-center justify-between group transition">
-                <span className="text-xs text-gray-400">Join Telegram</span>
-                <span className="text-blue-400 group-hover:translate-x-1 transition">➔</span>
-            </Link>
-            <Link href="/livetv" className="bg-[#1e293b] hover:bg-[#263349] border border-gray-700 p-3 rounded-xl flex items-center justify-between group transition">
-                <span className="text-xs text-gray-400">New Channels</span>
-                <span className="text-green-400 group-hover:translate-x-1 transition">➔</span>
-            </Link>
-            <Link href="/support" className="col-span-2 md:col-span-1 bg-gradient-to-r from-cyan-900/20 to-blue-900/20 hover:from-cyan-900/30 hover:to-blue-900/30 border border-cyan-500/20 p-3 rounded-xl flex items-center justify-between group transition">
-                <span className="text-xs text-cyan-100">Support Us</span>
-                <Icons.Heart filled={true} />
-            </Link>
-        </div>
-
-        {/* --- Warning --- */}
-        <div className="bg-red-950/30 border border-red-500/30 rounded-xl p-4 flex gap-4 items-start">
-            <div className="shrink-0 text-red-500 p-1 bg-red-500/10 rounded-full mt-1">
-                <Icons.Shield />
-            </div>
-            <div>
-                <h3 className="text-red-400 font-bold text-sm uppercase tracking-wide mb-1">সতর্কবার্তা</h3>
-                <p className="text-[11px] md:text-xs text-gray-400 leading-relaxed">
-                    এই সাইটটি শুধুমাত্র খেলা দেখার জন্য। আমরা কোনো ধরনের <strong className="text-gray-300">বেটিং (Betting), জুয়া বা প্রেডিকশন</strong> অ্যাপ প্রমোট করি না। খেলার মাঝে কোনো জুয়ার বিজ্ঞাপন আসলে দয়া করে তাতে ক্লিক করবেন না।
-                </p>
+        {/* --- MARQUEE NOTICE --- */}
+        <div className="bg-cyan-600/5 border border-cyan-500/10 rounded-2xl p-4 overflow-hidden relative">
+            <div className="flex whitespace-nowrap animate-marquee items-center gap-4">
+                <span className="text-[11px] font-black text-cyan-500 uppercase tracking-widest">[NOTICE]</span>
+                <span className="text-xs font-bold text-zinc-400">{siteConfig.marqueeText || "Welcome to ToffeePro! Enjoy HD quality buffer-free streaming."}</span>
             </div>
         </div>
 
-        {/* --- TOP AD --- */}
-        {currentTopAd && (
-          <div className="w-full h-[100px] sm:h-[120px] bg-[#020617] rounded-xl flex items-center justify-center overflow-hidden border border-gray-800 relative group animate-fadeIn">
-            <span className="absolute top-0 right-0 bg-gray-800 text-[9px] px-1.5 py-0.5 text-gray-400 rounded-bl-lg z-20">Sponsored</span>
-            {currentTopAd.imageUrl ? (
-                <a href={currentTopAd.link || "#"} target="_blank" className="w-full h-full flex items-center justify-center relative">
-                    <img src={currentTopAd.imageUrl} alt="Advertisement" className="h-full w-auto object-contain max-w-full transition-opacity duration-500" />
-                </a>
-            ) : (
-                <div className="text-center p-2 text-cyan-600 font-bold opacity-50 text-sm tracking-widest">{currentTopAd.text}</div>
-            )}
-          </div>
-        )}
-
-        {/* --- Main Player --- */}
-        <div className="bg-[#0f172a] rounded-2xl overflow-hidden shadow-2xl border border-gray-800 relative">
-            <div className="aspect-video w-full bg-black relative group">
-                <div key={`${currentChannel?.id}-${activeSourceIndex}-${playerType}`} className="w-full h-full">
-                    {renderPlayer()}
+        {/* --- PLAYER SECTION --- */}
+        <div className="grid lg:grid-cols-12 gap-8 items-start">
+            <div className="lg:col-span-8 space-y-6">
+                <div className="bg-[#0a0a0c] rounded-[2.5rem] overflow-hidden border border-white/5 shadow-2xl aspect-video relative group">
+                    <div className="w-full h-full bg-black">
+                        {currentChannel ? (
+                            <ShakaPlayer src={currentChannel.sources[activeSourceIndex].url} />
+                        ) : (
+                            <div className="w-full h-full flex flex-col items-center justify-center gap-4">
+                                <div className="w-20 h-20 bg-zinc-900 rounded-full flex items-center justify-center animate-pulse">
+                                    <Icons.Tv />
+                                </div>
+                                <p className="text-xs font-black text-zinc-600 uppercase tracking-[0.3em]">Select a channel to play</p>
+                            </div>
+                        )}
+                    </div>
                 </div>
+
+                {/* --- CHANNEL INFO CARD --- */}
+                {currentChannel && (
+                    <div className="bg-[#0f172a]/50 backdrop-blur-md p-8 rounded-[2.5rem] border border-white/5 flex flex-col md:flex-row items-center gap-8 animate-fadeIn">
+                        <div className="w-24 h-24 rounded-3xl bg-black p-2 border border-white/10 shadow-xl overflow-hidden shrink-0">
+                            <img src={currentChannel.logo} className="w-full h-full object-contain" alt="Logo" />
+                        </div>
+                        <div className="flex-1 text-center md:text-left">
+                            <h2 className="text-3xl font-black text-white tracking-tighter italic uppercase">{currentChannel.name}</h2>
+                            <p className="text-xs text-cyan-500 font-bold mt-2 uppercase tracking-widest">{currentChannel.category || "Streaming Live"}</p>
+                            <div className="flex gap-2 mt-6 justify-center md:justify-start">
+                                {currentChannel.sources.map((s: any, i: number) => (
+                                    <button 
+                                        key={i} 
+                                        onClick={() => setActiveSourceIndex(i)}
+                                        className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase border transition-all ${activeSourceIndex === i ? 'bg-cyan-600 border-cyan-500 text-white' : 'bg-zinc-900 border-white/5 text-zinc-500'}`}
+                                    >
+                                        Server {i + 1}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
 
-            <div className="bg-[#1e293b] px-4 py-3 flex flex-wrap items-center justify-between gap-3 border-t border-gray-700">
-                {currentChannel && !currentChannel.is_embed && currentChannel.sources[activeSourceIndex]?.url.includes(".m3u8") && (
-                   <div className="flex items-center gap-2 overflow-x-auto pb-1 hide-scrollbar">
-                        <span className="text-[10px] uppercase font-bold text-gray-500 shrink-0">Engine:</span>
-                        {["plyr", "videojs", "native", "playerjs"].map((type) => (
-                            <button key={type} onClick={() => setPlayerType(type as any)} className={`px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider border transition ${playerType === type ? "bg-cyan-600 border-cyan-500 text-white shadow-lg shadow-cyan-500/20" : "bg-gray-800 border-gray-700 text-gray-400 hover:text-gray-200"}`}>
-                                {type}
+            {/* --- SIDEBAR CHANNELS --- */}
+            <div className="lg:col-span-4 space-y-6">
+                <div className="bg-[#0a0a0c] p-6 rounded-[2.5rem] border border-white/5 h-[600px] flex flex-col shadow-2xl">
+                    <div className="mb-6">
+                        <h3 className="text-white font-black text-sm uppercase italic mb-4">Channel Grid</h3>
+                        <input 
+                            className="w-full bg-black border border-white/5 p-4 rounded-2xl text-xs text-white outline-none focus:border-cyan-600/50" 
+                            placeholder="Search channel..." 
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                        />
+                    </div>
+                    <div className="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar">
+                        {filteredChannels.map((ch) => (
+                            <button 
+                                key={ch.id} 
+                                onClick={() => setCurrentChannel(ch)}
+                                className={`w-full flex items-center gap-4 p-4 rounded-2xl border transition-all ${currentChannel?.id === ch.id ? 'bg-cyan-600 border-cyan-500 text-white' : 'bg-zinc-900/50 border-white/5 hover:border-white/20'}`}
+                            >
+                                <img src={ch.logo} className="w-10 h-10 rounded-xl object-contain bg-black p-1" alt="" />
+                                <span className="text-[11px] font-black uppercase tracking-tighter truncate">{ch.name}</span>
                             </button>
                         ))}
-                   </div>
-                )}
-                <div className="flex items-center gap-3 ml-auto">
-                    <button onClick={handleShare} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition text-xs font-bold ${shareCopied ? "bg-green-500/10 border-green-500/20 text-green-400" : "bg-gray-800 border-gray-700 text-gray-400 hover:text-cyan-400"}`}>
-                        {shareCopied ? <Icons.Check /> : <Icons.Share />}
-                        <span>{shareCopied ? "Copied" : "Share"}</span>
-                    </button>
-                    <button onClick={toggleFavorite} className={`p-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition ${isFavorite ? "text-red-500" : "text-gray-400 hover:text-red-400"}`}>
-                        <Icons.Heart filled={isFavorite} />
-                    </button>
-                    <button onClick={handleReport} className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 transition text-xs font-bold">
-                        <Icons.Report /> <span>Report</span>
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        {/* --- Direct Link --- */}
-        {activeDirectLink && (
-            <div className="flex justify-center">
-                <a href={activeDirectLink.url} target="_blank" rel="noopener noreferrer" className="group relative inline-flex items-center gap-2 rounded-full px-8 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold shadow-lg shadow-emerald-500/20 hover:scale-105 transition-all overflow-hidden">
-                    <div className="absolute inset-0 bg-white/20 group-hover:translate-x-full transition-transform duration-500 ease-in-out"></div>
-                    <Icons.Play />
-                    <span>{activeDirectLink.label}</span>
-                </a>
-            </div>
-        )}
-
-        {/* --- Info Card --- */}
-        <div className="bg-[#1e293b] p-5 rounded-2xl border border-gray-700 flex flex-col md:flex-row items-center gap-5 md:gap-6 shadow-lg">
-           <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-[#0f172a] border-2 border-gray-600 p-1 flex-shrink-0 relative">
-                {currentChannel?.logo ? <img src={currentChannel.logo} className="w-full h-full object-cover rounded-full" /> : <div className="w-full h-full flex items-center justify-center text-gray-600"><Icons.Tv /></div>}
-           </div>
-           <div className="flex-1 text-center md:text-left space-y-2">
-             <h2 className="text-xl md:text-2xl font-bold text-white">{currentChannel?.name || "No Channel Selected"}</h2>
-             <p className="text-xs text-cyan-400 font-mono tracking-wide">{currentChannel ? "● Streaming Live in HD" : "Select a channel to begin"}</p>
-             {currentChannel && currentChannel.sources.length > 1 && (
-               <div className="flex gap-2 flex-wrap justify-center md:justify-start mt-2">
-                 {currentChannel.sources.map((src, idx) => (
-                    <button key={idx} onClick={() => setActiveSourceIndex(idx)} className={`flex items-center gap-1 text-[10px] px-3 py-1.5 rounded font-bold border transition-all ${activeSourceIndex === idx ? "bg-cyan-600 border-cyan-500 text-white" : "bg-gray-800 border-gray-600 hover:bg-gray-700 text-gray-400"}`}>
-                        <Icons.Server /> {src.label || `Server ${idx+1}`}
-                    </button>
-                 ))}
-               </div>
-             )}
-           </div>
-        </div>
-        
-        {/* --- Quick Guide --- */}
-        <div className="bg-[#0f172a] rounded-xl p-4 border border-gray-800">
-            <h3 className="text-gray-400 text-xs font-bold uppercase mb-2 tracking-widest border-b border-gray-800 pb-2">Quick Guide</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-gray-500">
-                <p>1. Video লোড না হলে <strong>Server</strong> পরিবর্তন করে দেখুন।</p>
-                <p>2. প্লেয়ারে সমস্যা হলে <strong>Engine</strong> (Plyr/Native) চেঞ্জ করুন।</p>
-                <p>3. সাউন্ড না আসলে প্লেয়ারে ট্যাপ করে <strong>Unmute</strong> করুন।</p>
-            </div>
-        </div>
-
-        {/* --- MIDDLE AD --- */}
-        {currentMiddleAd && (
-            <div className="w-full h-[90px] bg-[#020617] rounded-xl flex items-center justify-center overflow-hidden border border-gray-800 relative animate-fadeIn">
-                <span className="absolute top-0 right-0 bg-gray-800 text-[9px] px-1 text-gray-500">Ad</span>
-                {currentMiddleAd.imageUrl ? (
-                      <a href={currentMiddleAd.link || "#"} target="_blank" className="w-full h-full flex items-center justify-center">
-                        <img src={currentMiddleAd.imageUrl} alt="Ad" className="h-full w-auto object-contain transition-opacity duration-500" />
-                      </a>
-                ) : <div className="text-gray-600 text-xs">{currentMiddleAd.text}</div>}
-            </div>
-        )}
-
-        {/* --- Channel Grid --- */}
-        <div className="bg-[#111827] p-5 rounded-2xl border border-gray-800 shadow-xl">
-          <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
-              <h3 className="text-lg font-bold text-white flex items-center gap-2"><Icons.Tv /> Live Channels</h3>
-              <div className="relative w-full md:w-64">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-500"><Icons.Search /></div>
-                <input type="text" placeholder="Search..." className="w-full bg-[#1f2937] text-white text-sm py-2 pl-10 pr-4 rounded-lg border border-gray-700 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
-              </div>
-          </div>
-
-          {loading ? <div className="grid grid-cols-4 md:grid-cols-6 gap-4 animate-pulse">{[...Array(12)].map((_,i) => <div key={i} className="h-24 bg-gray-800 rounded-lg"></div>)}</div> : (
-            <div id="channel-grid-container" className="max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar" onScroll={handleScroll}>
-                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3">
-                {channelsToDisplay.map(ch => (
-                    <div key={ch.id} onClick={() => setCurrentChannel(ch)} className={`group relative flex flex-col items-center gap-2 cursor-pointer p-3 rounded-xl transition-all border ${currentChannel?.id === ch.id ? "bg-[#1e293b] border-cyan-500/50 shadow-[0_0_15px_rgba(6,182,212,0.15)]" : "bg-[#1f2937]/50 border-gray-800 hover:bg-[#1f2937] hover:border-gray-600 hover:-translate-y-1"}`}>
-                        <div className="w-12 h-12 bg-[#0b1120] rounded-full p-1.5 overflow-hidden shadow-inner relative ring-1 ring-white/5">
-                            {ch.logo ? <img src={ch.logo} alt={ch.name} className="w-full h-full object-contain transition-transform group-hover:scale-110" /> : <div className="w-full h-full flex items-center justify-center text-gray-600"><Icons.Tv /></div>}
-                        </div>
-                        <span className={`text-[10px] font-bold text-center line-clamp-1 w-full ${currentChannel?.id === ch.id ? "text-cyan-400" : "text-gray-400 group-hover:text-gray-200"}`}>{ch.name}</span>
-                        {currentChannel?.id === ch.id && <div className="absolute top-2 right-2 w-2 h-2 bg-cyan-500 rounded-full animate-pulse shadow-[0_0_5px_#06b6d4]"></div>}
                     </div>
-                ))}
                 </div>
             </div>
-          )}
+        </div>
+
+        {/* --- ANTI-GAMBLING WARNING --- */}
+        <div className="bg-red-600/5 border border-red-600/10 p-8 rounded-[3rem] flex items-center gap-8 shadow-xl">
+            <div className="w-16 h-16 bg-red-600 rounded-3xl flex items-center justify-center text-3xl shadow-lg shadow-red-600/20 shrink-0">🔞</div>
+            <div>
+                <h4 className="text-red-500 font-black uppercase italic tracking-tighter text-xl">Warning: জুয়া বা বেটিং নিষিদ্ধ!</h4>
+                <p className="text-[11px] text-zinc-500 mt-1 leading-relaxed max-w-2xl font-medium">আমরা কোনো প্রকার জুয়া বা বেটিং প্রমোট করি না। খেলার মাঝে জুয়ার বিজ্ঞাপন আসলে তাতে ক্লিক করবেন না। এগুলোর জন্য কর্তৃপক্ষ দায়ী নয়।</p>
+            </div>
         </div>
       </div>
 
-      {/* --- Footer --- */}
-      {/* Changed to mt-auto to stick at bottom, removed negative margins that caused overlap issues */}
-      <footer className="mt-auto pt-8 pb-6 bg-[#020617] border-t border-gray-800 relative overflow-visible">
-        {/* Glow Effect */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full max-w-4xl bg-cyan-500/5 blur-[100px] rounded-full pointer-events-none"></div>
-        
-        <div className="max-w-6xl mx-auto px-4 relative z-10">
-            {/* Stats Cards - Floating Effect Adjusted */}
-            <div className="grid grid-cols-3 gap-4 mb-10 -mt-20">
-                {[
-                    { label: "Live Users", value: onlineUsers, color: "text-green-400", border: "border-green-500/20", bg: "bg-[#020617]" },
-                    { label: "Total Visits", value: totalVisitors, color: "text-cyan-400", border: "border-cyan-500/20", bg: "bg-[#020617]" },
-                    { label: "Channels", value: totalChannels, color: "text-purple-400", border: "border-purple-500/20", bg: "bg-[#020617]" }
-                ].map((stat, i) => (
-                    <div key={i} className={`flex flex-col items-center justify-center p-4 rounded-xl backdrop-blur-xl border ${stat.border} ${stat.bg} shadow-2xl transition hover:-translate-y-1`}>
-                        <span className={`text-xl md:text-3xl font-black ${stat.color} tabular-nums`}>{stat.value}</span>
-                        <span className="text-[10px] md:text-xs uppercase font-bold text-gray-400 tracking-wider mt-1">{stat.label}</span>
-                    </div>
-                ))}
+      {/* --- FOOTER WITH FLOATING STATS --- */}
+      <footer className="mt-auto bg-[#050505] border-t border-white/5 pt-32 pb-10 relative">
+        <div className="max-w-7xl mx-auto px-6 relative">
+            
+            {/* Floating Stats - Fixed Positioning */}
+            <div className="absolute -top-20 left-6 right-6 grid grid-cols-3 gap-6">
+                <StatBox label="Active Now" value={onlineUsers} color="text-green-500" />
+                <StatBox label="Live Channels" value={channels.length} color="text-cyan-500" />
+                <StatBox label="Global Server" value="100%" color="text-purple-500" />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-10 mb-12 pt-6">
-                {/* Brand */}
-                <div className="space-y-4">
-                    <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded bg-gradient-to-br from-cyan-600 to-blue-700 flex items-center justify-center text-white font-bold text-lg">T</div>
-                        <h2 className="text-2xl font-bold text-white">Toffee<span className="text-cyan-400">Pro</span></h2>
-                    </div>
-                    <p className="text-sm text-gray-500 leading-relaxed">
-                        Enjoy buffer-free live streaming of your favorite sports and TV channels in HD quality. Free for everyone, forever.
-                    </p>
+            <div className="grid md:grid-cols-3 gap-16 mb-16">
+                <div>
+                    <h2 className="text-2xl font-black italic text-white uppercase tracking-tighter">Toffee<span className="text-cyan-600 text-3xl">.</span></h2>
+                    <p className="text-xs text-zinc-500 mt-4 leading-relaxed font-medium">আপনার প্রিয় স্পোর্টস এবং টিভি চ্যানেলগুলো বাফারলেস উপভোগ করুন সরাসরি অনলাইনে। সবার জন্য ফ্রি।</p>
                 </div>
-
-                {/* Quick Links */}
-                <div className="flex flex-col gap-2">
-                    <h3 className="text-white font-bold text-sm mb-2 uppercase tracking-wide">Quick Links</h3>
-                    <Link href="/" className="text-sm text-gray-500 hover:text-cyan-400 transition w-fit">Home</Link>
-                    <Link href="/livetv" className="text-sm text-gray-500 hover:text-cyan-400 transition w-fit">All Channels</Link>
-                    <Link href="/dmca" className="text-sm text-gray-500 hover:text-cyan-400 transition w-fit">DMCA Policy</Link>
-                    <Link href="/contact" className="text-sm text-gray-500 hover:text-cyan-400 transition w-fit">Contact Us</Link>
+                <div className="flex flex-col gap-3">
+                    <h3 className="text-[10px] font-black text-zinc-700 uppercase tracking-[0.4em] mb-2">Legal Links</h3>
+                    <Link href="/dmca" className="text-xs text-zinc-500 hover:text-cyan-500 transition-colors font-bold">DMCA Policy</Link>
+                    <Link href="/privacy" className="text-xs text-zinc-500 hover:text-cyan-500 transition-colors font-bold">Privacy Policy</Link>
+                    <Link href="/terms" className="text-xs text-zinc-500 hover:text-cyan-500 transition-colors font-bold">Terms of Service</Link>
                 </div>
-
-                {/* Socials */}
-                <div className="flex flex-col gap-4">
-                    <h3 className="text-white font-bold text-sm mb-2 uppercase tracking-wide">Connect With Us</h3>
+                <div className="flex flex-col gap-6">
+                    <h3 className="text-[10px] font-black text-zinc-700 uppercase tracking-[0.4em] mb-2">Community</h3>
                     <div className="flex gap-4">
-                        <a href="https://t.me/toffeepro" target="_blank" className="w-10 h-10 rounded-lg bg-[#1e293b] flex items-center justify-center text-gray-400 hover:bg-blue-600 hover:text-white transition border border-gray-700 hover:border-blue-500">
-                            <Icons.Telegram />
-                        </a>
-                         <a href="#" className="w-10 h-10 rounded-lg bg-[#1e293b] flex items-center justify-center text-gray-400 hover:bg-cyan-600 hover:text-white transition border border-gray-700 hover:border-cyan-500">
-                            <Icons.Globe />
-                        </a>
+                        <Link href="https://t.me/toffeepro" className="w-12 h-12 bg-zinc-900 rounded-2xl flex items-center justify-center hover:bg-cyan-600 transition-all border border-white/5"><Icons.Tv /></Link>
+                        <Link href="#" className="w-12 h-12 bg-zinc-900 rounded-2xl flex items-center justify-center hover:bg-cyan-600 transition-all border border-white/5"><Icons.Shield /></Link>
                     </div>
                 </div>
             </div>
 
-            {/* Bottom Bar */}
-            <div className="border-t border-gray-800 pt-6 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-gray-600">
-                <p>&copy; {new Date().getFullYear()} ToffeePro Inc. All rights reserved.</p>
-                <div className="flex items-center gap-1">
-                    <span>Made with</span>
+            <div className="pt-8 border-t border-white/5 flex justify-between items-center text-[10px] font-black text-zinc-600 uppercase tracking-widest">
+                <p>&copy; {new Date().getFullYear()} ToffeePro Inc. High-End Streaming.</p>
+                <div className="flex items-center gap-2">
+                    <span>Made for fans</span>
                     <Icons.Heart filled={true} />
-                    <span>for Streamers</span>
                 </div>
             </div>
         </div>
       </footer>
 
+      <style jsx global>{`
+        @keyframes marquee { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
+        .animate-marquee { animation: marquee 25s linear infinite; }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+        .animate-shimmer { background-size: 200% 100%; animation: shimmer 2s infinite; }
+        @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+      `}</style>
     </main>
   );
 }
+
+const StatBox = ({ label, value, color }: any) => (
+    <div className="bg-[#0a0a0c] border border-white/5 p-8 rounded-[2.5rem] flex flex-col items-center justify-center shadow-2xl transition-all hover:-translate-y-2">
+        <span className={`text-3xl font-black ${color} tracking-tighter italic`}>{value}</span>
+        <span className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.2em] mt-2">{label}</span>
+    </div>
+);
 
 export default function Home() {
   return (
