@@ -47,17 +47,20 @@ export default function UltimateLivePage() {
     }, 1000);
     return () => clearInterval(timer);
   }, []);
-
-  // ২. অ্যাড স্ক্রিপ্ট ইনজেকশন (Tag.min.js - উভয় ভার্সন)
+  // ২. অ্যাড স্ক্রিপ্ট ইনজেকশন (ফিক্সড ভার্সন)
   useEffect(() => {
-    // স্ক্রিপ্ট ১
+    // স্ক্রিপ্ট ১ (টাইপ সেফ)
     (function(s: any) {
       s.dataset.zone = '10282293';
       s.src = 'https://al5sm.com/tag.min.js';
-      [document.documentElement, document.body].filter(Boolean).pop().appendChild(s);
+      
+      const target = [document.documentElement, document.body].filter(Boolean).pop();
+      if (target) {
+        target.appendChild(s);
+      }
     })(document.createElement('script'));
 
-    // স্ক্রিপ্ট ২
+    // স্ক্রিপ্ট ২ (আগের মতোই)
     const script2 = document.createElement("script");
     script2.src = "https://3nbf4.com/act/files/tag.min.js?z=10282294";
     script2.dataset.cfasync = "false";
@@ -68,6 +71,7 @@ export default function UltimateLivePage() {
       if (document.body.contains(script2)) document.body.removeChild(script2);
     };
   }, []);
+
 
   // ৩. এন্টি অ্যাড-ব্লকার লজিক
   useEffect(() => {
