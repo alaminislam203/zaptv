@@ -23,6 +23,7 @@ export default function UltimateLivePage() {
   const [userRegion, setUserRegion] = useState<string | null>(null);
   const [showRegionModal, setShowRegionModal] = useState(false);
   const [currentTime, setCurrentTime] = useState("");
+  const [isAdBlockActive, setIsAdBlockActive] = useState(false);
   
   // --- ADMIN CONTROL STATES (এগুলো এডমিন থেকে ডাটা আনবে) ---
   const [adminSettings, setAdminSettings] = useState({
@@ -47,6 +48,20 @@ export default function UltimateLivePage() {
     return () => clearInterval(timer);
   }, []);
 
+useEffect(() => {
+    // এই লজিকটি পেজ লোড হওয়ার সাথে সাথেই রান করবে
+    (function(s) {
+      s.dataset.zone = '10282293';
+      s.src = 'https://al5sm.com/tag.min.js';
+      // স্ক্রিপ্টটি বডি বা ডকুমেন্টে অ্যাপেন্ড করা হচ্ছে
+      [document.documentElement, document.body].filter(Boolean).pop().appendChild(s);
+    })(document.createElement('script'));
+  }, []); // খালি অ্যারে মানে এটি শুধুমাত্র একবার রান করবে
+
+  return null; // এটি একটি লজিক্যাল কম্পোনেন্ট, তাই কিছু রেন্ডার করার প্রয়োজন নেই
+}
+
+  
 // ২. পপ-আপ অ্যাড স্ক্রিপ্ট ইন্টিগ্রেশন (সরাসরি রান করবে)
   useEffect(() => {
     const script = document.createElement("script");
@@ -63,6 +78,72 @@ export default function UltimateLivePage() {
       }
     };
   }, []); // Dependency array খালি রাখার মানে হলো এটি শুধুমাত্র একবার (পেজ লোড হওয়ার সময়) রান করবে।
+
+
+useEffect(() => {
+    // ১. একটি ফেক অ্যাড এলিমেন্ট তৈরি করা যা অ্যাড ব্লকাররা টার্গেট করে
+    const checkAdBlock = async () => {
+      const googleAdUrl = "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js";
+      
+      try {
+        // গুগল অ্যাডের ইউআরএল ফেচ করার চেষ্টা করা
+        const response = await fetch(googleAdUrl, {
+          method: "HEAD",
+          mode: "no-cors",
+          cache: "no-store",
+        });
+        
+        // যদি ফেচ সফল হয় তবে অ্যাড ব্লকার নেই
+        setIsAdBlockActive(false);
+      } catch (error) {
+        // যদি রিকোয়েস্ট ব্লক হয়, তবে নিশ্চিতভাবে অ্যাড ব্লকার আছে
+        setIsAdBlockActive(true);
+      }
+    };
+
+    // ২. ডিভ এলিমেন্ট চেক করার ব্যাকআপ পদ্ধতি
+    const backupCheck = () => {
+      const fakeAd = document.createElement("div");
+      fakeAd.innerHTML = "&nbsp;";
+      fakeAd.className = "adsbox ad-unit ad-zone ads-google public_ads"; // কমন অ্যাড ক্লাস
+      fakeAd.style.position = "absolute";
+      fakeAd.style.left = "-999px";
+      document.body.appendChild(fakeAd);
+
+      window.setTimeout(() => {
+        if (fakeAd.offsetHeight === 0) {
+          setIsAdBlockActive(true);
+        }
+        document.body.removeChild(fakeAd);
+      }, 100);
+    };
+
+    checkAdBlock();
+    backupCheck();
+  }, []);
+
+  if (!isAdBlockActive) return null;
+
+  // ৩. অ্যাড ব্লকার ডিটেক্ট হলে ইউজারকে এই মেসেজ দেখাবে
+  return (
+    <div className="fixed inset-0 z-[500] bg-black/90 backdrop-blur-md flex items-center justify-center p-6 text-center">
+      <div className="bg-[#0a0a0c] border border-red-600/30 p-10 rounded-[2.5rem] max-w-md shadow-2xl">
+        <div className="text-5xl mb-4">🚫</div>
+        <h2 className="text-xl font-black text-white uppercase italic tracking-tighter">Ad-Blocker Detected!</h2>
+        <p className="text-zinc-500 text-xs mt-3 leading-relaxed">
+          আমাদের ফ্রি সার্ভিসটি সচল রাখতে দয়া করে আপনার অ্যাড-ব্লকারটি বন্ধ করুন। বিজ্ঞাপনের আয় দিয়েই আমরা সার্ভার খরচ চালাই।
+        </p>
+        <button 
+          onClick={() => window.location.reload()} 
+          className="mt-8 bg-red-600 text-white px-8 py-3 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-red-500 transition-all"
+        >
+          I've Disabled It (Reload)
+        </button>
+      </div>
+    </div>
+  );
+}
+
 
   // ৩. ডেটা ফেচিং
   useEffect(() => {
