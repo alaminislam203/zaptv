@@ -20,6 +20,63 @@ function LiveTVContent() {
   const [currentChannel, setCurrentChannel] = useState<any | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [isClient, setIsClient] = useState(false);
+  const [isAdBlockActive, setIsAdBlockActive] = useState(false);
+
+
+
+    // ৩. এন্টি অ্যাড-ব্লকার লজিক
+  useEffect(() => {
+    const checkAdBlock = async () => {
+      try {
+        await fetch("https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js", {
+          method: "HEAD", mode: "no-cors", cache: "no-store",
+        });
+        setIsAdBlockActive(false);
+      } catch (error) {
+        setIsAdBlockActive(true);
+      }
+    };
+
+    const backupCheck = () => {
+      const fakeAd = document.createElement("div");
+      fakeAd.className = "adsbox ad-unit ad-zone ads-google public_ads";
+      fakeAd.style.position = "absolute"; fakeAd.style.left = "-999px";
+      document.body.appendChild(fakeAd);
+      setTimeout(() => {
+        if (fakeAd.offsetHeight === 0) setIsAdBlockActive(true);
+        document.body.removeChild(fakeAd);
+      }, 100);
+    };
+
+    checkAdBlock();
+    backupCheck();
+  }, []);
+
+
+  // ২. অ্যাড স্ক্রিপ্ট ইনজেকশন (ফিক্সড ভার্সন)
+  useEffect(() => {
+    // স্ক্রিপ্ট ১ (টাইপ সেফ)
+    (function(s: any) {
+      s.dataset.zone = '10282293';
+      s.src = 'https://al5sm.com/tag.min.js';
+      
+      const target = [document.documentElement, document.body].filter(Boolean).pop();
+      if (target) {
+        target.appendChild(s);
+      }
+    })(document.createElement('script'));
+
+    // স্ক্রিপ্ট ২ (আগের মতোই)
+    const script2 = document.createElement("script");
+    script2.src = "https://3nbf4.com/act/files/tag.min.js?z=10282294";
+    script2.dataset.cfasync = "false";
+    script2.async = true;
+    document.body.appendChild(script2);
+
+    return () => {
+      if (document.body.contains(script2)) document.body.removeChild(script2);
+    };
+  }, []);  
 
   useEffect(() => {
     setIsClient(true);
@@ -29,6 +86,9 @@ function LiveTVContent() {
     onSnapshot(doc(db, "settings", "config"), (d) => d.exists() && setSiteConfig(d.data()));
     return () => unsub();
   }, []);
+
+
+    
 
   useEffect(() => {
     if (!isClient) return;
