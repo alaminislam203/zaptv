@@ -101,6 +101,20 @@ function LiveTVContent() {
 
   const filteredChannels = channels.filter(ch => ch.name.toLowerCase().includes(searchQuery.toLowerCase()));
 
+    // অ্যাড-ব্লকার সতর্কবার্তা রেন্ডার
+  if (isAdBlockActive) {
+    return (
+      <div className="fixed inset-0 z-[500] bg-black/90 backdrop-blur-md flex items-center justify-center p-6 text-center">
+        <div className="bg-[#0a0a0c] border border-red-600/30 p-10 rounded-[2.5rem] max-w-md shadow-2xl">
+          <div className="text-5xl mb-4">🚫</div>
+          <h2 className="text-xl font-black text-white uppercase italic tracking-tighter">Ad-Blocker Detected!</h2>
+          <p className="text-zinc-500 text-xs mt-3 leading-relaxed">আমাদের ফ্রি সার্ভিসটি সচল রাখতে দয়া করে আপনার অ্যাড-ব্লকারটি বন্ধ করুন।</p>
+          <button onClick={() => window.location.reload()} className="mt-8 bg-red-600 text-white px-8 py-3 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-red-500 transition-all">Reload Page</button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <main className="min-h-screen bg-[#020617] text-gray-200 flex flex-col overflow-x-hidden">
       
