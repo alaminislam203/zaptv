@@ -266,9 +266,6 @@ export default function UltimateLivePage() {
       {showRegionModal && (
         <style jsx global>{`
           body { overflow: hidden; }
-        `}</style>
-
-      <style jsx>{`
         @keyframes marquee { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
         .animate-marquee { animation: marquee 30s linear infinite; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
