@@ -3,83 +3,44 @@ import React, { useState, useEffect, Suspense } from "react";
 import { collection, onSnapshot, doc } from "firebase/firestore";
 import { ref, onValue, set, onDisconnect } from "firebase/database";
 import { db, rtdb } from "../firebase"; 
-import Link from "next/link";
 import dynamic from "next/dynamic";
+import Navbar from "../../../components/Navbar";
+import Footer from "../../../components/Footer";
+import { Play, Activity, Search, Shield, Trophy, Users, Tv, Star, ChevronRight } from "lucide-react";
 
 // --- DYNAMIC IMPORTS ---
-const ShakaPlayer = dynamic(() => import("../../../components/ShakaPlayer"), { ssr: false });
+const ShakaPlayer = dynamic(() => import("../../../components/ShakaPlayer"), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-full bg-slate-900 flex flex-col items-center justify-center gap-4">
+      <div className="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+      <p className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">Warming up...</p>
+    </div>
+  )
+});
 
-const Icons = {
-    Tv: () => <svg className="w-5 h-5 sm:w-6 sm:h-6 text-cyan-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>,
-};
-
-function LiveTVContent() {
+function LiveSportsContent() {
   const [channels, setChannels] = useState<any[]>([]);
   const [siteConfig, setSiteConfig] = useState<any>({});
   const [onlineUsers, setOnlineUsers] = useState(0);
   const [currentChannel, setCurrentChannel] = useState<any | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [isClient, setIsClient] = useState(false);
   const [isAdBlockActive, setIsAdBlockActive] = useState(false);
 
-
-
-    // ৩. এন্টি অ্যাড-ব্লকার লজিক
   useEffect(() => {
     const checkAdBlock = async () => {
       try {
         await fetch("https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js", {
           method: "HEAD", mode: "no-cors", cache: "no-store",
         });
-        setIsAdBlockActive(false);
-      } catch (error) {
+      } catch {
         setIsAdBlockActive(true);
       }
     };
-
-    const backupCheck = () => {
-      const fakeAd = document.createElement("div");
-      fakeAd.className = "adsbox ad-unit ad-zone ads-google public_ads";
-      fakeAd.style.position = "absolute"; fakeAd.style.left = "-999px";
-      document.body.appendChild(fakeAd);
-      setTimeout(() => {
-        if (fakeAd.offsetHeight === 0) setIsAdBlockActive(true);
-        document.body.removeChild(fakeAd);
-      }, 100);
-    };
-
     checkAdBlock();
-    backupCheck();
   }, []);
 
-
-  // ২. অ্যাড স্ক্রিপ্ট ইনজেকশন (ফিক্সড ভার্সন)
   useEffect(() => {
-    // স্ক্রিপ্ট ১ (টাইপ সেফ)
-    (function(s: any) {
-      s.dataset.zone = '10282293';
-      s.src = 'https://al5sm.com/tag.min.js';
-      
-      const target = [document.documentElement, document.body].filter(Boolean).pop();
-      if (target) {
-        target.appendChild(s);
-      }
-    })(document.createElement('script'));
-
-    // স্ক্রিপ্ট ২ (আগের মতোই)
-    const script2 = document.createElement("script");
-    script2.src = "https://3nbf4.com/act/files/tag.min.js?z=10282294";
-    script2.dataset.cfasync = "false";
-    script2.async = true;
-    document.body.appendChild(script2);
-
-    return () => {
-      if (document.body.contains(script2)) document.body.removeChild(script2);
-    };
-  }, []);  
-
-  useEffect(() => {
-    setIsClient(true);
     const unsub = onSnapshot(collection(db, "channels"), (snap) => {
       setChannels(snap.docs.map(d => ({ id: d.id, ...d.data() })));
     });
@@ -87,163 +48,171 @@ function LiveTVContent() {
     return () => unsub();
   }, []);
 
-
-    
-
   useEffect(() => {
-    if (!isClient) return;
     const statusRef = ref(rtdb, 'status');
     const myRef = ref(rtdb, 'status/' + Math.random().toString(36).substr(2, 9));
     set(myRef, { online: true });
     onDisconnect(myRef).remove();
     onValue(statusRef, (snap) => setOnlineUsers(snap.size));
-  }, [isClient]);
+  }, []);
 
   const filteredChannels = channels.filter(ch => ch.name.toLowerCase().includes(searchQuery.toLowerCase()));
 
-    // অ্যাড-ব্লকার সতর্কবার্তা রেন্ডার
   if (isAdBlockActive) {
     return (
-      <div className="fixed inset-0 z-[500] bg-black/90 backdrop-blur-md flex items-center justify-center p-6 text-center">
-        <div className="bg-[#0a0a0c] border border-red-600/30 p-10 rounded-[2.5rem] max-w-md shadow-2xl">
-          <div className="text-5xl mb-4">🚫</div>
-          <h2 className="text-xl font-black text-white uppercase italic tracking-tighter">Ad-Blocker Detected!</h2>
-          <p className="text-zinc-500 text-xs mt-3 leading-relaxed">আমাদের ফ্রি সার্ভিসটি সচল রাখতে দয়া করে আপনার অ্যাড-ব্লকারটি বন্ধ করুন।</p>
-          <button onClick={() => window.location.reload()} className="mt-8 bg-red-600 text-white px-8 py-3 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-red-500 transition-all">Reload Page</button>
+      <div className="fixed inset-0 z-[500] bg-slate-950 flex items-center justify-center p-6 text-center">
+        <div className="glass p-12 rounded-[3rem] max-w-md">
+          <Shield className="w-16 h-16 text-red-500 mx-auto mb-6" />
+          <h2 className="text-xl font-black text-white uppercase italic tracking-tighter mb-4">Ad-Blocker Detected</h2>
+          <p className="text-slate-500 text-xs font-medium leading-relaxed">Please disable your ad-blocker to support our free sports streaming service.</p>
+          <button onClick={() => window.location.reload()} className="mt-8 bg-emerald-500 text-white px-8 py-4 rounded-2xl font-black uppercase tracking-widest hover:bg-emerald-600 transition-all">Reload Page</button>
         </div>
       </div>
     );
   }
 
   return (
-    <main className="min-h-screen bg-[#020617] text-gray-200 flex flex-col overflow-x-hidden">
-      
-      {/* --- HEADER (Fully Responsive) --- */}
-      <header className="sticky top-0 z-50 bg-[#020617]/90 backdrop-blur-xl border-b border-white/5">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 sm:h-20 flex items-center justify-between">
-            <div onClick={() => setCurrentChannel(null)} className="flex items-center gap-2 cursor-pointer">
-                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-cyan-600 rounded-xl flex items-center justify-center shadow-lg shadow-cyan-600/20">
-                    <Icons.Tv />
-                </div>
-                <h1 className="text-lg sm:text-2xl font-black tracking-tighter uppercase italic">Toffee<span className="text-cyan-500">Pro</span></h1>
+    <div className="min-h-screen bg-slate-950 text-slate-100 selection:bg-emerald-500/30">
+      <Navbar />
+
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+
+        {/* Page Header */}
+        <div className="flex flex-col md:flex-row items-center justify-between gap-8 mb-16">
+          <div className="text-center md:text-left">
+            <div className="flex items-center justify-center md:justify-start gap-3 mb-4">
+              <Trophy className="w-6 h-6 text-emerald-500" />
+              <span className="text-xs font-black text-emerald-500 uppercase tracking-[0.4em]">Premium Arena</span>
             </div>
-            <div className="flex items-center gap-3">
-                <div className="bg-green-500/10 px-2 py-1 rounded-md border border-green-500/20 hidden xs:flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div>
-                    <span className="text-[10px] font-bold text-green-500">{onlineUsers}</span>
-                </div>
-                <Link href="/admin" className="text-[10px] font-black uppercase px-3 py-1.5 bg-white/5 rounded-lg border border-white/10">Admin</Link>
+            <h1 className="text-4xl md:text-6xl font-black text-white italic uppercase tracking-tighter leading-none">
+              Live <span className="text-gradient">Sports</span>
+            </h1>
+          </div>
+          <div className="flex gap-4">
+            <div className="glass px-8 py-6 rounded-3xl text-center">
+              <p className="text-3xl font-black text-white italic leading-none mb-1">{onlineUsers}</p>
+              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Watching Live</p>
             </div>
+            <div className="glass px-8 py-6 rounded-3xl text-center border-emerald-500/20">
+              <p className="text-3xl font-black text-emerald-500 italic leading-none mb-1">{channels.length}</p>
+              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Pro Channels</p>
+            </div>
+          </div>
         </div>
-      </header>
 
-      <div className="max-w-7xl mx-auto w-full px-3 sm:px-6 py-4 sm:py-8 space-y-6">
-        
-        {/* --- MAIN GRID LAYOUT --- */}
-        <div className="flex flex-col lg:grid lg:grid-cols-12 gap-6">
-            
-            {/* LEFT: PLAYER SEKCTION (Top on Mobile) */}
-            <div className="lg:col-span-8 space-y-6 order-1">
-                <div className="bg-black rounded-2xl sm:rounded-[2.5rem] overflow-hidden border border-white/5 shadow-2xl aspect-video relative group">
-                    {currentChannel ? (
-                        <ShakaPlayer src={currentChannel.sources[0].url} />
-                    ) : (
-                        <div className="w-full h-full flex flex-col items-center justify-center gap-4 bg-[#0a0a0c]">
-                            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-zinc-900 rounded-full flex items-center justify-center animate-pulse text-zinc-700">
-                                <Icons.Tv />
-                            </div>
-                            <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Select a channel</p>
-                        </div>
-                    )}
+        {/* Player Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+
+          <div className="lg:col-span-8 space-y-8">
+            <div className="glass rounded-[3rem] overflow-hidden aspect-video relative border-white/5 shadow-2xl">
+              {currentChannel ? (
+                <ShakaPlayer src={currentChannel.sources[0].url} />
+              ) : (
+                <div className="w-full h-full flex flex-col items-center justify-center gap-6 bg-slate-900/50">
+                  <div className="w-24 h-24 bg-emerald-500/10 rounded-[2.5rem] flex items-center justify-center text-emerald-500 border border-emerald-500/20">
+                    <Trophy className="w-10 h-10" />
+                  </div>
+                  <div className="text-center">
+                    <p className="text-xs font-black text-white uppercase tracking-[0.3em] mb-2">Arena is Empty</p>
+                    <p className="text-[10px] font-medium text-slate-500 uppercase tracking-widest">Select a channel from the grid to enter</p>
+                  </div>
                 </div>
+              )}
+            </div>
 
-                {/* --- CHANNEL INFO (Mobile Optimized) --- */}
-                {currentChannel && (
-                    <div className="bg-white/5 backdrop-blur-md p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border border-white/5 flex items-center gap-4 sm:gap-6">
-                        <img src={currentChannel.logo} className="w-12 h-12 sm:w-20 sm:h-20 rounded-xl sm:rounded-3xl object-contain bg-black p-1 border border-white/10" alt="" />
-                        <div>
-                            <h2 className="text-lg sm:text-2xl font-black text-white italic uppercase tracking-tight">{currentChannel.name}</h2>
-                            <p className="text-[10px] sm:text-xs text-cyan-500 font-bold uppercase tracking-widest mt-1">Live Streaming Now</p>
-                        </div>
+            {currentChannel && (
+              <div className="glass p-10 rounded-[3rem] flex flex-col md:flex-row items-center gap-8">
+                <div className="w-24 h-24 bg-black rounded-3xl border border-white/5 p-2 overflow-hidden shrink-0 flex items-center justify-center">
+                  <img src={currentChannel.logo} className="w-full h-full object-contain" alt="" />
+                </div>
+                <div className="flex-1 text-center md:text-left">
+                  <div className="flex items-center justify-center md:justify-start gap-3 mb-2">
+                    <Star className="w-4 h-4 text-amber-500 fill-current" />
+                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Premium Source</span>
+                  </div>
+                  <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter leading-none mb-3">{currentChannel.name}</h2>
+                  <div className="flex items-center justify-center md:justify-start gap-4">
+                    <span className="flex items-center gap-2 text-[10px] font-black text-emerald-500 uppercase tracking-widest bg-emerald-500/10 px-3 py-1.5 rounded-lg border border-emerald-500/20">
+                      <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></div>
+                      Ultra HD
+                    </span>
+                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">No Lag Streaming</span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="lg:col-span-4 space-y-8">
+            <div className="glass p-10 rounded-[3rem] h-[600px] flex flex-col">
+              <div className="mb-8">
+                <h3 className="text-xs font-black text-white uppercase italic tracking-widest mb-6 flex items-center gap-3">
+                  <Play className="w-4 h-4 text-emerald-500 fill-current" />
+                  Sports Grid
+                </h3>
+                <div className="relative">
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-600" />
+                  <input
+                    className="w-full bg-slate-950 border border-white/5 p-4 rounded-2xl text-[10px] font-black text-white uppercase tracking-widest outline-none focus:border-emerald-500/50"
+                    placeholder="Search channel..."
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar space-y-3">
+                {filteredChannels.map((ch) => (
+                  <button
+                    key={ch.id}
+                    onClick={() => {
+                      setCurrentChannel(ch);
+                      window.scrollTo({top: 0, behavior: 'smooth'});
+                    }}
+                    className={`w-full flex items-center gap-4 p-4 rounded-2xl border transition-all group ${
+                      currentChannel?.id === ch.id
+                        ? 'bg-emerald-500 border-emerald-400 text-white shadow-xl shadow-emerald-500/20'
+                        : 'bg-slate-950 border-white/5 hover:bg-white/5'
+                    }`}
+                  >
+                    <div className="w-10 h-10 rounded-xl object-contain bg-black p-1 border border-white/10 overflow-hidden flex shrink-0 items-center justify-center">
+                      <img src={ch.logo} className="w-full h-full object-contain" alt="" />
                     </div>
-                )}
+                    <span className={`text-[10px] font-black uppercase tracking-widest truncate text-left flex-1 ${
+                      currentChannel?.id === ch.id ? 'text-white' : 'text-slate-400 group-hover:text-white'
+                    }`}>
+                      {ch.name}
+                    </span>
+                    <ChevronRight className={`w-4 h-4 ${currentChannel?.id === ch.id ? 'text-white opacity-100' : 'text-slate-800 opacity-0 group-hover:opacity-100'} transition-all`} />
+                  </button>
+                ))}
+              </div>
             </div>
-
-            {/* RIGHT: CHANNEL LIST (Bottom on Mobile) */}
-            <div className="lg:col-span-4 space-y-6 order-2 lg:order-2">
-                <div className="bg-[#0a0a0c] p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border border-white/5 h-[400px] sm:h-[550px] flex flex-col shadow-2xl">
-                    <div className="mb-4">
-                        <h3 className="text-white font-black text-xs sm:text-sm uppercase italic mb-3">Live Grid</h3>
-                        <input 
-                            className="w-full bg-black border border-white/5 p-3 rounded-xl text-xs text-white outline-none focus:border-cyan-600/50" 
-                            placeholder="Search..." 
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                        />
-                    </div>
-                    <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
-                        {filteredChannels.map((ch) => (
-                            <button 
-                                key={ch.id} 
-                                onClick={() => {
-                                  setCurrentChannel(ch);
-                                  window.scrollTo({top: 0, behavior: 'smooth'}); // মোবাইলে ক্লিক করলে প্লেয়ারে নিয়ে যাবে
-                                }}
-                                className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all ${currentChannel?.id === ch.id ? 'bg-cyan-600 border-cyan-500 text-white shadow-lg' : 'bg-white/5 border-white/5 hover:bg-white/10'}`}
-                            >
-                                <img src={ch.logo} className="w-8 h-8 rounded-lg object-contain bg-black p-0.5" alt="" />
-                                <span className="text-[10px] font-black uppercase tracking-tighter truncate text-left flex-1">{ch.name}</span>
-                                {currentChannel?.id === ch.id && <div className="w-1.5 h-1.5 bg-white rounded-full animate-ping"></div>}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-            </div>
+          </div>
         </div>
 
-        {/* --- FOOTER STATS (Responsive Grid) --- */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6 mt-12 pt-6 border-t border-white/5">
-            {[
-                { label: "Active Users", value: onlineUsers, color: "text-green-500" },
-                { label: "Channels", value: channels.length, color: "text-cyan-500" },
-                { label: "Quality", value: "4K/HD", color: "text-purple-500" },
-                { label: "Status", value: "Online", color: "text-blue-500" }
-            ].map((stat, i) => (
-                <div key={i} className="bg-white/5 p-4 sm:p-6 rounded-2xl border border-white/5 text-center">
-                    <p className={`text-xl sm:text-3xl font-black ${stat.color} italic tracking-tighter`}>{stat.value}</p>
-                    <p className="text-[8px] sm:text-[10px] font-black text-zinc-500 uppercase tracking-widest mt-1">{stat.label}</p>
-                </div>
-            ))}
+        {/* Warning Section */}
+        <div className="mt-20 glass p-10 rounded-[3rem] border-red-500/10 flex flex-col md:flex-row items-center gap-10">
+          <div className="w-20 h-20 bg-red-500/10 rounded-[2rem] flex items-center justify-center shrink-0 border border-red-500/20">
+            <Shield className="w-10 h-10 text-red-500" />
+          </div>
+          <div>
+            <h4 className="text-red-500 font-black uppercase italic tracking-tighter text-xl mb-2">Betting Prohibited</h4>
+            <p className="text-[11px] text-slate-500 leading-relaxed font-medium uppercase tracking-wide">
+              ToffeePro does not promote or endorse any gambling or betting platforms. We are a pure sports streaming destination. Be responsible. Enjoy the spirit of the game.
+            </p>
+          </div>
         </div>
+      </main>
 
-        {/* --- ANTI-BETTING WARNING --- */}
-        <div className="bg-red-600/5 border border-red-600/10 p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] flex flex-col sm:flex-row items-center gap-4 sm:gap-8 shadow-xl">
-            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-red-600 rounded-2xl flex items-center justify-center text-2xl shadow-lg shrink-0">🔞</div>
-            <div className="text-center sm:text-left">
-                <h4 className="text-red-500 font-black uppercase italic tracking-tighter text-sm sm:text-xl">Warning: Gambling Prohibited</h4>
-                <p className="text-[9px] sm:text-[11px] text-zinc-500 mt-1 leading-relaxed max-w-2xl font-medium">আমরা কোনো প্রকার জুয়া বা বেটিং প্রমোট করি না। খেলার মাঝে আসা কোনো বিজ্ঞাপনের জন্য কর্তৃপক্ষ দায়ী নয়।</p>
-            </div>
-        </div>
-      </div>
-
-      <footer className="mt-auto bg-black border-t border-white/5 py-8 text-center">
-        <p className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.4em]">&copy; {new Date().getFullYear()} ToffeePro Inc. All Rights Reserved.</p>
-      </footer>
-
-      <style jsx global>{`
-        .custom-scrollbar::-webkit-scrollbar { width: 3px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
-        @media (max-width: 640px) {
-            .animate-marquee { animation: marquee 15s linear infinite; }
-        }
-      `}</style>
-    </main>
+      <Footer />
+    </div>
   );
 }
 
 export default function Home() {
   return (
-    <Suspense fallback={<div className="bg-black min-h-screen" />}>
-      <LiveTVContent />
+    <Suspense fallback={<div className="bg-slate-950 min-h-screen" />}>
+      <LiveSportsContent />
     </Suspense>
   );
 }
