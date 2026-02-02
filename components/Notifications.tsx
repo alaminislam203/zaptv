@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { doc, onSnapshot } from "firebase/firestore";
-import { db } from "../app/firebase";
+import { db } from "../src/app/firebase";
 import { X, Bell, ExternalLink } from "lucide-react";
 import Link from "next/link";
 

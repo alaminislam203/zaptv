@@ -163,7 +163,7 @@ export default function KidsTVPage() {
           <div className="lg:col-span-8 space-y-8">
             <div className="glass rounded-[3rem] overflow-hidden aspect-video relative border-white/5 shadow-2xl">
               {currentChannel ? (
-                <DynamicPlayer src={currentChannel.sources[0].url} />
+                <DynamicPlayer player="plyr" src={currentChannel.sources[0].url} />
               ) : (
                 <div className="w-full h-full flex flex-col items-center justify-center gap-6 bg-slate-900/50">
                   <div className="w-20 h-20 bg-emerald-500/10 rounded-[2rem] flex items-center justify-center text-emerald-500">

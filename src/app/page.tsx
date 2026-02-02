@@ -2,6 +2,8 @@
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import dynamic from "next/dynamic";
+import { onSnapshot, doc } from "firebase/firestore";
+import { db } from "./firebase";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 import { Play, Activity, Clock, Globe, AlertTriangle, Search, Filter, ChevronRight } from "lucide-react";
@@ -35,6 +37,7 @@ export default function UltimateLivePage() {
   const [playerType, setPlayerType] = useState<"native" | "plyr">("native");
   const [userRegion, setUserRegion] = useState<string | null>(null);
   const [showRegionModal, setShowRegionModal] = useState(false);
+  const [siteConfig, setSiteConfig] = useState<any>({});
   const [currentTime, setCurrentTime] = useState("");
   const [isAdBlockActive, setIsAdBlockActive] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");

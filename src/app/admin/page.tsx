@@ -147,12 +147,12 @@ export default function EnhancedAdminPanel() {
             <div className="col-span-12 lg:col-span-4 glass p-8 rounded-[2.5rem] border-white/5 h-fit">
               <h3 className="text-white font-black uppercase text-sm italic mb-6">Create Match</h3>
               <div className="space-y-4">
-                <AdminInput label="Team 1 Name" value={matchForm.team1} onChange={e => setMatchForm({...matchForm, team1: e.target.value})} />
-                <AdminInput label="Team 2 Name" value={matchForm.team2} onChange={e => setMatchForm({...matchForm, team2: e.target.value})} />
-                <AdminInput label="Stream URL / ID" value={matchForm.channelName} onChange={e => setMatchForm({...matchForm, channelName: e.target.value})} />
+                <AdminInput label="Team 1 Name" value={matchForm.team1} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setMatchForm({...matchForm, team1: e.target.value})} />
+                <AdminInput label="Team 2 Name" value={matchForm.team2} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setMatchForm({...matchForm, team2: e.target.value})} />
+                <AdminInput label="Stream URL / ID" value={matchForm.channelName} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setMatchForm({...matchForm, channelName: e.target.value})} />
                 <div className="space-y-2">
                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-4">Status</label>
-                   <select className="w-full bg-slate-950 border border-white/5 p-4 rounded-2xl text-white font-bold text-xs" value={matchForm.status} onChange={e => setMatchForm({...matchForm, status: e.target.value})}>
+                   <select className="w-full bg-slate-950 border border-white/5 p-4 rounded-2xl text-white font-bold text-xs" value={matchForm.status} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setMatchForm({...matchForm, status: e.target.value})}>
                      <option value="LIVE">LIVE</option>
                      <option value="UPCOMING">UPCOMING</option>
                    </select>
@@ -179,12 +179,12 @@ export default function EnhancedAdminPanel() {
           <div className="max-w-4xl glass p-10 rounded-[3rem] border-white/5 space-y-8">
             <h3 className="text-white font-black uppercase text-sm italic">Remote M3U Sources</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <AdminInput label="Live TV M3U" value={siteConfig.liveTvPlaylistUrl} onChange={e => setSiteConfig({...siteConfig, liveTvPlaylistUrl: e.target.value})} />
-              <AdminInput label="Arabic TV M3U" value={siteConfig.arabicTvPlaylistUrl} onChange={e => setSiteConfig({...siteConfig, arabicTvPlaylistUrl: e.target.value})} />
-              <AdminInput label="BD Channels M3U" value={siteConfig.bdPlaylistUrl} onChange={e => setSiteConfig({...siteConfig, bdPlaylistUrl: e.target.value})} />
-              <AdminInput label="Kids Content M3U" value={siteConfig.kidsPlaylistUrl} onChange={e => setSiteConfig({...siteConfig, kidsPlaylistUrl: e.target.value})} />
-              <AdminInput label="Malaysia Channels M3U" value={siteConfig.malaysiaPlaylistUrl} onChange={e => setSiteConfig({...siteConfig, malaysiaPlaylistUrl: e.target.value})} />
-              <AdminInput label="FanCode / Special M3U" value={siteConfig.fancodePlaylistUrl} onChange={e => setSiteConfig({...siteConfig, fancodePlaylistUrl: e.target.value})} />
+              <AdminInput label="Live TV M3U" value={siteConfig.liveTvPlaylistUrl} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSiteConfig({...siteConfig, liveTvPlaylistUrl: e.target.value})} />
+              <AdminInput label="Arabic TV M3U" value={siteConfig.arabicTvPlaylistUrl} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSiteConfig({...siteConfig, arabicTvPlaylistUrl: e.target.value})} />
+              <AdminInput label="BD Channels M3U" value={siteConfig.bdPlaylistUrl} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSiteConfig({...siteConfig, bdPlaylistUrl: e.target.value})} />
+              <AdminInput label="Kids Content M3U" value={siteConfig.kidsPlaylistUrl} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSiteConfig({...siteConfig, kidsPlaylistUrl: e.target.value})} />
+              <AdminInput label="Malaysia Channels M3U" value={siteConfig.malaysiaPlaylistUrl} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSiteConfig({...siteConfig, malaysiaPlaylistUrl: e.target.value})} />
+              <AdminInput label="FanCode / Special M3U" value={siteConfig.fancodePlaylistUrl} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSiteConfig({...siteConfig, fancodePlaylistUrl: e.target.value})} />
             </div>
           </div>
         )}
@@ -197,9 +197,9 @@ export default function EnhancedAdminPanel() {
               <Toggle active={siteConfig.pushNotification.show} onClick={() => setSiteConfig({...siteConfig, pushNotification: {...siteConfig.pushNotification, show: !siteConfig.pushNotification.show}})} />
             </div>
             <div className="space-y-6">
-              <AdminInput label="Alert Title" value={siteConfig.pushNotification.title} onChange={e => setSiteConfig({...siteConfig, pushNotification: {...siteConfig.pushNotification, title: e.target.value}})} />
-              <AdminInput label="Alert Message" value={siteConfig.pushNotification.message} onChange={e => setSiteConfig({...siteConfig, pushNotification: {...siteConfig.pushNotification, message: e.target.value}})} />
-              <AdminInput label="Target Link (e.g. /livetv)" value={siteConfig.pushNotification.link} onChange={e => setSiteConfig({...siteConfig, pushNotification: {...siteConfig.pushNotification, link: e.target.value}})} />
+              <AdminInput label="Alert Title" value={siteConfig.pushNotification.title} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSiteConfig({...siteConfig, pushNotification: {...siteConfig.pushNotification, title: e.target.value}})} />
+              <AdminInput label="Alert Message" value={siteConfig.pushNotification.message} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSiteConfig({...siteConfig, pushNotification: {...siteConfig.pushNotification, message: e.target.value}})} />
+              <AdminInput label="Target Link (e.g. /livetv)" value={siteConfig.pushNotification.link} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSiteConfig({...siteConfig, pushNotification: {...siteConfig.pushNotification, link: e.target.value}})} />
             </div>
           </div>
         )}
@@ -209,7 +209,7 @@ export default function EnhancedAdminPanel() {
           <div className="max-w-3xl space-y-8">
              <div className="glass p-10 rounded-[3rem] border-white/5 space-y-6">
                 <h3 className="text-white font-black uppercase text-sm italic">Site Configuration</h3>
-                <AdminInput label="Marquee Notice Text" value={siteConfig.noticeText} onChange={e => setSiteConfig({...siteConfig, noticeText: e.target.value})} />
+                <AdminInput label="Marquee Notice Text" value={siteConfig.noticeText} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSiteConfig({...siteConfig, noticeText: e.target.value})} />
                 <div className="flex items-center gap-12">
                    <div className="flex flex-col gap-2">
                       <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Maintenance Mode</span>
@@ -220,7 +220,7 @@ export default function EnhancedAdminPanel() {
                       <Toggle active={siteConfig.adConfig.showPopAds} onClick={() => setSiteConfig({...siteConfig, adConfig: {...siteConfig.adConfig, showPopAds: !siteConfig.adConfig.showPopAds}})} />
                    </div>
                 </div>
-                <AdminInput label="Ad Link (Popunder)" value={siteConfig.adConfig.popAdLink} onChange={e => setSiteConfig({...siteConfig, adConfig: {...siteConfig.adConfig, popAdLink: e.target.value}})} />
+                <AdminInput label="Ad Link (Popunder)" value={siteConfig.adConfig.popAdLink} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSiteConfig({...siteConfig, adConfig: {...siteConfig.adConfig, popAdLink: e.target.value}})} />
              </div>
           </div>
         )}
@@ -248,7 +248,7 @@ const StatCard = ({ title, value, color }: any) => (
   </div>
 );
 
-const AdminInput = ({ label, value, onChange }: any) => (
+const AdminInput = ({ label, value, onChange }: { label: string, value: string, onChange: (e: React.ChangeEvent<HTMLInputElement>) => void }) => (
   <div className="space-y-2">
     <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-4">{label}</label>
     <input
@@ -265,7 +265,7 @@ const Toggle = ({ active, onClick }: any) => (
   </button>
 );
 
-const LoginScreen = ({ onLogin }: any) => {
+const LoginScreen = ({ onLogin }: { onLogin: () => void }) => {
   const [user, setUser] = useState("");
   const [pin, setPin] = useState("");
   return (
@@ -274,8 +274,8 @@ const LoginScreen = ({ onLogin }: any) => {
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-emerald-500 to-transparent"></div>
         <h1 className="text-3xl font-black text-white italic mb-10 tracking-tighter">Admin <span className="text-emerald-500">Access</span></h1>
         <div className="space-y-4">
-          <input className="w-full bg-slate-950 border border-white/5 p-5 rounded-[2rem] text-white outline-none font-bold text-sm text-center" placeholder="Username" onChange={e => setUser(e.target.value)} />
-          <input className="w-full bg-slate-950 border border-white/5 p-5 rounded-[2rem] text-white outline-none font-bold text-sm text-center" type="password" placeholder="Secret PIN" onChange={e => setPin(e.target.value)} />
+          <input className="w-full bg-slate-950 border border-white/5 p-5 rounded-[2rem] text-white outline-none font-bold text-sm text-center" placeholder="Username" onChange={(e: React.ChangeEvent<HTMLInputElement>) => setUser(e.target.value)} />
+          <input className="w-full bg-slate-950 border border-white/5 p-5 rounded-[2rem] text-white outline-none font-bold text-sm text-center" type="password" placeholder="Secret PIN" onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPin(e.target.value)} />
           <button onClick={() => { if (user === "admin" && pin === "sajid@1234") onLogin(); }} className="w-full bg-emerald-500 text-white font-black py-5 rounded-[2rem] shadow-xl hover:bg-emerald-400 transition-all uppercase tracking-widest text-xs mt-4">Initialize Session</button>
         </div>
       </div>
