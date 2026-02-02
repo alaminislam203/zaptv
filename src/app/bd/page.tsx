@@ -1,19 +1,25 @@
 "use client";
-import React, { useState, useEffect, useMemo, Suspense } from "react";
-import { collection, onSnapshot, addDoc, doc, runTransaction } from "firebase/firestore";
-import { ref, onValue, off, set, onDisconnect, serverTimestamp } from "firebase/database";
+import React, { useState, useEffect, useRef, useMemo, Suspense } from "react";
+import { 
+  collection, onSnapshot, addDoc, doc, 
+  runTransaction 
+} from "firebase/firestore";
+import { 
+  ref, onValue, off, set, onDisconnect, serverTimestamp 
+} from "firebase/database";
 import { db, rtdb } from "../firebase"; 
+import Link from "next/link";
+import { useSearchParams } from "next/navigation"; 
 import dynamic from "next/dynamic";
-import { useSearchParams } from "next/navigation";
-import Navbar from "../../../components/Navbar";
-import Footer from "../../../components/Footer";
-import { Play, Activity, Search, Shield, Info, Heart, AlertTriangle, Users, Tv, Globe, Star, ChevronRight } from "lucide-react";
+import Image from "next/image";
+import UserAdDisplay from "../../../components/UserAdDisplay"; 
 
 // --- DYNAMIC IMPORTS ---
 const LoadingPlayer = () => (
-  <div className="w-full h-full bg-slate-900 flex flex-col items-center justify-center gap-4 rounded-3xl border border-white/5 animate-pulse">
-    <div className="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
-    <span className="text-[10px] font-black uppercase tracking-widest text-emerald-500">Connecting...</span>
+  <div className="w-full h-full bg-[#050b14] flex items-center justify-center flex-col gap-3 relative overflow-hidden">
+    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-cyan-900/10 to-transparent animate-shimmer"></div>
+    <div className="w-10 h-10 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin z-10"></div>
+    <span className="text-xs text-cyan-400 font-mono animate-pulse z-10">Initializing Stream...</span>
   </div>
 );
 
@@ -24,10 +30,31 @@ const ShakaPlayer = dynamic(() => import("../../../components/ShakaPlayer"), { s
 const IframePlayer = dynamic(() => import("../../../components/IframePlayer"), { ssr: false });
 const PlayerJSPlayer = dynamic(() => import("../../../components/PlayerJSPlayer"), { ssr: false, loading: () => <LoadingPlayer /> });
 
+// --- INTERFACES ---
+interface DrmConfig { type: "clearkey" | "widevine"; keyId?: string; key?: string; licenseUrl?: string; }
+interface Source { label: string; url: string; drm?: DrmConfig; }
+interface Channel { id: string; name: string; logo: string; is_embed: boolean | string; category?: string; sources: Source[]; }
+interface AdData { id: string; location: "top" | "middle"; imageUrl?: string; text?: string; link?: string; }
+
+// --- ICONS ---
+const Icons = {
+    Play: () => <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
+    Heart: ({ filled }: { filled: boolean }) => <svg xmlns="http://www.w3.org/2000/svg" className={`w-5 h-5 ${filled ? "text-red-500 fill-current" : "text-zinc-400"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>,
+    Share: () => <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>,
+    Report: () => <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>,
+    Search: () => <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>,
+    Server: () => <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" /></svg>,
+    Tv: () => <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>,
+    Shield: () => <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>,
+    Check: () => <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>,
+    Telegram: () => <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.446 1.394c-.16.16-.295.295-.605.295l.213-3.054 5.56-5.022c.242-.213-.054-.334-.373-.121l-6.869 4.326-2.96-.924c-.64-.203-.658-.64.135-.954l11.566-4.458c.538-.196 1.006.128.832.941z"/></svg>,
+    Globe: () => <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" /></svg>
+};
+
 // --- M3U Parser ---
-const parseM3U = (content: string): any[] => {
+const parseM3U = (content: string): Channel[] => {
   const lines = content.split('\n');
-  const result: any[] = [];
+  const result: Channel[] = [];
   let currentName = "", currentLogo = "", currentCategory = "";
 
   lines.forEach((line, index) => {
@@ -41,6 +68,7 @@ const parseM3U = (content: string): any[] => {
       currentName = nameParts[nameParts.length - 1].trim();
     } else if (line.length > 0 && !line.startsWith('#')) {
       if (currentName) {
+        // Generating a pseudo-ID based on index to keep consistent
         result.push({ id: `ch-${index}`, name: currentName, logo: currentLogo, category: currentCategory, is_embed: false, sources: [{ label: "Stream 1", url: line }] });
         currentName = ""; currentLogo = "";
       }
@@ -49,26 +77,38 @@ const parseM3U = (content: string): any[] => {
   return result;
 };
 
-function BDLiveTVContent() {
+function LiveTVContent() {
   const searchParams = useSearchParams();
 
   // Data States
-  const [channels, setChannels] = useState<any[]>([]);
+  const [channels, setChannels] = useState<Channel[]>([]);
+  const [ads, setAds] = useState<AdData[]>([]);
   const [siteConfig, setSiteConfig] = useState<any>({});
   const [onlineUsers, setOnlineUsers] = useState(0);
   const [totalVisitors, setTotalVisitors] = useState(0);
+  const [activeDirectLink, setActiveDirectLink] = useState<{url: string, label: string} | null>(null);
 
   // Filter States
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const [searchQuery, setSearchQuery] = useState("");
+  const [hideReported, setHideReported] = useState(false);
   const [reportedChannelNames, setReportedChannelNames] = useState<Set<string>>(new Set());
 
   // Player & User States
-  const [currentChannel, setCurrentChannel] = useState<any | null>(null);
+  const [currentChannel, setCurrentChannel] = useState<Channel | null>(null);
   const [activeSourceIndex, setActiveSourceIndex] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [isFavorite, setIsFavorite] = useState(false);
-  const [playerType, setPlayerType] = useState<any>("plyr");
+  const [playerType, setPlayerType] = useState<"plyr" | "videojs" | "native" | "playerjs">("plyr");
+  const [isClient, setIsClient] = useState(false);
+  const scriptsLoaded = useRef(false);
+  const [totalChannels, setTotalChannels] = useState(0);
+  const [shareCopied, setShareCopied] = useState(false);
+
+  // Ad Rotation State
+  const [adIndex, setAdIndex] = useState(0);
+   
+  // Infinite Scroll
   const [visibleCount, setVisibleCount] = useState(48);
 
   const categories = useMemo(() => {
@@ -76,28 +116,100 @@ function BDLiveTVContent() {
     return ["All", ...uniqueCats.sort()];
   }, [channels]);
 
-  const filteredChannels = useMemo(() => {
-    return channels.filter(ch => {
-      const matchesSearch = ch.name.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesCategory = selectedCategory === "All" || ch.category === selectedCategory;
-      return matchesSearch && matchesCategory;
-    });
-  }, [channels, searchQuery, selectedCategory]);
+  const filteredChannels = channels.filter(ch => {
+    const matchesSearch = ch.name.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory = selectedCategory === "All" || ch.category === selectedCategory;
+    const matchesStatus = hideReported ? !reportedChannelNames.has(ch.name) : true;
+    return matchesSearch && matchesCategory && matchesStatus;
+  });
+
+  // --- LOGIC: AD SCRIPT INTEGRATION ---
+  useEffect(() => {
+    // Injecting the requested ad script
+    const script = document.createElement("script");
+    script.dataset.zone = "10282293";
+    script.src = "https://al5sm.com/tag.min.js";
+    
+    const target = document.body || document.documentElement;
+    if (target) {
+        target.appendChild(script);
+    }
+
+    return () => {
+        if (target && script.parentNode === target) {
+            target.removeChild(script);
+        }
+    };
+  }, []);
+
+  // --- LOGIC: AD ROTATION ---
+  useEffect(() => {
+    const interval = setInterval(() => {
+        setAdIndex((prev) => prev + 1);
+    }, 5000); 
+    return () => clearInterval(interval);
+  }, []);
+
+  const topAds = ads.filter(ad => ad.location === "top");
+  const middleAds = ads.filter(ad => ad.location === "middle");
+  const currentTopAd = topAds.length > 0 ? topAds[adIndex % topAds.length] : null;
+  const currentMiddleAd = middleAds.length > 0 ? middleAds[adIndex % middleAds.length] : null;
+
+  // --- LOGIC: 4-DIGIT ID GENERATOR ---
+  const getShortId = (id: string) => {
+    let hash = 0;
+    for (let i = 0; i < id.length; i++) hash = id.charCodeAt(i) + ((hash << 5) - hash);
+    return (Math.abs(hash % 9000) + 1000).toString();
+  };
+
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const { scrollTop, clientHeight, scrollHeight } = e.currentTarget;
+    if (scrollHeight - scrollTop <= clientHeight + 50) {
+        if (visibleCount < channels.length) setVisibleCount((prev) => prev + 24);
+    }
+  };
+
+  // URL Play Logic (Supports both full ID and short ID matching if implemented fully)
+  useEffect(() => {
+    const channelIdToPlay = searchParams.get("play");
+    if (channelIdToPlay && channels.length > 0) {
+      // Trying to match by ID or Name
+      const targetChannel = channels.find((ch) => ch.id === channelIdToPlay || ch.name === channelIdToPlay);
+      if (targetChannel) setCurrentChannel(targetChannel);
+    }
+  }, [channels, searchParams]);
 
   useEffect(() => {
-    onSnapshot(doc(db, "settings", "config"), (docSnap) => {
-      if (docSnap.exists()) {
-        const config = docSnap.data();
-        setSiteConfig(config);
+    if (siteConfig?.directLinks && Array.isArray(siteConfig.directLinks) && siteConfig.directLinks.length > 0) {
+        setActiveDirectLink(siteConfig.directLinks[Math.floor(Math.random() * siteConfig.directLinks.length)]);
+    }
+  }, [siteConfig]);
 
-        const fetchPlaylist = async () => {
-          const PLAYLIST_URL = config.bdPlaylistUrl || "https://raw.githubusercontent.com/alaminislam203/my_playlist/refs/heads/main/bd.json";
-          try {
-            const response = await fetch(PLAYLIST_URL);
-            const rawText = await response.text();
-            let parsedChannels: any[] = [];
-            try {
-                const jsonData = JSON.parse(rawText);
+  useEffect(() => { setIsClient(true); }, []);
+
+  useEffect(() => {
+    setPlayerType("plyr");
+    setActiveSourceIndex(0);
+    if(currentChannel) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      checkIfFavorite(currentChannel.id);
+    }
+  }, [currentChannel]);
+
+  // Data Fetching (Updated to support JSON)
+  useEffect(() => {
+    const fetchPlaylist = async () => {
+      const PLAYLIST_URL = "https://raw.githubusercontent.com/alaminislam203/my_playlist/refs/heads/main/bd.json"; 
+      try {
+        setLoading(true);
+        const response = await fetch(PLAYLIST_URL);
+        if (!response.ok) throw new Error("Failed to fetch playlist");
+        const rawText = await response.text();
+        let parsedChannels: Channel[] = [];
+
+        try {
+            const jsonData = JSON.parse(rawText);
+            if (Array.isArray(jsonData)) {
                 parsedChannels = jsonData.map((item: any, idx: number) => ({
                     id: item.id || `json-${idx}`,
                     name: item.name || "Unknown",
@@ -106,20 +218,28 @@ function BDLiveTVContent() {
                     is_embed: item.is_embed || false,
                     sources: item.sources || [{ label: "Stream 1", url: item.url, drm: item.drm }] 
                 }));
-            } catch (e) {
-                parsedChannels = parseM3U(rawText);
-            }
-            setChannels(parsedChannels);
-          } catch (error) {
-            console.error("Error loading playlist:", error);
-          } finally {
-            setLoading(false);
-          }
-        };
-        fetchPlaylist();
+            } else throw new Error("Not a JSON array");
+        } catch (e) {
+            parsedChannels = parseM3U(rawText);
+        }
+        setChannels(parsedChannels);
+        setTotalChannels(parsedChannels.length);
+        setLoading(false);
+      } catch (error) {
+        console.error("Error loading playlist:", error);
+        setLoading(false);
       }
+    };
+    fetchPlaylist();
+
+    const unsubAds = onSnapshot(collection(db, "ads"), (snapshot) => {
+      const list = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })) as AdData[];
+      setAds(list);
     });
-    onSnapshot(collection(db, "reports"), (snapshot) => {
+    const unsubSettings = onSnapshot(doc(db, "settings", "config"), (docSnap) => {
+      if (docSnap.exists()) setSiteConfig(docSnap.data());
+    });
+    const unsubReports = onSnapshot(collection(db, "reports"), (snapshot) => {
       const reportedSet = new Set<string>();
       snapshot.docs.forEach(doc => {
         const data = doc.data();
@@ -127,63 +247,81 @@ function BDLiveTVContent() {
       });
       setReportedChannelNames(reportedSet);
     });
+    return () => { unsubAds(); unsubSettings(); unsubReports(); };
   }, []);
 
+  // Stats Logic
   useEffect(() => {
+    if (!isClient) return;
     const counterRef = doc(db, 'counters', 'visitors');
-    onSnapshot(counterRef, (doc) => { if (doc.exists()) setTotalVisitors(doc.data().total); });
-
+    const incrementTotalVisitors = async () => {
+        if (!sessionStorage.getItem('visitedThisSession')) {
+            sessionStorage.setItem('visitedThisSession', 'true');
+            try { await runTransaction(db, async (transaction) => {
+                const docSnap = await transaction.get(counterRef);
+                if (!docSnap.exists()) { transaction.set(counterRef, { total: 1 }); setTotalVisitors(1); } 
+                else { transaction.update(counterRef, { total: docSnap.data().total + 1 }); setTotalVisitors(docSnap.data().total + 1); }
+            }); } catch (e) { console.error(e); }
+        }
+    };
+    const unsub = onSnapshot(counterRef, (doc) => { if (doc.exists()) setTotalVisitors(doc.data().total); });
+    incrementTotalVisitors();
+     
     const statusRef = ref(rtdb, 'status');
-    const myRef = ref(rtdb, 'status/' + Math.random().toString(36).substr(2, 9));
-    set(myRef, { online: true });
-    onDisconnect(myRef).remove();
+    const connectedRef = ref(rtdb, '.info/connected');
+    const myConnectionsRef = ref(rtdb, 'status/' + Math.random().toString(36).substr(2, 9));
+    onValue(connectedRef, (snap) => { if (snap.val() === true) { set(myConnectionsRef, { timestamp: serverTimestamp() }); onDisconnect(myConnectionsRef).remove(); } });
     onValue(statusRef, (snap) => setOnlineUsers(snap.size));
-  }, []);
+     
+    return () => { unsub(); off(connectedRef); off(statusRef); onDisconnect(myConnectionsRef).cancel(); set(myConnectionsRef, null); };
+  }, [isClient]);
 
-  useEffect(() => {
-    const channelIdToPlay = searchParams.get("play");
-    if (channelIdToPlay && channels.length > 0) {
-      const targetChannel = channels.find((ch) => ch.id === channelIdToPlay || ch.name === channelIdToPlay);
-      if (targetChannel) setCurrentChannel(targetChannel);
-    }
-  }, [channels, searchParams]);
-
-  useEffect(() => {
-    if (currentChannel) {
-        const favs = JSON.parse(localStorage.getItem("favorites") || '[]');
-        setIsFavorite(favs.some((c: any) => c.id === currentChannel.id));
-    }
-  }, [currentChannel]);
-
+  const checkIfFavorite = (id: string) => setIsFavorite(JSON.parse(localStorage.getItem("favorites") || '[]').some((c: Channel) => c.id === id));
+   
   const toggleFavorite = () => {
     if (!currentChannel) return;
     let favs = JSON.parse(localStorage.getItem("favorites") || '[]');
-    const exists = favs.some((c: any) => c.id === currentChannel.id);
-    if (exists) favs = favs.filter((c: any) => c.id !== currentChannel.id);
+    if (isFavorite) favs = favs.filter((c: Channel) => c.id !== currentChannel.id);
     else favs.push(currentChannel);
     localStorage.setItem("favorites", JSON.stringify(favs));
-    setIsFavorite(!exists);
+    checkIfFavorite(currentChannel.id);
+  };
+
+  const handleShare = () => {
+    if (!currentChannel) return;
+    // URL with ID
+    const url = `${window.location.origin}${window.location.pathname}?play=${currentChannel.id}`;
+    navigator.clipboard.writeText(url);
+    setShareCopied(true);
+    setTimeout(() => setShareCopied(false), 2000);
   };
 
   const handleReport = async () => {
     if (!currentChannel) return;
     if (confirm(`Report "${currentChannel.name}"?`)) {
       try {
-        await addDoc(collection(db, "reports"), { channelName: currentChannel.name, channelId: currentChannel.id, timestamp: new Date(), status: "pending", issue: "Stream not working" });
+        await addDoc(collection(db, "reports"), { channelName: currentChannel.name, channelId: currentChannel.id, sourceLabel: currentChannel.sources[activeSourceIndex]?.label || "Default", timestamp: new Date(), status: "pending", issue: "Stream not working" });
         alert("Report submitted successfully!");
       } catch (e) { console.error("Error reporting:", e); }
     }
   };
 
   const renderPlayer = () => {
+    if (!isClient) return <LoadingPlayer />;
     if (!currentChannel) return (
-      <div className="w-full h-full flex flex-col items-center justify-center gap-6 bg-slate-900/50">
-        <div className="w-20 h-20 bg-emerald-500/10 rounded-[2rem] flex items-center justify-center text-emerald-500">
-          <Tv className="w-10 h-10" />
+        <div className="flex flex-col items-center justify-center h-full bg-[#050b14] relative overflow-hidden group">
+            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10"></div>
+            <div className="z-10 text-center space-y-4 p-6">
+                <div className="w-20 h-20 bg-cyan-500/10 rounded-full flex items-center justify-center mx-auto ring-1 ring-cyan-500/30 animate-pulse">
+                    <Icons.Tv />
+                </div>
+                <h2 className="text-xl md:text-2xl font-bold text-white tracking-widest">SELECT A CHANNEL</h2>
+                <p className="text-gray-500 text-sm">Choose from the list below to start watching</p>
+            </div>
         </div>
-        <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">Select a Bangladesh channel</p>
-      </div>
     );
+
+    if (!currentChannel.sources?.length) return <div className="text-white flex justify-center items-center h-full">No Source Available</div>;
 
     const activeSource = currentChannel.sources[activeSourceIndex];
     const { url, drm } = activeSource;
@@ -199,186 +337,315 @@ function BDLiveTVContent() {
           default: return <PlyrPlayer src={url} />;
       }
     }
-    return <NativePlayer src={url} />;
+    return <IframePlayer src={url} />;
   };
 
-  if (siteConfig?.maintenanceMode) {
+  if (siteConfig?.maintenanceMode === true) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center p-6 text-center">
-        <div className="glass p-12 rounded-[3rem] max-w-md">
-          <AlertTriangle className="w-16 h-16 text-amber-500 mx-auto mb-6" />
-          <h1 className="text-2xl font-black text-white uppercase italic mb-4">Under Maintenance</h1>
-          <p className="text-slate-500 text-sm font-medium">Bangladesh section is temporarily offline. Please check back later.</p>
+      <div className="min-h-screen bg-[#050b14] flex items-center justify-center px-6 text-white">
+        <div className="max-w-md w-full text-center bg-[#0f172a] border border-gray-800 rounded-2xl p-8 shadow-2xl relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-1 bg-red-500"></div>
+            <h1 className="text-3xl font-bold tracking-wide text-red-500 mb-3">Site Under Maintenance</h1>
+            <p className="text-sm text-gray-400">We’re upgrading systems. Please check back shortly.</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 selection:bg-emerald-500/30">
-      <Navbar />
+    <main className="min-h-screen bg-[#050b14] text-gray-200 font-sans pb-0 select-none selection:bg-cyan-500/30 flex flex-col">
+      
+      {/* --- Header --- */}
+      <header className="sticky top-0 z-50 bg-[#050b14]/80 backdrop-blur-md border-b border-white/5">
+        <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+            <div onClick={() => setCurrentChannel(null)} className="flex items-center gap-2 cursor-pointer">
+                <Icons.Tv />
+                <div className="text-xl font-extrabold tracking-tight">
+                    <span className="text-white">Toffee</span><span className="text-cyan-400">Pro</span>
+                </div>
+            </div>
+            <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-500/10 border border-red-500/20 shadow-[0_0_10px_rgba(239,68,68,0.2)]">
+                    <span className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse"></span>
+                    <span className="text-[10px] font-bold tracking-wider text-red-400">LIVE</span>
+                </div>
+                <Link href="/admin">
+                    <button className="hidden sm:block text-xs font-bold px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/5 text-gray-300 transition">Login</button>
+                </Link>
+            </div>
+        </div>
+      </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div className="max-w-5xl mx-auto px-2 md:px-4 mt-6 space-y-6 flex-grow pb-24">
         
-        {/* Page Header */}
-        <div className="flex flex-col md:flex-row items-center justify-between gap-8 mb-16">
-          <div className="text-center md:text-left">
-            <div className="flex items-center justify-center md:justify-start gap-3 mb-4">
-              <span className="text-2xl">🇧🇩</span>
-              <span className="text-xs font-black text-emerald-500 uppercase tracking-[0.4em]">Home Network</span>
+        {/* --- Marquee --- */}
+        <div className="bg-[#0f172a] border border-gray-800 rounded-lg h-10 flex items-center overflow-hidden relative shadow-lg">
+            <div className="absolute left-0 top-0 h-full w-10 bg-gradient-to-r from-[#0f172a] to-transparent z-10"></div>
+            <div className="absolute right-0 top-0 h-full w-10 bg-gradient-to-l from-[#0f172a] to-transparent z-10"></div>
+            <div className="flex items-center whitespace-nowrap animate-marquee pl-6">
+                <span className="text-sm text-gray-300 font-mono tracking-wide flex items-center gap-2">
+                    <span className="text-cyan-400">📢 UPDATE:</span> 
+                    {siteConfig.marqueeText || "Welcome to ToffeePro — Please disable adblocker to support free streaming."}
+                </span>
             </div>
-            <h1 className="text-4xl md:text-6xl font-black text-white italic uppercase tracking-tighter leading-none">
-              Bangladesh <span className="text-gradient">TV</span>
-            </h1>
-          </div>
-          <div className="flex gap-4">
-            <div className="glass px-8 py-6 rounded-3xl text-center">
-              <p className="text-3xl font-black text-white italic leading-none mb-1">{onlineUsers}</p>
-              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Watching Live</p>
-            </div>
-            <div className="glass px-8 py-6 rounded-3xl text-center border-emerald-500/20">
-              <p className="text-3xl font-black text-emerald-500 italic leading-none mb-1">{channels.length}</p>
-              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">BD Channels</p>
-            </div>
-          </div>
+        </div>
+   
+        {/* --- Action Buttons --- */}
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            <Link href="https://t.me/toffeepro" target="_blank" className="bg-[#1e293b] hover:bg-[#263349] border border-gray-700 p-3 rounded-xl flex items-center justify-between group transition">
+                <span className="text-xs text-gray-400">Join Telegram</span>
+                <span className="text-blue-400 group-hover:translate-x-1 transition">➔</span>
+            </Link>
+            <Link href="/livetv" className="bg-[#1e293b] hover:bg-[#263349] border border-gray-700 p-3 rounded-xl flex items-center justify-between group transition">
+                <span className="text-xs text-gray-400">New Channels</span>
+                <span className="text-green-400 group-hover:translate-x-1 transition">➔</span>
+            </Link>
+            <Link href="/support" className="col-span-2 md:col-span-1 bg-gradient-to-r from-cyan-900/20 to-blue-900/20 hover:from-cyan-900/30 hover:to-blue-900/30 border border-cyan-500/20 p-3 rounded-xl flex items-center justify-between group transition">
+                <span className="text-xs text-cyan-100">Support Us</span>
+                <Icons.Heart filled={true} />
+            </Link>
         </div>
 
-        {/* Notice Section */}
-        <div className="bg-red-500/5 border border-red-500/20 rounded-[2rem] p-8 mb-12 flex flex-col md:flex-row items-center gap-6">
-            <div className="w-12 h-12 bg-red-500/10 rounded-2xl flex items-center justify-center text-red-500 shrink-0">
-                <AlertTriangle className="w-6 h-6" />
+        {/* --- STRICT WARNING SECTION (GAMBLING & ADULT) --- */}
+        <div className="bg-red-950/40 border border-red-500/40 rounded-xl p-4 flex gap-4 items-start animate-pulse-slow">
+            <div className="shrink-0 text-red-500 p-2 bg-red-500/10 rounded-full mt-1">
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
             </div>
-            <div className="text-center md:text-left">
-                <h4 className="text-red-500 font-black uppercase italic tracking-tighter mb-1">সতর্কবাণী (Notice)</h4>
-                <p className="text-[11px] text-slate-500 leading-relaxed font-medium uppercase tracking-wide">
-                    এই সাইটে প্রদর্শিত বিজ্ঞাপনগুলো থার্ড-পার্টি দ্বারা নিয়ন্ত্রিত। জুয়া বা অশ্লীল বিজ্ঞাপন এড়িয়ে চলুন। নিজ দায়িত্বে ব্যবহার করুন।
+            <div>
+                <h3 className="text-red-500 font-extrabold text-sm uppercase tracking-wide mb-1 flex items-center gap-2">
+                   ⚠️ সতর্কতা (Warning)
+                </h3>
+                <p className="text-xs text-gray-300 leading-relaxed text-justify">
+                   এই সাইটে প্রদর্শিত বিজ্ঞাপনগুলো <strong>থার্ড-পার্টি</strong> দ্বারা নিয়ন্ত্রিত। এখানে মাঝে মাঝে <strong>জুয়া (Gambling/Betting)</strong> অথবা <strong>অশ্লীল/এডাল্ট (18+)</strong> বিজ্ঞাপন আসতে পারে। আমরা এগুলো সমর্থন করি না। দয়া করে এসব বিজ্ঞাপনে ক্লিক করা থেকে বিরত থাকুন এবং নিজ দায়িত্বে এড়িয়ে চলুন।
                 </p>
             </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
-
-          {/* Player Section */}
-          <div className="lg:col-span-8 space-y-8">
-            <div className="glass rounded-[3rem] overflow-hidden aspect-video relative border-white/5 shadow-2xl">
-              {renderPlayer()}
-            </div>
-
-            {currentChannel && (
-              <div className="glass p-8 rounded-[2.5rem] flex flex-col sm:flex-row items-center justify-between gap-6">
-                <div className="flex items-center gap-6">
-                  <div className="w-20 h-20 bg-black rounded-3xl border border-white/5 p-2 overflow-hidden flex-shrink-0 flex items-center justify-center text-4xl">
-                    {currentChannel.logo ? <img src={currentChannel.logo} className="w-full h-full object-contain" alt="" /> : "📡"}
-                  </div>
-                  <div>
-                    <h2 className="text-2xl font-black text-white italic uppercase tracking-tighter leading-none mb-2">{currentChannel.name}</h2>
-                    <div className="flex items-center gap-3">
-                        <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest flex items-center gap-2">
-                            <Activity className="w-3 h-3 animate-pulse" />
-                            Live Stream
-                        </span>
-                        {reportedChannelNames.has(currentChannel.name) && (
-                            <span className="text-[10px] font-black text-red-500 uppercase tracking-widest bg-red-500/10 px-2 py-0.5 rounded border border-red-500/20">
-                                Unstable
-                            </span>
-                        )}
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={toggleFavorite}
-                    className={`p-4 rounded-2xl border transition-all ${isFavorite ? "bg-emerald-500 text-white border-emerald-500" : "bg-slate-900 border-white/5 text-slate-500 hover:text-white"}`}
-                  >
-                    <Heart className={`w-5 h-5 ${isFavorite ? "fill-current" : ""}`} />
-                  </button>
-                  <button onClick={handleReport} className="flex items-center gap-2 px-6 py-4 bg-red-500/10 border border-red-500/20 text-red-500 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all">
-                    <Shield className="w-4 h-4" />
-                    Report
-                  </button>
-                </div>
-              </div>
+        {/* --- TOP AD (ROTATING) --- */}
+        {currentTopAd && (
+          <div className="w-full h-[100px] sm:h-[120px] bg-[#020617] rounded-xl flex items-center justify-center overflow-hidden border border-gray-800 relative group animate-fadeIn">
+            <span className="absolute top-0 right-0 bg-gray-800 text-[9px] px-1.5 py-0.5 text-gray-400 rounded-bl-lg z-20">
+                Sponsored {topAds.length > 1 && "⟳"}
+            </span>
+            {currentTopAd.imageUrl ? (
+                <a href={currentTopAd.link || "#"} target="_blank" className="w-full h-full flex items-center justify-center relative">
+                    <img src={currentTopAd.imageUrl} alt="Advertisement" className="h-full w-auto object-contain max-w-full transition-opacity duration-500" />
+                </a>
+            ) : (
+                <div className="text-center p-2 text-cyan-600 font-bold opacity-50 text-sm tracking-widest">{currentTopAd.text}</div>
             )}
           </div>
+        )}
 
-          {/* Sidebar Section */}
-          <div className="lg:col-span-4 space-y-8">
-            <div className="glass p-8 rounded-[3rem] h-[700px] flex flex-col">
-              <div className="mb-8">
-                <h3 className="text-xs font-black text-white uppercase italic tracking-widest mb-6">Local Network</h3>
-                <div className="relative mb-6">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-600" />
-                  <input
-                    type="text"
-                    placeholder="Search BD channels..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full bg-slate-950 border border-white/5 rounded-2xl py-4 pl-12 pr-6 text-[10px] font-bold text-white uppercase tracking-widest focus:outline-none focus:border-emerald-500/50 transition-all"
-                  />
-                </div>
-                <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2 border-b border-white/5">
-                  {categories.map(cat => (
-                    <button
-                      key={cat}
-                      onClick={() => setSelectedCategory(cat)}
-                      className={`px-4 py-2 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${
-                        selectedCategory === cat ? "bg-emerald-500 text-white" : "text-slate-600 hover:text-slate-400"
-                      }`}
-                    >
-                      {cat}
-                    </button>
-                  ))}
-                </div>
-              </div>
+        {/* --- USER AD DISPLAY --- */}
+        <UserAdDisplay location="top" />
 
-              <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar space-y-3">
-                {filteredChannels.slice(0, visibleCount).map(ch => (
-                  <button
-                    key={ch.id}
-                    onClick={() => {
-                      setCurrentChannel(ch);
-                      setActiveSourceIndex(0);
-                    }}
-                    className={`w-full flex items-center gap-4 p-4 rounded-2xl border transition-all group ${
-                      currentChannel?.id === ch.id
-                        ? "bg-emerald-500 border-emerald-400 shadow-lg shadow-emerald-500/20"
-                        : "bg-slate-950 border-white/5 hover:bg-white/5"
-                    }`}
-                  >
-                    <div className="w-10 h-10 bg-black rounded-xl border border-white/10 p-1 flex-shrink-0 flex items-center justify-center text-xs">
-                      {ch.logo ? <img src={ch.logo} className="w-full h-full object-contain" alt="" /> : "📡"}
-                    </div>
-                    <span className={`flex-1 text-left text-[10px] font-black uppercase tracking-widest truncate ${
-                      currentChannel?.id === ch.id ? "text-white" : "text-slate-400 group-hover:text-white"
-                    }`}>
-                      {ch.name}
-                    </span>
-                    <ChevronRight className={`w-4 h-4 ${currentChannel?.id === ch.id ? "text-white" : "text-slate-800 group-hover:text-white"} transition-all`} />
-                  </button>
-                ))}
-                {visibleCount < filteredChannels.length && (
-                  <button
-                    onClick={() => setVisibleCount(prev => prev + 48)}
-                    className="w-full py-4 text-[10px] font-black uppercase tracking-[0.3em] text-emerald-500 hover:text-emerald-400 transition-colors"
-                  >
-                    Load More
-                  </button>
-                )}
-              </div>
+        {/* --- Main Player Section --- */}
+        <div className="bg-[#0f172a] rounded-2xl overflow-hidden shadow-2xl border border-gray-800 relative">
+            <div className="aspect-video w-full bg-black relative group">
+                <div key={`${currentChannel?.id}-${activeSourceIndex}-${playerType}`} className="w-full h-full">
+                    {renderPlayer()}
+                </div>
             </div>
-          </div>
-        </div>
-      </main>
 
-      <Footer />
-    </div>
+            <div className="bg-[#1e293b] px-4 py-3 flex flex-wrap items-center justify-between gap-3 border-t border-gray-700">
+                {currentChannel && !currentChannel.is_embed && currentChannel.sources[activeSourceIndex]?.url.includes(".m3u8") && (
+                   <div className="flex items-center gap-2 overflow-x-auto pb-1 hide-scrollbar">
+                        <span className="text-[10px] uppercase font-bold text-gray-500 shrink-0">Engine:</span>
+                        {["plyr", "videojs", "native", "playerjs"].map((type) => (
+                            <button key={type} onClick={() => setPlayerType(type as any)} className={`px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider border transition ${playerType === type ? "bg-cyan-600 border-cyan-500 text-white shadow-lg shadow-cyan-500/20" : "bg-gray-800 border-gray-700 text-gray-400 hover:text-gray-200"}`}>
+                                {type}
+                            </button>
+                        ))}
+                   </div>
+                )}
+                
+                <div className="flex items-center gap-3 ml-auto">
+                    <button onClick={handleShare} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition text-xs font-bold ${shareCopied ? "bg-green-500/10 border-green-500/20 text-green-400" : "bg-gray-800 border-gray-700 text-gray-400 hover:text-cyan-400"}`} title="Share ID">
+                        {shareCopied ? <Icons.Check /> : <Icons.Share />}
+                        <span>{shareCopied ? "Copied" : currentChannel ? `#${getShortId(currentChannel.id)}` : "Share"}</span>
+                    </button>
+                    <button onClick={toggleFavorite} className={`p-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition ${isFavorite ? "text-red-500" : "text-gray-400 hover:text-red-400"}`} title="Favorite">
+                        <Icons.Heart filled={isFavorite} />
+                    </button>
+                    <button onClick={handleReport} className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 transition text-xs font-bold" title="Report Issue">
+                        <Icons.Report /> <span>Report</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        {/* --- Direct Link --- */}
+        {activeDirectLink && (
+            <div className="flex justify-center">
+                <a href={activeDirectLink.url} target="_blank" rel="noopener noreferrer" className="group relative inline-flex items-center gap-2 rounded-full px-8 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold shadow-lg shadow-emerald-500/20 hover:scale-105 transition-all overflow-hidden">
+                    <div className="absolute inset-0 bg-white/20 group-hover:translate-x-full transition-transform duration-500 ease-in-out"></div>
+                    <Icons.Play /> <span>{activeDirectLink.label}</span>
+                </a>
+            </div>
+        )}
+
+        {/* --- Channel Info --- */}
+        <div className="bg-[#1e293b] p-5 rounded-2xl border border-gray-700 flex flex-col md:flex-row items-center gap-5 md:gap-6 shadow-lg">
+           <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-[#0f172a] border-2 border-gray-600 p-1 flex-shrink-0 relative">
+                {currentChannel?.logo ? <img src={currentChannel.logo} className="w-full h-full object-cover rounded-full" /> : <div className="w-full h-full flex items-center justify-center text-gray-600"><Icons.Tv /></div>}
+                {currentChannel && <div className="absolute bottom-0 right-0 w-5 h-5 bg-green-500 border-2 border-[#1e293b] rounded-full animate-bounce"></div>}
+           </div>
+           <div className="flex-1 text-center md:text-left space-y-2">
+             <h2 className="text-xl md:text-2xl font-bold text-white">{currentChannel?.name || "No Channel Selected"}</h2>
+             <div className="flex items-center justify-center md:justify-start gap-2">
+                <span className="text-xs text-cyan-400 font-mono tracking-wide">{currentChannel ? "● Streaming Live in HD" : "Select a channel to begin"}</span>
+                {currentChannel && reportedChannelNames.has(currentChannel.name) && (
+                   <span className="text-[10px] bg-red-500/20 text-red-400 px-2 rounded border border-red-500/30">⚠ Reported</span>
+                )}
+             </div>
+             {currentChannel && currentChannel.sources.length > 1 && (
+               <div className="flex gap-2 flex-wrap justify-center md:justify-start mt-2">
+                 {currentChannel.sources.map((src, idx) => (
+                    <button key={idx} onClick={() => setActiveSourceIndex(idx)} className={`flex items-center gap-1 text-[10px] px-3 py-1.5 rounded font-bold border transition-all ${activeSourceIndex === idx ? "bg-cyan-600 border-cyan-500 text-white" : "bg-gray-800 border-gray-600 hover:bg-gray-700 text-gray-400"}`}>
+                        <Icons.Server /> {src.label || `Server ${idx+1}`}
+                    </button>
+                 ))}
+               </div>
+             )}
+           </div>
+        </div>
+        
+        {/* --- Quick Guide --- */}
+        <div className="bg-[#0f172a] rounded-xl p-4 border border-gray-800">
+            <h3 className="text-gray-400 text-xs font-bold uppercase mb-2 tracking-widest border-b border-gray-800 pb-2">Quick Guide</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-gray-500">
+                <p>1. Video লোড না হলে <strong>Server</strong> পরিবর্তন করে দেখুন।</p>
+                <p>2. প্লেয়ারে সমস্যা হলে <strong>Engine</strong> (Plyr/Native) চেঞ্জ করুন।</p>
+                <p>3. সাউন্ড না আসলে প্লেয়ারে ট্যাপ করে <strong>Unmute</strong> করুন।</p>
+                <p>4. বাফারিং এড়াতে ইন্টারনেট স্পিড চেক করুন।</p>
+            </div>
+        </div>
+
+        {/* --- MIDDLE AD (ROTATING) --- */}
+        {currentMiddleAd && (
+            <div className="w-full h-[90px] bg-[#020617] rounded-xl flex items-center justify-center overflow-hidden border border-gray-800 relative animate-fadeIn">
+                <span className="absolute top-0 right-0 bg-gray-800 text-[9px] px-1 text-gray-500">Ad {middleAds.length > 1 && "⟳"}</span>
+                {currentMiddleAd.imageUrl ? (
+                      <a href={currentMiddleAd.link || "#"} target="_blank" className="w-full h-full flex items-center justify-center">
+                        <img src={currentMiddleAd.imageUrl} alt="Ad" className="h-full w-auto object-contain transition-opacity duration-500" />
+                      </a>
+                ) : <div className="text-gray-600 text-xs">{currentMiddleAd.text}</div>}
+            </div>
+        )}
+
+        {/* --- Channel Grid --- */}
+        <div className="bg-[#111827] p-5 rounded-2xl border border-gray-800 shadow-xl">
+          <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+              <h3 className="text-lg font-bold text-white flex items-center gap-2"><Icons.Tv /> Live Channels</h3>
+              
+              <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar max-w-full md:max-w-[40%]">
+                 {categories.map((cat) => (
+                  <button key={cat} onClick={() => setSelectedCategory(cat)} className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border whitespace-nowrap transition ${selectedCategory === cat ? "bg-cyan-900/50 border-cyan-500 text-cyan-400" : "bg-gray-800 border-gray-700 text-gray-400 hover:bg-gray-700"}`}>
+                    {cat}
+                  </button>
+                 ))}
+              </div>
+
+              <div className="relative w-full md:w-64">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-500"><Icons.Search /></div>
+                <input type="text" placeholder="Search channels..." className="w-full bg-[#1f2937] text-white text-sm py-2 pl-10 pr-4 rounded-lg border border-gray-700 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+              </div>
+          </div>
+
+          {loading ? <div className="grid grid-cols-4 md:grid-cols-6 gap-4 animate-pulse">{[...Array(12)].map((_,i) => <div key={i} className="h-24 bg-gray-800 rounded-lg"></div>)}</div> : (
+            <div id="channel-grid-container" className="max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar" onScroll={handleScroll}>
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3">
+                {filteredChannels.length > 0 ? filteredChannels.map(ch => (
+                    <div key={ch.id} onClick={() => setCurrentChannel(ch)} className={`group relative flex flex-col items-center gap-2 cursor-pointer p-3 rounded-xl transition-all border ${currentChannel?.id === ch.id ? "bg-[#1e293b] border-cyan-500/50 shadow-[0_0_15px_rgba(6,182,212,0.15)]" : "bg-[#1f2937]/50 border-gray-800 hover:bg-[#1f2937] hover:border-gray-600 hover:-translate-y-1"}`}>
+                        <div className="w-12 h-12 bg-[#0b1120] rounded-full p-1.5 overflow-hidden shadow-inner relative ring-1 ring-white/5">
+                            {ch.logo ? <img src={ch.logo} alt={ch.name} className="w-full h-full object-contain transition-transform group-hover:scale-110" /> : <div className="w-full h-full flex items-center justify-center text-gray-600"><Icons.Tv /></div>}
+                        </div>
+                        <span className={`text-[10px] font-bold text-center line-clamp-1 w-full ${currentChannel?.id === ch.id ? "text-cyan-400" : "text-gray-400 group-hover:text-gray-200"}`}>{ch.name}</span>
+                        {currentChannel?.id === ch.id && <div className="absolute top-2 right-2 w-2 h-2 bg-cyan-500 rounded-full animate-pulse shadow-[0_0_5px_#06b6d4]"></div>}
+                    </div>
+                )) : <div className="col-span-full text-center text-gray-500 text-sm py-10">No channels found.</div>}
+                </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* --- Footer (Modern Redesigned) --- */}
+      <footer className="mt-auto pt-8 pb-6 bg-[#020617] border-t border-gray-800 relative overflow-visible">
+        {/* Glow Effect */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full max-w-4xl bg-cyan-500/5 blur-[100px] rounded-full pointer-events-none"></div>
+        
+        <div className="max-w-6xl mx-auto px-4 relative z-10">
+            {/* Stats Cards - Floating Effect Adjusted */}
+            <div className="grid grid-cols-3 gap-4 mb-10 -mt-20">
+                {[
+                    { label: "Live Users", value: onlineUsers, color: "text-green-400", border: "border-green-500/20", bg: "bg-[#020617]" },
+                    { label: "Total Visits", value: totalVisitors, color: "text-cyan-400", border: "border-cyan-500/20", bg: "bg-[#020617]" },
+                    { label: "Channels", value: totalChannels, color: "text-purple-400", border: "border-purple-500/20", bg: "bg-[#020617]" }
+                ].map((stat, i) => (
+                    <div key={i} className={`flex flex-col items-center justify-center p-4 rounded-xl backdrop-blur-xl border ${stat.border} ${stat.bg} shadow-2xl transition hover:-translate-y-1`}>
+                        <span className={`text-xl md:text-3xl font-black ${stat.color} tabular-nums`}>{stat.value}</span>
+                        <span className="text-[10px] md:text-xs uppercase font-bold text-gray-400 tracking-wider mt-1">{stat.label}</span>
+                    </div>
+                ))}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-10 mb-12 pt-6">
+                {/* Brand */}
+                <div className="space-y-4">
+                    <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded bg-gradient-to-br from-cyan-600 to-blue-700 flex items-center justify-center text-white font-bold text-lg">T</div>
+                        <h2 className="text-2xl font-bold text-white">Toffee<span className="text-cyan-400">Pro</span></h2>
+                    </div>
+                    <p className="text-sm text-gray-500 leading-relaxed">
+                        Enjoy buffer-free live streaming of your favorite sports and TV channels in HD quality. Free for everyone, forever.
+                    </p>
+                </div>
+
+                {/* Quick Links */}
+                <div className="flex flex-col gap-2">
+                    <h3 className="text-white font-bold text-sm mb-2 uppercase tracking-wide">Quick Links</h3>
+                    <Link href="/" className="text-sm text-gray-500 hover:text-cyan-400 transition w-fit">Home</Link>
+                    <Link href="/livetv" className="text-sm text-gray-500 hover:text-cyan-400 transition w-fit">All Channels</Link>
+                    <Link href="/dmca" className="text-sm text-gray-500 hover:text-cyan-400 transition w-fit">DMCA Policy</Link>
+                    <Link href="/contact" className="text-sm text-gray-500 hover:text-cyan-400 transition w-fit">Contact Us</Link>
+                </div>
+
+                {/* Socials */}
+                <div className="flex flex-col gap-4">
+                    <h3 className="text-white font-bold text-sm mb-2 uppercase tracking-wide">Connect With Us</h3>
+                    <div className="flex gap-4">
+                        <a href="https://t.me/toffeepro" target="_blank" className="w-10 h-10 rounded-lg bg-[#1e293b] flex items-center justify-center text-gray-400 hover:bg-blue-600 hover:text-white transition border border-gray-700 hover:border-blue-500">
+                            <Icons.Telegram />
+                        </a>
+                         <a href="#" className="w-10 h-10 rounded-lg bg-[#1e293b] flex items-center justify-center text-gray-400 hover:bg-cyan-600 hover:text-white transition border border-gray-700 hover:border-cyan-500">
+                            <Icons.Globe />
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            {/* Bottom Bar */}
+            <div className="border-t border-gray-800 pt-6 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-gray-600">
+                <p>&copy; {new Date().getFullYear()} ToffeePro Inc. All rights reserved.</p>
+                <div className="flex items-center gap-1">
+                    <span>Made with</span>
+                    <Icons.Heart filled={true} />
+                    <span>for Streamers</span>
+                </div>
+            </div>
+        </div>
+      </footer>
+
+    </main>
   );
 }
 
 export default function Home() {
   return (
-    <Suspense fallback={<div className="bg-slate-950 min-h-screen" />}>
-      <BDLiveTVContent />
+    <Suspense fallback={<LoadingPlayer />}>
+      <LiveTVContent />
     </Suspense>
   );
 }
