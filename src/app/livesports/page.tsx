@@ -6,6 +6,7 @@ import { db, rtdb } from "../firebase";
 import dynamic from "next/dynamic";
 import Navbar from "../../../components/Navbar";
 import Footer from "../../../components/Footer";
+import GlobalBannerAd from "../../../components/GlobalBannerAd";
 import { Play, Activity, Search, Shield, Trophy, Users, Tv, Star, ChevronRight } from "lucide-react";
 
 // --- DYNAMIC IMPORTS ---
@@ -74,6 +75,7 @@ function LiveSportsContent() {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 selection:bg-emerald-500/30">
       <Navbar />
+      <GlobalBannerAd location="top" />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
 
@@ -204,6 +206,7 @@ function LiveSportsContent() {
         </div>
       </main>
 
+      <GlobalBannerAd location="bottom" />
       <Footer />
     </div>
   );

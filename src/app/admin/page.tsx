@@ -43,7 +43,10 @@ export default function EnhancedAdminPanel() {
     adConfig: {
       showPopAds: true,
       showBannerAds: true,
-      popAdLink: "https://www.profitablecpmrate.com/v1h0s768?key=414d0f666f81e289f8166c0853488277"
+      popAdLink: "https://www.profitablecpmrate.com/v1h0s768?key=414d0f666f81e289f8166c0853488277",
+      bannerAdTop: "",
+      bannerAdBottom: "",
+      popunderScript: "<script>(function(s){s.dataset.zone='10282293',s.src='https://al5sm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>"
     }
   });
 
@@ -204,9 +207,9 @@ export default function EnhancedAdminPanel() {
           </div>
         )}
 
-        {/* General Settings */}
+        {/* General Settings & Ads */}
         {activeTab === "settings" && (
-          <div className="max-w-3xl space-y-8">
+          <div className="max-w-4xl space-y-8">
              <div className="glass p-10 rounded-[3rem] border-white/5 space-y-6">
                 <h3 className="text-white font-black uppercase text-sm italic">Site Configuration</h3>
                 <AdminInput label="Marquee Notice Text" value={siteConfig.noticeText} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSiteConfig({...siteConfig, noticeText: e.target.value})} />
@@ -216,11 +219,45 @@ export default function EnhancedAdminPanel() {
                       <Toggle active={siteConfig.maintenanceMode} onClick={() => setSiteConfig({...siteConfig, maintenanceMode: !siteConfig.maintenanceMode})} />
                    </div>
                    <div className="flex flex-col gap-2">
+                      <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Banner Ads</span>
+                      <Toggle active={siteConfig.adConfig.showBannerAds} onClick={() => setSiteConfig({...siteConfig, adConfig: {...siteConfig.adConfig, showBannerAds: !siteConfig.adConfig.showBannerAds}})} />
+                   </div>
+                   <div className="flex flex-col gap-2">
                       <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Popunder Ads</span>
                       <Toggle active={siteConfig.adConfig.showPopAds} onClick={() => setSiteConfig({...siteConfig, adConfig: {...siteConfig.adConfig, showPopAds: !siteConfig.adConfig.showPopAds}})} />
                    </div>
                 </div>
-                <AdminInput label="Ad Link (Popunder)" value={siteConfig.adConfig.popAdLink} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSiteConfig({...siteConfig, adConfig: {...siteConfig.adConfig, popAdLink: e.target.value}})} />
+             </div>
+
+             <div className="glass p-10 rounded-[3rem] border-white/5 space-y-8">
+                <h3 className="text-white font-black uppercase text-sm italic">Advertisement Management</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="space-y-4">
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-4">Banner Ad Top (HTML/Script)</label>
+                    <textarea
+                      className="w-full bg-slate-950 border border-white/5 p-4 rounded-2xl text-white font-mono text-xs outline-none focus:border-emerald-500/50 transition-all min-h-[100px]"
+                      value={siteConfig.adConfig.bannerAdTop}
+                      onChange={(e) => setSiteConfig({...siteConfig, adConfig: {...siteConfig.adConfig, bannerAdTop: e.target.value}})}
+                    />
+                  </div>
+                  <div className="space-y-4">
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-4">Banner Ad Bottom (HTML/Script)</label>
+                    <textarea
+                      className="w-full bg-slate-950 border border-white/5 p-4 rounded-2xl text-white font-mono text-xs outline-none focus:border-emerald-500/50 transition-all min-h-[100px]"
+                      value={siteConfig.adConfig.bannerAdBottom}
+                      onChange={(e) => setSiteConfig({...siteConfig, adConfig: {...siteConfig.adConfig, bannerAdBottom: e.target.value}})}
+                    />
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-4">Popunder Ad Script (Integrate with layout)</label>
+                  <textarea
+                    className="w-full bg-slate-950 border border-white/5 p-4 rounded-2xl text-white font-mono text-xs outline-none focus:border-emerald-500/50 transition-all min-h-[80px]"
+                    value={siteConfig.adConfig.popunderScript}
+                    onChange={(e) => setSiteConfig({...siteConfig, adConfig: {...siteConfig.adConfig, popunderScript: e.target.value}})}
+                  />
+                </div>
+                <AdminInput label="Popunder Direct Link (Fallback)" value={siteConfig.adConfig.popAdLink} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSiteConfig({...siteConfig, adConfig: {...siteConfig.adConfig, popAdLink: e.target.value}})} />
              </div>
           </div>
         )}

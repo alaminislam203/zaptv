@@ -6,6 +6,7 @@ import { onSnapshot, doc } from "firebase/firestore";
 import { db } from "./firebase";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
+import GlobalBannerAd from "../../components/GlobalBannerAd";
 import { Play, Activity, Clock, Globe, AlertTriangle, Search, Filter, ChevronRight } from "lucide-react";
 
 // --- DYNAMIC IMPORTS ---
@@ -131,6 +132,7 @@ export default function UltimateLivePage() {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 selection:bg-emerald-500/30">
       <Navbar />
+      <GlobalBannerAd location="top" />
 
       {/* Hero Section */}
       {!activeMatch && featuredMatch && (
@@ -333,6 +335,8 @@ export default function UltimateLivePage() {
           </div>
         </div>
       </main>
+
+      <GlobalBannerAd location="bottom" />
 
       {/* Region Modal */}
       {showRegionModal && (
