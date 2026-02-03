@@ -52,8 +52,17 @@ export default function EnhancedAdminPanel() {
     }
   });
 
-  // Form States
-  const [matchForm, setMatchForm] = useState({ team1: "", team2: "", status: "UPCOMING", channelName: "" });
+  // Form States (Fixed: Added missing fields)
+  const [matchForm, setMatchForm] = useState({
+    team1: "",
+    team2: "",
+    team1Logo: "",
+    team2Logo: "",
+    status: "UPCOMING",
+    channelName: "",
+    info: "",
+    matchTime: new Date().toISOString()
+  });
 
   // --- ডাটা কানেকশন (Real-time) ---
   useEffect(() => {
@@ -81,10 +90,25 @@ export default function EnhancedAdminPanel() {
     try {
       if (editingId) await updateDoc(doc(db, "hotMatches", editingId), matchForm);
       else await addDoc(collection(db, "hotMatches"), matchForm);
-      setMatchForm({ team1: "", team2: "", status: "UPCOMING", channelName: "" });
+      setMatchForm({ team1: "", team2: "", team1Logo: "", team2Logo: "", status: "UPCOMING", channelName: "", info: "", matchTime: new Date().toISOString() });
       setEditingId(null);
     } catch (e) { console.error(e); }
     setLoading(false);
+  };
+
+  const editMatch = (match: any) => {
+    setMatchForm({
+      team1: match.team1 || "",
+      team2: match.team2 || "",
+      team1Logo: match.team1Logo || "",
+      team2Logo: match.team2Logo || "",
+      status: match.status || "UPCOMING",
+      channelName: match.channelName || "",
+      info: match.info || "",
+      matchTime: match.matchTime || new Date().toISOString()
+    });
+    setEditingId(match.id);
+    setActiveTab("matches");
   };
 
   const deleteItem = async (col: string, id: string) => {
@@ -125,41 +149,11 @@ export default function EnhancedAdminPanel() {
           </button>
         </div>
         <nav className="flex-1 px-4 space-y-2">
-          <TabButton
-            active={activeTab === "dashboard"}
-            onClick={() => setActiveTab("dashboard")}
-            icon={<Icons.Dashboard />}
-            label="Dashboard"
-            collapsed={isSidebarCollapsed}
-          />
-          <TabButton
-            active={activeTab === "matches"}
-            onClick={() => setActiveTab("matches")}
-            icon={<Icons.Matches />}
-            label="Live Matches"
-            collapsed={isSidebarCollapsed}
-          />
-          <TabButton
-            active={activeTab === "playlists"}
-            onClick={() => setActiveTab("playlists")}
-            icon={<Icons.Channels />}
-            label="Playlists"
-            collapsed={isSidebarCollapsed}
-          />
-          <TabButton
-            active={activeTab === "notifications"}
-            onClick={() => setActiveTab("notifications")}
-            icon={<Icons.Notification />}
-            label="Push Alerts"
-            collapsed={isSidebarCollapsed}
-          />
-          <TabButton
-            active={activeTab === "settings"}
-            onClick={() => setActiveTab("settings")}
-            icon={<Icons.Settings />}
-            label="Site Config"
-            collapsed={isSidebarCollapsed}
-          />
+          <TabButton active={activeTab === "dashboard"} onClick={() => setActiveTab("dashboard")} icon={<Icons.Dashboard />} label="Dashboard" collapsed={isSidebarCollapsed} />
+          <TabButton active={activeTab === "matches"} onClick={() => setActiveTab("matches")} icon={<Icons.Matches />} label="Live Matches" collapsed={isSidebarCollapsed} />
+          <TabButton active={activeTab === "playlists"} onClick={() => setActiveTab("playlists")} icon={<Icons.Channels />} label="Playlists" collapsed={isSidebarCollapsed} />
+          <TabButton active={activeTab === "notifications"} onClick={() => setActiveTab("notifications")} icon={<Icons.Notification />} label="Push Alerts" collapsed={isSidebarCollapsed} />
+          <TabButton active={activeTab === "settings"} onClick={() => setActiveTab("settings")} icon={<Icons.Settings />} label="Site Config" collapsed={isSidebarCollapsed} />
         </nav>
       </aside>
 
@@ -186,12 +180,21 @@ export default function EnhancedAdminPanel() {
         {/* Matches */}
         {activeTab === "matches" && (
           <div className="grid grid-cols-12 gap-8">
-            <div className="col-span-12 lg:col-span-4 glass p-8 rounded-[2.5rem] border-white/5 h-fit">
-              <h3 className="text-white font-black uppercase text-sm italic mb-6">Create Match</h3>
+            <div className="col-span-12 lg:col-span-5 glass p-8 rounded-[2.5rem] border-white/5 h-fit">
+              <h3 className="text-white font-black uppercase text-sm italic mb-6">{editingId ? "Edit Match" : "Create Match"}</h3>
               <div className="space-y-4">
-                <AdminInput label="Team 1 Name" value={matchForm.team1} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setMatchForm({...matchForm, team1: e.target.value})} />
-                <AdminInput label="Team 2 Name" value={matchForm.team2} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setMatchForm({...matchForm, team2: e.target.value})} />
-                <AdminInput label="Stream URL / ID" value={matchForm.channelName} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setMatchForm({...matchForm, channelName: e.target.value})} />
+                <div className="grid grid-cols-2 gap-4">
+                    <AdminInput label="Team 1 Name" value={matchForm.team1} onChange={(e: any) => setMatchForm({...matchForm, team1: e.target.value})} />
+                    <AdminInput label="Team 2 Name" value={matchForm.team2} onChange={(e: any) => setMatchForm({...matchForm, team2: e.target.value})} />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                    <AdminInput label="Team 1 Logo URL" value={matchForm.team1Logo} onChange={(e: any) => setMatchForm({...matchForm, team1Logo: e.target.value})} />
+                    <AdminInput label="Team 2 Logo URL" value={matchForm.team2Logo} onChange={(e: any) => setMatchForm({...matchForm, team2Logo: e.target.value})} />
+                </div>
+                <AdminInput label="League / Match Info" value={matchForm.info} onChange={(e: any) => setMatchForm({...matchForm, info: e.target.value})} />
+                <AdminInput label="Stream URL / ID" value={matchForm.channelName} onChange={(e: any) => setMatchForm({...matchForm, channelName: e.target.value})} />
+                <AdminInput label="Match Time (ISO)" value={matchForm.matchTime} onChange={(e: any) => setMatchForm({...matchForm, matchTime: e.target.value})} />
+
                 <div className="space-y-2">
                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-4">Status</label>
                    <select className="w-full bg-slate-950 border border-white/5 p-4 rounded-2xl text-white font-bold text-xs" value={matchForm.status} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setMatchForm({...matchForm, status: e.target.value})}>
@@ -199,17 +202,29 @@ export default function EnhancedAdminPanel() {
                      <option value="UPCOMING">UPCOMING</option>
                    </select>
                 </div>
-                <button onClick={saveMatch} className="w-full bg-emerald-500 text-white font-black py-4 rounded-2xl uppercase text-xs tracking-[0.2em]">Add Match</button>
+                <div className="flex gap-2">
+                    <button onClick={saveMatch} className="flex-1 bg-emerald-500 text-white font-black py-4 rounded-2xl uppercase text-xs tracking-[0.2em]">{editingId ? "Update" : "Add Match"}</button>
+                    {editingId && <button onClick={() => { setEditingId(null); setMatchForm({team1:"", team2:"", team1Logo:"", team2Logo:"", status:"UPCOMING", channelName:"", info:"", matchTime: new Date().toISOString()}) }} className="bg-slate-800 text-white px-6 rounded-2xl font-black text-xs uppercase tracking-widest">Cancel</button>}
+                </div>
               </div>
             </div>
-            <div className="col-span-12 lg:col-span-8 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="col-span-12 lg:col-span-7 grid grid-cols-1 gap-4">
               {matches.map(m => (
                 <div key={m.id} className="glass p-6 rounded-[2rem] border-white/5 flex justify-between items-center group hover:border-emerald-500/30 transition-all">
-                  <div>
-                    <h4 className="font-black text-white italic uppercase tracking-tighter">{m.team1} <span className="text-emerald-500">VS</span> {m.team2}</h4>
-                    <span className={`text-[10px] font-black uppercase tracking-widest ${m.status === 'LIVE' ? 'text-red-500' : 'text-slate-500'}`}>{m.status}</span>
+                  <div className="flex items-center gap-6">
+                    <div className="flex -space-x-4">
+                        <img src={m.team1Logo} className="w-10 h-10 rounded-full bg-black border border-white/10 p-1" />
+                        <img src={m.team2Logo} className="w-10 h-10 rounded-full bg-black border border-white/10 p-1" />
+                    </div>
+                    <div>
+                        <h4 className="font-black text-white italic uppercase tracking-tighter">{m.team1} <span className="text-emerald-500 text-xs">VS</span> {m.team2}</h4>
+                        <p className="text-[8px] text-slate-500 uppercase font-bold tracking-widest">{m.info} • {m.matchTime?.split('T')[0]}</p>
+                    </div>
                   </div>
-                  <button onClick={() => deleteItem("hotMatches", m.id)} className="p-3 bg-red-500/10 text-red-500 rounded-xl opacity-0 group-hover:opacity-100 transition-all"><Icons.Trash /></button>
+                  <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all">
+                    <button onClick={() => editMatch(m)} className="p-3 bg-emerald-500/10 text-emerald-500 rounded-xl hover:bg-emerald-500 hover:text-white transition-all"><Icons.Settings /></button>
+                    <button onClick={() => deleteItem("hotMatches", m.id)} className="p-3 bg-red-500/10 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all"><Icons.Trash /></button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -326,7 +341,7 @@ const StatCard = ({ title, value, color }: any) => (
   </div>
 );
 
-const AdminInput = ({ label, value, onChange }: { label: string, value: string, onChange: (e: React.ChangeEvent<HTMLInputElement>) => void }) => (
+const AdminInput = ({ label, value, onChange }: { label: string, value: string, onChange: (e: any) => void }) => (
   <div className="space-y-2">
     <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-4">{label}</label>
     <input

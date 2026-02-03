@@ -2,8 +2,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import videojs from 'video.js';
 import 'video.js/dist/video-js.css';
-// থিম ইন্সটল করা থাকলে আন-কমেন্ট করুন
-// import '@videojs/themes/dist/fantasy/index.css';
 
 interface VideoJSPlayerProps {
   src: string;
@@ -39,7 +37,7 @@ const VideoJSPlayer: React.FC<VideoJSPlayerProps> = ({ src }) => {
       controls: true,
       responsive: true,
       fluid: true,
-      liveui: true, // লাইভ ব্যাজ দেখানোর জন্য
+      liveui: true,
       sources: [{ src, type: 'application/x-mpegURL' }],
       html5: {
         vhs: {
@@ -50,11 +48,9 @@ const VideoJSPlayer: React.FC<VideoJSPlayerProps> = ({ src }) => {
     };
 
     const player = (playerRef.current = videojs(videoElement, options, () => {
-      // Player Ready
       setIsLoading(false);
     }));
 
-    // ৩. ইভেন্ট হ্যান্ডলিং
     player.on('waiting', () => {
        if (!player.paused()) setIsLoading(true);
     });
@@ -71,7 +67,6 @@ const VideoJSPlayer: React.FC<VideoJSPlayerProps> = ({ src }) => {
 
   }, [src]);
 
-  // ৪. ক্লিনআপ
   useEffect(() => {
     const player = playerRef.current;
     return () => {
@@ -85,14 +80,12 @@ const VideoJSPlayer: React.FC<VideoJSPlayerProps> = ({ src }) => {
   return (
     <div className="w-full h-full relative bg-black rounded-xl overflow-hidden group">
       
-      {/* VideoJS Mount Point */}
       <div ref={videoRef} className="w-full h-full" />
 
-      {/* কাস্টম স্টাইল ওভাররাইড (কালার থিম মিলানোর জন্য) */}
       <style jsx global>{`
-        .video-js .vjs-control-bar { background: rgba(0, 0, 0, 0.7); }
+        .video-js .vjs-control-bar { background: rgba(2, 6, 23, 0.8); backdrop-filter: blur(10px); }
         .video-js .vjs-big-play-button { 
-            background-color: rgba(6, 182, 212, 0.7); /* Cyan-500 */
+            background-color: rgba(16, 185, 129, 0.7); /* Emerald-500 */
             border-color: #fff;
             border-radius: 50%;
             width: 2em;
@@ -103,29 +96,27 @@ const VideoJSPlayer: React.FC<VideoJSPlayerProps> = ({ src }) => {
             left: 50%;
             transform: translateY(-50%);
         }
-        .video-js .vjs-play-progress { background-color: #06b6d4; } /* Cyan Progress */
-        .video-js .vjs-load-progress div { background-color: rgba(255, 255, 255, 0.3); }
+        .video-js .vjs-play-progress { background-color: #10b981; } /* Emerald Progress */
+        .video-js .vjs-load-progress div { background-color: rgba(255, 255, 255, 0.2); }
       `}</style>
 
-      {/* --- লোডিং স্ক্রিন (NativePlayer এর সাথে মিল রেখে) --- */}
       {(isLoading && !error) && (
-        <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-black/70 backdrop-blur-sm pointer-events-none">
-            <div className="w-12 h-12 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin"></div>
-            <p className="text-cyan-400 text-xs font-mono animate-pulse mt-3">BUFFERING...</p>
+        <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-slate-950/70 backdrop-blur-sm pointer-events-none">
+            <div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+            <p className="text-emerald-400 text-[10px] font-black uppercase tracking-[0.3em] mt-4">Initializing Stream</p>
         </div>
       )}
 
-      {/* --- এরর স্ক্রিন --- */}
       {error && (
-        <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-black/80 text-center p-4">
-            <div className="text-red-500 text-5xl mb-2">⚠️</div>
-            <h3 className="font-bold text-red-400 text-lg">Stream Error</h3>
-            <p className="text-sm text-zinc-400 mt-1 max-w-xs">{error}</p>
+        <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-slate-950/80 text-center p-4">
+            <div className="text-red-500 text-5xl mb-4">🚫</div>
+            <h3 className="font-black text-white uppercase italic text-lg tracking-tighter">Stream Error</h3>
+            <p className="text-[10px] font-bold text-slate-500 mt-2 uppercase tracking-widest max-w-xs">{error}</p>
             <button 
                 onClick={() => window.location.reload()} 
-                className="mt-4 px-4 py-2 bg-red-600/20 text-red-400 rounded-lg text-xs hover:bg-red-600 hover:text-white transition"
+                className="mt-6 px-6 py-3 bg-emerald-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-600 transition"
             >
-                Reload Player
+                Retry Stream
             </button>
         </div>
       )}

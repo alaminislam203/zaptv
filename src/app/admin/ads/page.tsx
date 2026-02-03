@@ -66,7 +66,7 @@ export default function AdAdminPanel() {
   }, []);
 
   const handleLogin = () => {
-    if(username === "admin" && password === "admin123") {
+    if(username === "admin" && password === "sajid@1234") {
         localStorage.setItem("admin_session", "valid_token_v4");
         setIsAuthenticated(true);
         showToast("Welcome Admin!", "success");
@@ -194,25 +194,32 @@ export default function AdAdminPanel() {
 
   // --- LOGIN UI ---
   if(!isAuthenticated) return (
-    <div className="min-h-screen bg-[#050b14] flex items-center justify-center p-4">
+    <div className="min-h-screen bg-slate-950 flex items-center justify-center p-6">
         {toast && <Toast msg={toast.msg} type={toast.type} onClose={()=>setToast(null)}/>}
-        <div className="bg-[#111827] p-8 rounded-2xl border border-gray-800 w-full max-w-sm text-center">
-            <h1 className="text-3xl font-bold text-white mb-6">Admin<span className="text-indigo-500">Login</span></h1>
-            <input className="w-full bg-black border border-gray-700 p-3 rounded-lg text-white mb-4" placeholder="Username" onChange={e=>setUsername(e.target.value)}/>
-            <input className="w-full bg-black border border-gray-700 p-3 rounded-lg text-white mb-6" type="password" placeholder="Password" onChange={e=>setPassword(e.target.value)}/>
-            <button onClick={handleLogin} className="w-full bg-indigo-600 py-3 rounded-lg font-bold text-white">Access Panel</button>
+        <div className="glass p-12 rounded-[3.5rem] border-white/5 w-full max-w-md text-center shadow-2xl relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-emerald-500 to-transparent"></div>
+            <h1 className="text-3xl font-black text-white italic mb-10 tracking-tighter">Ads <span className="text-emerald-500">Portal</span></h1>
+            <div className="space-y-4">
+              <input className="w-full bg-slate-900 border border-white/5 p-5 rounded-[2rem] text-white outline-none font-bold text-sm text-center" placeholder="Username" onChange={e=>setUsername(e.target.value)}/>
+              <input className="w-full bg-slate-900 border border-white/5 p-5 rounded-[2rem] text-white outline-none font-bold text-sm text-center" type="password" placeholder="Secret PIN" onChange={e=>setPassword(e.target.value)}/>
+              <button onClick={handleLogin} className="w-full bg-emerald-500 text-white font-black py-5 rounded-[2rem] shadow-xl hover:bg-emerald-400 transition-all uppercase tracking-widest text-xs mt-4">Access Panel</button>
+            </div>
         </div>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-[#09090b] text-gray-200 font-sans flex flex-col md:flex-row">
+    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans flex flex-col md:flex-row">
       {toast && <Toast msg={toast.msg} type={toast.type} onClose={()=>setToast(null)}/>}
       
       {/* SIDEBAR */}
-      <aside className="w-full md:w-64 bg-[#121215] border-r border-gray-800 flex flex-col md:h-screen sticky top-0 z-50">
-         <div className="p-6 border-b border-gray-800"><h2 className="text-2xl font-bold text-white">Ads<span className="text-indigo-500">Manager</span></h2></div>
-         <nav className="flex-1 p-4 space-y-2">
+      <aside className="w-full md:w-72 bg-[#0a0a0c] border-r border-white/5 flex flex-col md:h-screen sticky top-0 z-50">
+         <div className="p-8 border-b border-white/5">
+            <h2 className="text-2xl font-black text-white italic tracking-tighter">
+                Ads<span className="text-emerald-500">MANAGER</span>
+            </h2>
+         </div>
+         <nav className="flex-1 p-4 space-y-2 mt-4">
              {[ 
                {id: "dashboard", label: "Overview", icon: <Icons.Dashboard/>},
                {id: "deposits", label: "Deposits", icon: <Icons.Money/>},
@@ -220,9 +227,9 @@ export default function AdAdminPanel() {
                {id: "users", label: "Users", icon: <Icons.Users/>}, 
                {id: "settings", label: "Settings", icon: <Icons.Settings/>}
              ].map(item => (
-                 <button key={item.id} onClick={() => setActiveTab(item.id)} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm transition ${activeTab === item.id ? "bg-indigo-600 text-white shadow-lg" : "text-gray-400 hover:bg-gray-800 hover:text-white"}`}>
+                 <button key={item.id} onClick={() => setActiveTab(item.id)} className={`w-full flex items-center gap-4 px-6 py-4 rounded-2xl font-bold text-sm transition-all ${activeTab === item.id ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/20" : "text-slate-500 hover:text-white"}`}>
                     {item.icon} {item.label}
-                    {item.id==='deposits' && deposits.filter(d=>d.status==='pending').length>0 && <span className="ml-auto bg-red-500 text-white text-[10px] px-2 rounded-full">{deposits.filter(d=>d.status==='pending').length}</span>}
+                    {item.id==='deposits' && deposits.filter(d=>d.status==='pending').length>0 && <span className="ml-auto bg-red-500 text-white text-[10px] px-2 rounded-full font-black">{deposits.filter(d=>d.status==='pending').length}</span>}
                  </button>
              ))}
          </nav>
@@ -238,25 +245,25 @@ export default function AdAdminPanel() {
         {activeTab === 'dashboard' && (
             <div className="space-y-8 animate-fadeIn">
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                    <div className="bg-[#18181b] p-6 rounded-2xl border border-gray-800">
-                        <h3 className="text-xs font-bold text-gray-500 uppercase">Total Revenue</h3>
-                        <p className="text-3xl font-black text-green-400 mt-2">৳ {deposits.filter(d=>d.status==='approved').reduce((a,b)=>a+Number(b.amount),0)}</p>
+                    <div className="glass p-8 rounded-[2.5rem] border-white/5">
+                        <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Total Revenue</h3>
+                        <p className="text-3xl font-black text-emerald-500 italic mt-2">৳ {deposits.filter(d=>d.status==='approved').reduce((a,b)=>a+Number(b.amount),0)}</p>
                     </div>
-                    <div className="bg-[#18181b] p-6 rounded-2xl border border-gray-800">
-                        <h3 className="text-xs font-bold text-gray-500 uppercase">Active Ads</h3>
-                        <p className="text-3xl font-black text-indigo-400 mt-2">{campaigns.filter(c=>c.status==='active').length}</p>
+                    <div className="glass p-8 rounded-[2.5rem] border-white/5">
+                        <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Active Ads</h3>
+                        <p className="text-3xl font-black text-teal-400 italic mt-2">{campaigns.filter(c=>c.status==='active').length}</p>
                     </div>
-                    <div className="bg-[#18181b] p-6 rounded-2xl border border-gray-800">
-                        <h3 className="text-xs font-bold text-gray-500 uppercase">Total Users</h3>
-                        <p className="text-3xl font-black text-blue-400 mt-2">{users.length}</p>
+                    <div className="glass p-8 rounded-[2.5rem] border-white/5">
+                        <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Total Users</h3>
+                        <p className="text-3xl font-black text-blue-400 italic mt-2">{users.length}</p>
                     </div>
-                    <div className="bg-[#18181b] p-6 rounded-2xl border border-gray-800">
-                        <h3 className="text-xs font-bold text-gray-500 uppercase">Pending Ads</h3>
-                        <p className="text-3xl font-black text-orange-400 mt-2">{campaigns.filter(c=>c.status==='pending').length}</p>
+                    <div className="glass p-8 rounded-[2.5rem] border-white/5">
+                        <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Pending Ads</h3>
+                        <p className="text-3xl font-black text-amber-500 italic mt-2">{campaigns.filter(c=>c.status==='pending').length}</p>
                     </div>
                 </div>
 
-                <div className="bg-[#18181b] p-6 rounded-2xl border border-gray-800 h-80">
+                <div className="glass p-10 rounded-[3rem] border-white/5 h-96">
                     <h3 className="text-white font-bold mb-4">Deposit Growth</h3>
                     <ResponsiveContainer width="100%" height="100%">
                         <AreaChart data={deposits.filter(d=>d.status==='approved').map((d,i)=>({name:i, amount:d.amount}))}>
