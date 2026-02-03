@@ -24,7 +24,7 @@ export default function AdScriptManager() {
       // The script usually contains (function(s){...})(...)
       // We can inject it by creating a script element
 
-      const scriptMatch = popunderScript.match(/<script>(.*?)<\/script>/s);
+      const scriptMatch = popunderScript.match(/<script>([\s\S]*?)<\/script>/);
       const scriptContent = scriptMatch ? scriptMatch[1] : popunderScript;
 
       try {
