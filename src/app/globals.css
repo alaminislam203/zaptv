@@ -28,7 +28,7 @@ body {
 
 @layer utilities {
   .glass {
-    @apply bg-slate-900/50 backdrop-blur-xl border border-white/5 shadow-2xl;
+    @apply bg-slate-900/50 backdrop-blur-xl border border-white/5 shadow-2xl dark:bg-slate-900/50 light:bg-white/70 light:border-slate-200 light:shadow-xl;
   }
 
   .glass-hover {

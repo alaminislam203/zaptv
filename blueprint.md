@@ -4,43 +4,54 @@
 
 This document outlines the architecture, features, and design of the ToffeePro Streaming application. It's a web-based platform for streaming live video content, built with Next.js and Firebase.
 
-## 2. Core Features
+## 2. Core Features (Current & Roadmap)
 
-*   **Live Streaming:** The application's primary function is to provide live video streaming to users.
-*   **Multiple Video Players:** It supports various video player libraries like Plyr, Video.js, and native HTML5 video to ensure compatibility and performance across different devices and browsers. It also includes Shaka Player for DRM-protected content.
-*   **Dynamic Channel and Match Loading:** The app dynamically fetches and displays a list of available channels and hot matches from a Firebase Firestore database.
-*   **Firebase Integration:** The application is integrated with Firebase for backend services, including:
-    *   **Firestore:** To store and manage channels, matches, ads, and application settings.
-    *   **Real-time Updates:** The app uses real-time listeners to update the channel and match lists automatically.
-*   **User Interaction:**
-    *   **Channel Search:** Users can search for specific channels.
-    *   **Favorites:** Users can mark channels as favorites, and this information is saved in their browser's local storage.
-    *   **Reporting:** A reporting feature allows users to report issues with a stream.
-*   **Admin Panel:** A dedicated admin page is available for managing the application.
-*   **Security:** Basic security measures are implemented to prevent right-clicking and the use of developer tools in a production environment.
-*   **Ad Integration:** The app includes a system for displaying ads, which can be managed from the Firebase backend.
-*   **Maintenance Mode:** The application can be put into maintenance mode, displaying a user-friendly message to visitors.
+*   **Live Streaming:** Primary function providing live video streaming to users.
+*   **Multiple Video Players:** Supports Plyr, Video.js, Shaka Player (DRM), and Native HTML5.
+*   **Dynamic Content:** Real-time fetching of channels and matches from Firestore.
+*   **Admin Panel:** Multi-tab dashboard for management (Ads, Playlists, Settings, Notifications).
+*   **User Personalization (Roadmap):**
+    *   **Favorites & Watch History:** Saved to Firestore for registered users.
+    *   **User Profiles:** Social/Email login via Firebase Auth.
+    *   **Parental Control:** PIN-locked adult/sensitive channels.
+*   **Advanced Player Features (Roadmap):**
+    *   **Resolution Control:** Manual selection (144p to 4K).
+    *   **Playback Speed:** Speed control for recorded/archive content.
+    *   **Cinema Mode & PiP:** Enhanced viewing modes.
+*   **Content & Metadata (Roadmap):**
+    *   **EPG (Electronic Program Guide):** Real-time schedules.
+    *   **Live Chat:** Real-time interaction during events.
+    *   **Multi-language Support:** UI available in Bengali and English.
+*   **Monetization & Analytics:**
+    *   **Global Ad System:** Banner and Popunder ads.
+    *   **Pre-roll Ads (Roadmap):** Video ads before the stream.
+    *   **Insightful Analytics:** Tracking user engagement for admins.
 
 ## 3. Design and Styling
 
-*   **Modern and Dark Theme:** The application features a modern, dark theme with a clean and intuitive layout.
-*   **Responsive Design:** The UI is designed to be responsive and work well on both desktop and mobile devices.
-*   **Visual Elements:**
-    *   **Gradient Text:** The site logo uses a gradient for a visually appealing effect.
-    *   **Animated "LIVE" indicator:** A pulsating "LIVE" indicator gives immediate visual feedback.
-    *   **Icons and Placeholders:** The app uses icons for actions like "favorite" and "report," and placeholders for channel logos when they are not available.
-    *   **Loading Skeletons:** Animated loading skeletons provide visual feedback while data is being fetched.
-*   **Tailwind CSS:** The application is styled using Tailwind CSS, a utility-first CSS framework.
+*   **Design System:** "ToffeePro" - A premium Emerald/Teal accented dark theme.
+*   **Aesthetic:** Glassmorphism, blurred overlays, and high-quality shadows.
+*   **Theming:** Support for Dark and Light modes (using `next-themes`).
+*   **Typography:** Expressive headers with italic, black weights for a sporty look.
 
-## 4. Recent Change: ToffeePro Unified Redesign
+## 4. Implementation Plan: Feature Expansion
 
-*   **Feature:** Complete UI/UX overhaul across all application routes to create a premium, unified experience named "ToffeePro".
-*   **Implementation:**
-    *   **Visual Language:** Adopted a "Glassmorphism" aesthetic with a dark `slate-950` background, emerald/teal accents, and multi-layered drop shadows.
-    *   **Modern Components:** Integrated `lucide-react` icons, custom animated marquees, and pulsating "LIVE" indicators.
-    *   **Technical Optimization:**
-        *   Migrated all pages (Home, Live TV, Sports, Kids, etc.) to the new design system.
-        *   Redesigned the Admin Panel into a multi-tab enterprise dashboard with dedicated sections for settings and ad management.
-        *   Implemented a multi-layered Anti-Adblocker strategy to protect revenue.
-        *   Optimized Firebase real-time listeners and RTDB connection logic for better performance.
-    *   **Build Stabilization:** Programmatically corrected import paths and environment configurations to resolve build artifacts and port conflicts.
+### Phase 1: UI/UX & Theming
+- **Dashboard Shortcuts:** Recently Viewed (local/account sync) and Popular items.
+- **Enhanced Categories:** Smart filtering with intuitive icons.
+- **Theme Switcher:** Seamless Dark/Light mode transitions.
+
+### Phase 2: Player & Streaming
+- **Advanced Controls:** Expose quality, speed, and track selection in the UI.
+- **Cinema Mode:** A distraction-free viewing layout.
+- **Basic EPG:** Fetching and displaying program lists.
+
+### Phase 3: Personalization
+- **Auth Integration:** Google and Email login.
+- **Data Sync:** Migrate local storage data to user-bound Firestore documents.
+- **Security:** Parental PIN logic.
+
+### Phase 4: Localization & Engagement
+- **i18n:** Bengali/English translation layer.
+- **Engagement:** Real-time chat using Firebase RTDB.
+- **Efficiency:** Bandwidth saver mode for mobile data users.

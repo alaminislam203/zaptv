@@ -7,7 +7,9 @@ import dynamic from "next/dynamic";
 import Navbar from "../../../components/Navbar";
 import Footer from "../../../components/Footer";
 import GlobalBannerAd from "../../../components/GlobalBannerAd";
-import { Play, Activity, Search, Shield, Trophy, Users, Tv, Star, ChevronRight } from "lucide-react";
+import EPG from "../../../components/EPG";
+import LiveChat from "../../../components/LiveChat";
+import { Play, Activity, Search, Shield, Trophy, Users, Tv, Star, ChevronRight, Maximize2 } from "lucide-react";
 
 // --- DYNAMIC IMPORTS ---
 const ShakaPlayer = dynamic(() => import("../../../components/ShakaPlayer"), {
@@ -22,6 +24,7 @@ const ShakaPlayer = dynamic(() => import("../../../components/ShakaPlayer"), {
 
 function LiveSportsContent() {
   const [channels, setChannels] = useState<any[]>([]);
+  const [isCinemaMode, setIsCinemaMode] = useState(false);
   const [siteConfig, setSiteConfig] = useState<any>({});
   const [onlineUsers, setOnlineUsers] = useState(0);
   const [currentChannel, setCurrentChannel] = useState<any | null>(null);
@@ -103,10 +106,10 @@ function LiveSportsContent() {
         </div>
 
         {/* Player Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+        <div className={`grid grid-cols-1 lg:grid-cols-12 gap-12 transition-all duration-700 ${isCinemaMode ? 'lg:gap-0' : 'gap-12'}`}>
 
-          <div className="lg:col-span-8 space-y-8">
-            <div className="glass rounded-[3rem] overflow-hidden aspect-video relative border-white/5 shadow-2xl">
+          <div className={`${isCinemaMode ? 'lg:col-span-12' : 'lg:col-span-8'} space-y-8`}>
+            <div className={`glass rounded-[3rem] overflow-hidden relative border-white/5 shadow-2xl transition-all duration-700 ${isCinemaMode ? 'aspect-[21/9]' : 'aspect-video'}`}>
               {currentChannel ? (
                 <ShakaPlayer src={currentChannel.sources[0].url} />
               ) : (
@@ -141,11 +144,27 @@ function LiveSportsContent() {
                     <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">No Lag Streaming</span>
                   </div>
                 </div>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => setIsCinemaMode(!isCinemaMode)}
+                    className={`p-4 rounded-2xl border transition-all ${isCinemaMode ? "bg-emerald-500 text-white border-emerald-500" : "bg-slate-900 border-white/5 text-slate-500 hover:text-white"}`}
+                  >
+                    <Maximize2 className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* EPG & Chat */}
+            {!isCinemaMode && currentChannel && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="h-[400px]"><EPG channelName={currentChannel.name} /></div>
+                <div className="h-[400px]"><LiveChat channelId={currentChannel.id} /></div>
               </div>
             )}
           </div>
 
-          <div className="lg:col-span-4 space-y-8">
+          <div className={`${isCinemaMode ? 'hidden' : 'lg:col-span-4'} space-y-8`}>
             <div className="glass p-10 rounded-[3rem] h-[600px] flex flex-col">
               <div className="mb-8">
                 <h3 className="text-xs font-black text-white uppercase italic tracking-widest mb-6 flex items-center gap-3">

@@ -3,11 +3,15 @@ import React, { useState, useEffect, useRef, useMemo } from "react";
 import { collection, onSnapshot, addDoc, doc, runTransaction } from "firebase/firestore";
 import { ref, onValue, off, set, onDisconnect, serverTimestamp } from "firebase/database";
 import { db, rtdb } from "../firebase"; 
+import { useAuth } from "../../../components/AuthContext";
+import { logWatchEvent } from "../../../components/AnalyticsManager";
 import dynamic from "next/dynamic";
 import Navbar from "../../../components/Navbar";
 import Footer from "../../../components/Footer";
 import GlobalBannerAd from "../../../components/GlobalBannerAd";
-import { Play, Activity, Search, Shield, Info, Heart, AlertTriangle, Users, Tv } from "lucide-react";
+import EPG from "../../../components/EPG";
+import LiveChat from "../../../components/LiveChat";
+import { Play, Activity, Search, Shield, Info, Heart, AlertTriangle, Users, Tv, Maximize2, Settings2 } from "lucide-react";
 
 // Loading Component
 const LoadingPlayer = () => (
@@ -58,6 +62,7 @@ const parseM3U = (content: string): any[] => {
 };
 
 export default function LiveTVPage() {
+  const { user } = useAuth();
   const [channels, setChannels] = useState<any[]>([]);
   const [siteConfig, setSiteConfig] = useState<any>({});
   const [onlineUsers, setOnlineUsers] = useState(0);
@@ -68,6 +73,7 @@ export default function LiveTVPage() {
   const [isFavorite, setIsFavorite] = useState(false);
   const [playerType, setPlayerType] = useState<any>("plyr");
   const [loading, setLoading] = useState(true);
+  const [isCinemaMode, setIsCinemaMode] = useState(false);
 
   const categories = useMemo(() => {
     const uniqueCats = Array.from(new Set(channels.map(ch => ch.category || "Others")));
@@ -78,6 +84,9 @@ export default function LiveTVPage() {
     return channels.filter(ch => {
       const matchesSearch = ch.name.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesCategory = selectedCategory === "All" || ch.category === selectedCategory;
+      const isAdult = ch.category === "Adult" || ch.name.toLowerCase().includes("18+");
+      const isParentalLock = typeof window !== 'undefined' ? localStorage.getItem("parental_lock") === "true" : false;
+      if (isParentalLock && isAdult) return false;
       return matchesSearch && matchesCategory;
     });
   }, [channels, searchQuery, selectedCategory]);
@@ -153,11 +162,11 @@ export default function LiveTVPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+        <div className={`grid grid-cols-1 lg:grid-cols-12 gap-12 transition-all duration-700 ${isCinemaMode ? 'lg:gap-0' : 'gap-12'}`}>
 
           {/* Player Section */}
-          <div className="lg:col-span-8 space-y-8">
-            <div className="glass rounded-[2.5rem] overflow-hidden aspect-video relative group border-white/5 shadow-emerald-500/5 shadow-2xl">
+          <div className={`${isCinemaMode ? 'lg:col-span-12' : 'lg:col-span-8'} space-y-8`}>
+            <div className={`glass rounded-[2.5rem] overflow-hidden relative group border-white/5 shadow-emerald-500/5 shadow-2xl transition-all duration-700 ${isCinemaMode ? 'aspect-[21/9]' : 'aspect-video'}`}>
               {currentChannel ? (
                 <DynamicPlayer
                   player={playerType}
@@ -189,6 +198,13 @@ export default function LiveTVPage() {
                 </div>
                 <div className="flex items-center gap-3">
                   <button
+                    onClick={() => setIsCinemaMode(!isCinemaMode)}
+                    className={`p-4 rounded-2xl border transition-all ${isCinemaMode ? "bg-emerald-500 text-white border-emerald-500" : "bg-slate-900 border-white/5 text-slate-500 hover:text-white"}`}
+                    title="Cinema Mode"
+                  >
+                    <Maximize2 className="w-5 h-5" />
+                  </button>
+                  <button
                     onClick={toggleFavorite}
                     className={`p-4 rounded-2xl border transition-all ${isFavorite ? "bg-emerald-500 text-white border-emerald-500" : "bg-slate-900 border-white/5 text-slate-500 hover:text-white"}`}
                   >
@@ -201,10 +217,22 @@ export default function LiveTVPage() {
                 </div>
               </div>
             )}
+
+            {/* EPG & Chat Section */}
+            {!isCinemaMode && currentChannel && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="h-[400px]">
+                  <EPG channelName={currentChannel.name} />
+                </div>
+                <div className="h-[400px]">
+                  <LiveChat channelId={currentChannel.id} />
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Sidebar Section */}
-          <div className="lg:col-span-4 space-y-8">
+          <div className={`${isCinemaMode ? 'hidden' : 'lg:col-span-4'} space-y-8`}>
             <div className="glass p-8 rounded-[2.5rem] h-[700px] flex flex-col">
               <div className="mb-8">
                 <div className="flex items-center justify-between mb-6">
@@ -263,6 +291,11 @@ export default function LiveTVPage() {
                     </span>
                     {currentChannel?.id === ch.id && (
                       <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></div>
+                    )}
+                    {(ch.category === "Adult" || ch.name.toLowerCase().includes("18+")) && (
+                        <div className="p-1.5 bg-red-500/10 rounded-lg text-red-500">
+                            <Shield className="w-3 h-3" />
+                        </div>
                     )}
                   </button>
                 ))}

@@ -199,6 +199,15 @@ const NativePlayer = ({ src }: { src: string }) => {
       setShowQualityMenu(false);
   };
 
+  useEffect(() => {
+    const isBandwidthSaver = localStorage.getItem("bandwidth_saver") === "true";
+    if (isBandwidthSaver && hlsRef.current && qualityLevels.length > 0) {
+        // Force lowest level
+        hlsRef.current.currentLevel = 0;
+        setCurrentQuality(0);
+    }
+  }, [qualityLevels]);
+
   const isLive = duration === Infinity || duration === 0 || isNaN(duration);
 
   return (

@@ -1,11 +1,22 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { Play, Menu, Search, User, X, Home, Tv, Trophy, Baby, Info } from "lucide-react";
+import { useTheme } from "next-themes";
+import { useAuth } from "./AuthContext";
+import { useLanguage } from "./LanguageContext";
+import SettingsModal from "./SettingsModal";
+import { Play, Menu, Search, User, X, Home, Tv, Trophy, Baby, Info, Sun, Moon, LogIn, LogOut, Globe, Settings2 } from "lucide-react";
 
 export default function Navbar() {
+  const { theme, setTheme } = useTheme();
+  const { user, login, logout } = useAuth();
+  const { language, setLanguage, t } = useLanguage();
+  const [mounted, setMounted] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
+  useEffect(() => setMounted(true), []);
   const [searchQuery, setSearchQuery] = useState("");
 
   const navLinks = [
@@ -54,11 +65,58 @@ export default function Navbar() {
               >
                 <Search className="w-5 h-5" />
               </button>
+
+              <button
+                onClick={() => setLanguage(language === "en" ? "bn" : "en")}
+                className="p-3 text-slate-400 hover:text-emerald-500 hover:bg-emerald-500/5 rounded-xl transition-all flex items-center gap-1.5"
+              >
+                <Globe className="w-5 h-5" />
+                <span className="text-[10px] font-black uppercase tracking-widest">{language}</span>
+              </button>
+
+              {mounted && (
+                <button
+                  onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                  className="p-3 text-slate-400 hover:text-emerald-500 hover:bg-emerald-500/5 rounded-xl transition-all"
+                >
+                  {theme === "dark" ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+                </button>
+              )}
+
+              <button
+                onClick={() => setIsSettingsOpen(true)}
+                className="p-3 text-slate-400 hover:text-emerald-500 hover:bg-emerald-500/5 rounded-xl transition-all"
+              >
+                <Settings2 className="w-5 h-5" />
+              </button>
+
               <div className="h-6 w-[1px] bg-slate-800 mx-1 hidden sm:block"></div>
-              <Link href="/admin" className="hidden sm:flex items-center gap-2 px-5 py-2.5 bg-slate-900 hover:bg-slate-800 border border-white/5 rounded-xl text-[10px] font-black text-slate-300 transition-all uppercase tracking-widest">
-                <User className="w-4 h-4 text-emerald-500" />
-                Admin
-              </Link>
+              {user ? (
+                <div className="flex items-center gap-4">
+                  <button
+                    onClick={() => logout()}
+                    className="hidden sm:flex items-center gap-2 px-5 py-2.5 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 rounded-xl text-[10px] font-black text-red-500 transition-all uppercase tracking-widest"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Logout
+                  </button>
+                  <Link href="/admin" className="hidden sm:flex items-center gap-2 px-5 py-2.5 bg-slate-900 hover:bg-slate-800 border border-white/5 rounded-xl text-[10px] font-black text-slate-300 transition-all uppercase tracking-widest">
+                    <User className="w-4 h-4 text-emerald-500" />
+                    Admin
+                  </Link>
+                  <div className="w-8 h-8 rounded-full overflow-hidden border border-emerald-500/20">
+                    <img src={user.photoURL || "https://ui-avatars.com/api/?name=" + user.displayName} alt="" className="w-full h-full object-cover" />
+                  </div>
+                </div>
+              ) : (
+                <button
+                  onClick={() => login()}
+                  className="hidden sm:flex items-center gap-2 px-5 py-2.5 bg-emerald-500 text-white rounded-xl text-[10px] font-black transition-all uppercase tracking-widest shadow-lg shadow-emerald-500/20"
+                >
+                  <LogIn className="w-4 h-4" />
+                  Login
+                </button>
+              )}
               <button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                 className="md:hidden p-3 text-slate-400 hover:text-emerald-500 hover:bg-emerald-500/5 rounded-xl transition-all"
@@ -86,14 +144,33 @@ export default function Navbar() {
                 {link.label}
               </Link>
             ))}
-            <Link
-              href="/admin"
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="flex items-center gap-6 p-6 rounded-3xl bg-emerald-500/10 border border-emerald-500/20 text-xl font-black text-emerald-500 italic uppercase tracking-tight mt-auto"
-            >
-              <User className="w-6 h-6" />
-              Admin Portal
-            </Link>
+            {user ? (
+              <div className="mt-auto space-y-4">
+                <Link
+                  href="/admin"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="flex items-center gap-6 p-6 rounded-3xl bg-emerald-500/10 border border-emerald-500/20 text-xl font-black text-emerald-500 italic uppercase tracking-tight"
+                >
+                  <User className="w-6 h-6" />
+                  Admin Portal
+                </Link>
+                <button
+                  onClick={() => { logout(); setIsMobileMenuOpen(false); }}
+                  className="w-full flex items-center gap-6 p-6 rounded-3xl bg-red-500/10 border border-red-500/20 text-xl font-black text-red-500 italic uppercase tracking-tight"
+                >
+                  <LogOut className="w-6 h-6" />
+                  Logout
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => { login(); setIsMobileMenuOpen(false); }}
+                className="flex items-center gap-6 p-6 rounded-3xl bg-emerald-500 text-white text-xl font-black italic uppercase tracking-tight mt-auto"
+              >
+                <LogIn className="w-6 h-6" />
+                Login Now
+              </button>
+            )}
           </nav>
         </div>
       )}
@@ -134,6 +211,8 @@ export default function Navbar() {
           </div>
         </div>
       )}
+
+      <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
     </>
   );
 }

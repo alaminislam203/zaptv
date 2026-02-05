@@ -9,6 +9,7 @@ import { db } from "../firebase";
 const Icons = {
   Dashboard: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" /></svg>,
   Matches: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>,
+  Analytics: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>,
   Channels: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>,
   Ads: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" /></svg>,
   Notification: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>,
@@ -37,6 +38,7 @@ export default function EnhancedAdminPanel() {
   };
 
   const [activeTab, setActiveTab] = useState("dashboard");
+  const [analyticsData, setAnalyticsData] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -96,7 +98,10 @@ export default function EnhancedAdminPanel() {
           setSiteConfig(prev => ({ ...prev, ...data }));
         }
       });
-      return () => { unsubMatches(); unsubChannels(); unsubConfig(); };
+      const unsubAnalytics = onSnapshot(query(collection(db, "analytics_page_views"), orderBy("timestamp", "desc")), (snap) => {
+          setAnalyticsData(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      });
+      return () => { unsubMatches(); unsubChannels(); unsubConfig(); unsubAnalytics(); };
     }
   }, [isAuthenticated]);
 
@@ -169,6 +174,7 @@ export default function EnhancedAdminPanel() {
           <TabButton active={activeTab === "dashboard"} onClick={() => setActiveTab("dashboard")} icon={<Icons.Dashboard />} label="Dashboard" collapsed={isSidebarCollapsed} />
           <TabButton active={activeTab === "matches"} onClick={() => setActiveTab("matches")} icon={<Icons.Matches />} label="Live Matches" collapsed={isSidebarCollapsed} />
           <TabButton active={activeTab === "playlists"} onClick={() => setActiveTab("playlists")} icon={<Icons.Channels />} label="Playlists" collapsed={isSidebarCollapsed} />
+          <TabButton active={activeTab === "analytics"} onClick={() => setActiveTab("analytics")} icon={<Icons.Analytics />} label="Analytics" collapsed={isSidebarCollapsed} />
           <TabButton active={activeTab === "notifications"} onClick={() => setActiveTab("notifications")} icon={<Icons.Notification />} label="Push Alerts" collapsed={isSidebarCollapsed} />
           <TabButton active={activeTab === "settings"} onClick={() => setActiveTab("settings")} icon={<Icons.Settings />} label="Site Config" collapsed={isSidebarCollapsed} />
         </nav>
@@ -255,6 +261,28 @@ export default function EnhancedAdminPanel() {
               ))}
             </div>
           </div>
+        )}
+
+        {/* Analytics */}
+        {activeTab === "analytics" && (
+            <div className="space-y-8 animate-fadeIn">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="glass p-10 rounded-[3rem] border-white/5">
+                        <h3 className="text-white font-black uppercase italic text-sm mb-8">Recent Activity</h3>
+                        <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
+                            {analyticsData.map(log => (
+                                <div key={log.id} className="p-4 rounded-2xl bg-slate-950/50 border border-white/5 flex items-center justify-between">
+                                    <div>
+                                        <p className="text-xs font-black text-white uppercase tracking-widest">{log.page}</p>
+                                        <p className="text-[10px] text-slate-500 font-bold uppercase mt-1">{log.userId}</p>
+                                    </div>
+                                    <span className="text-[8px] font-black text-emerald-500 uppercase">{log.timestamp?.toDate().toLocaleString()}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            </div>
         )}
 
         {/* Playlists */}

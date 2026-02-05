@@ -3,6 +3,10 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Notifications from "../../components/Notifications";
 import AdScriptManager from "../../components/AdScriptManager";
+import { ThemeProvider } from "../../components/ThemeProvider";
+import { AuthProvider } from "../../components/AuthContext";
+import AnalyticsManager from "../../components/AnalyticsManager";
+import { LanguageProvider } from "../../components/LanguageContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -38,9 +42,21 @@ export default function RootLayout({
         <script src="https://richinfo.co/richpartners/in-page/js/richads-ob.js?pubid=1000941&siteid=386686" async></script>
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        {children}
-        <Notifications />
-        <AdScriptManager />
+        <AuthProvider>
+          <LanguageProvider>
+            <ThemeProvider
+              attribute="class"
+              defaultTheme="dark"
+              enableSystem
+              disableTransitionOnChange
+            >
+              {children}
+              <Notifications />
+              <AdScriptManager />
+            <AnalyticsManager />
+            </ThemeProvider>
+          </LanguageProvider>
+        </AuthProvider>
       </body>
     </html>
   );
