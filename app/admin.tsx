@@ -3,11 +3,13 @@
 // Supports adding: HLS, DASH, YouTube, iframe, MP4 streams
 // ============================================================
 
+"use client";
+
 import { useState, useEffect, CSSProperties } from "react";
 import { initializeApp, getApps } from "firebase/app";
 import {
   getFirestore, collection, addDoc, updateDoc, deleteDoc,
-  doc, onSnapshot, query, orderBy, serverTimestamp, setDoc
+  doc, onSnapshot, query, orderBy, serverTimestamp, setDoc, DocumentData
 } from "firebase/firestore";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "firebase/auth";
 
@@ -21,11 +23,53 @@ const firebaseConfig = {
   measurementId: "G-G5EPV3XFP4"
 };
 
+// Initialize Firebase
 const app  = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
 const db   = getFirestore(app);
 const auth = getAuth(app);
 
-const emptyMatch = {
+// ─── TYPE DEFINITIONS ─────────────────────────────────────────
+interface Stream {
+  label: string;
+  url: string;
+  type: string;
+}
+
+interface Match {
+  id?: string;
+  sport: string;
+  league: string;
+  homeTeam: string;
+  homeLogo: string;
+  awayTeam: string;
+  awayLogo: string;
+  matchDate: string;
+  status: "upcoming" | "live" | "finished";
+  homeScore: string | number;
+  awayScore: string | number;
+  streams: Stream[];
+  streamLink?: string; // For backwards compatibility
+}
+
+interface Page {
+  id?: string;
+  title: string;
+  content: string;
+}
+
+interface MenuItem {
+    id?: string;
+    label: string;
+    url: string;
+}
+
+interface Ad {
+    id?: string;
+    imageUrl: string;
+    linkUrl: string;
+}
+
+const emptyMatch: Match = {
   sport: "Football", league: "",
   homeTeam: "", homeLogo: "",
   awayTeam: "", awayLogo: "",
@@ -34,6 +78,7 @@ const emptyMatch = {
   streams: [{ label: "Main Stream", url: "", type: "auto" }],
 };
 
+// ─── CONSTANTS ────────────────────────────────────────────────
 const sportOptions  = ["Football", "Cricket", "Basketball", "Tennis", "Baseball", "Rugby", "Hockey"];
 const statusOptions = [
   { value: "upcoming", label: "⏳ Upcoming", color: "#1a73e8" },
@@ -90,12 +135,6 @@ function LoginPage() {
 }
 
 // ─── STREAM EDITOR ───────────────────────────────────────────
-interface Stream {
-  label: string;
-  url: string;
-  type: string;
-}
-
 interface StreamEditorProps {
   streams: Stream[];
   onChange: (streams: Stream[]) => void;
@@ -148,7 +187,6 @@ function StreamEditor({ streams, onChange }: StreamEditorProps) {
           <label style={{ ...S.label, marginTop:0 }}>URL</label>
           <input value={s.url} onChange={e=>update(i,"url",e.target.value)}
             style={S.input} placeholder="https://... (.m3u8 / .mpd / YouTube / iframe / .mp4)" />
-          {/* Type hint */}
           {s.url && (
             <div style={{ fontSize:10, color:"#888", marginTop:4 }}>
               {s.url.includes(".m3u8") ? "✅ HLS detected" :
@@ -165,9 +203,16 @@ function StreamEditor({ streams, onChange }: StreamEditorProps) {
 }
 
 // ─── MATCH FORM ───────────────────────────────────────────────
-function MatchForm({ initial, onSave, onCancel, saving }) {
-  const [form, setForm] = useState(initial || emptyMatch);
-  const set = (k,v) => setForm(f=>({...f,[k]:v}));
+interface MatchFormProps {
+  initial: Match | null;
+  onSave: (form: Match) => void;
+  onCancel: () => void;
+  saving: boolean;
+}
+
+function MatchForm({ initial, onSave, onCancel, saving }: MatchFormProps) {
+  const [form, setForm] = useState<Match>(initial || emptyMatch);
+  const set = (k: keyof Match, v: any) => setForm(f => ({...f, [k]:v}));
 
   return (
     <div>
@@ -216,16 +261,15 @@ function MatchForm({ initial, onSave, onCancel, saving }) {
         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
           <div>
             <label style={S.label}>Home Score</label>
-            <input type="number" value={form.homeScore} onChange={e=>set("homeScore",e.target.value)} style={S.input} placeholder="0" />
+            <input type="number" value={String(form.homeScore)} onChange={e=>set("homeScore",e.target.value)} style={S.input} placeholder="0" />
           </div>
           <div>
             <label style={S.label}>Away Score</label>
-            <input type="number" value={form.awayScore} onChange={e=>set("awayScore",e.target.value)} style={S.input} placeholder="0" />
+            <input type="number" value={String(form.awayScore)} onChange={e=>set("awayScore",e.target.value)} style={S.input} placeholder="0" />
           </div>
         </div>
       )}
 
-      {/* Multi-stream editor */}
       <StreamEditor
         streams={form.streams || [{ label:"Main Stream", url:"", type:"auto" }]}
         onChange={v => set("streams", v)}
@@ -247,7 +291,14 @@ function MatchForm({ initial, onSave, onCancel, saving }) {
 }
 
 // ─── PAGE EDITOR ──────────────────────────────────────────────
-function PageEditor({ page, onSave, onCancel, saving }) {
+interface PageEditorProps {
+  page: Page | null;
+  onSave: (page: Page) => void;
+  onCancel: () => void;
+  saving: boolean;
+}
+
+function PageEditor({ page, onSave, onCancel, saving }: PageEditorProps) {
   const [title, setTitle] = useState(page?.title || "");
   const [content, setContent] = useState(page?.content || "");
 
@@ -291,17 +342,17 @@ function PageEditor({ page, onSave, onCancel, saving }) {
 
 // ─── MENU MANAGER ──────────────────────────────────────────────
 function MenuManager() {
-    const [menuItems, setMenuItems] = useState([]);
-    const [editingItem, setEditingItem] = useState(null);
+    const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+    const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
     const [saving, setSaving] = useState(false);
 
     useEffect(() => {
         const q = query(collection(db, "menu"), orderBy("label"));
-        const unsub = onSnapshot(q, snap => setMenuItems(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
+        const unsub = onSnapshot(q, snap => setMenuItems(snap.docs.map(d => ({ id: d.id, ...d.data() } as MenuItem))));
         return () => unsub();
     }, []);
 
-    const saveMenuItem = async (itemData) => {
+    const saveMenuItem = async (itemData: Partial<MenuItem>) => {
         setSaving(true);
         try {
             if (itemData.id) {
@@ -311,17 +362,17 @@ function MenuManager() {
                 await addDoc(collection(db, "menu"), itemData);
             }
             setEditingItem(null);
-        } catch (e) {
+        } catch (e: any) {
             alert("Error saving menu item: " + e.message);
         }
         setSaving(false);
     };
 
-    const deleteMenuItem = async (itemId) => {
+    const deleteMenuItem = async (itemId: string) => {
         if (!window.confirm("Are you sure you want to delete this menu item?")) return;
         try {
             await deleteDoc(doc(db, "menu", itemId));
-        } catch (e) {
+        } catch (e: any) {
             alert("Error deleting menu item: " + e.message);
         }
     };
@@ -351,7 +402,7 @@ function MenuManager() {
                             </div>
                             <div style={{ display: "flex", gap: 8 }}>
                                 <button onClick={() => setEditingItem(item)} style={{ padding: "7px 16px", background: "#f0f6ff", color: "#1a73e8", border: "1px solid #c7deff", borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>Edit</button>
-                                <button onClick={() => deleteMenuItem(item.id)} style={{ padding: "7px 14px", background: "#fff0f0", color: "#dc2626", border: "1px solid #fecaca", borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>Delete</button>
+                                {item.id && <button onClick={() => deleteMenuItem(item.id!)} style={{ padding: "7px 14px", background: "#fff0f0", color: "#dc2626", border: "1px solid #fecaca", borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>Delete</button>}
                             </div>
                         </div>
                     ))}
@@ -367,7 +418,14 @@ function MenuManager() {
     );
 }
 
-function MenuItemForm({ item, onSave, onCancel, saving }) {
+interface MenuItemFormProps {
+    item: MenuItem | null;
+    onSave: (item: Partial<MenuItem>) => void;
+    onCancel: () => void;
+    saving: boolean;
+}
+
+function MenuItemForm({ item, onSave, onCancel, saving }: MenuItemFormProps) {
     const [label, setLabel] = useState(item?.label || "");
     const [url, setUrl] = useState(item?.url || "");
 
@@ -411,23 +469,23 @@ function MenuItemForm({ item, onSave, onCancel, saving }) {
 
 // ─── AD MANAGER ────────────────────────────────────────────────
 function AdManager() {
-    const [adView, setAdView] = useState('banner'); // 'banner' or 'carousel'
-    const [bannerAds, setBannerAds] = useState([]);
-    const [carouselAds, setCarouselAds] = useState([]);
-    const [editingAd, setEditingAd] = useState(null);
+    const [adView, setAdView] = useState<'banner' | 'carousel'>('banner');
+    const [bannerAds, setBannerAds] = useState<Ad[]>([]);
+    const [carouselAds, setCarouselAds] = useState<Ad[]>([]);
+    const [editingAd, setEditingAd] = useState<Ad | null>(null);
     const [saving, setSaving] = useState(false);
 
     useEffect(() => {
         const unsubBanner = onSnapshot(query(collection(db, "bannerAds")), snap => {
-            setBannerAds(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+            setBannerAds(snap.docs.map(d => ({ id: d.id, ...d.data() } as Ad)));
         });
         const unsubCarousel = onSnapshot(query(collection(db, "carouselAds"), orderBy("createdAt", "asc")), snap => {
-            setCarouselAds(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+            setCarouselAds(snap.docs.map(d => ({ id: d.id, ...d.data() } as Ad)));
         });
         return () => { unsubBanner(); unsubCarousel(); };
     }, []);
 
-    const saveAd = async (adData, type) => {
+    const saveAd = async (adData: Partial<Ad>, type: 'banner' | 'carousel') => {
         setSaving(true);
         const collectionName = type === 'banner' ? 'bannerAds' : 'carouselAds';
         try {
@@ -438,18 +496,18 @@ function AdManager() {
                 await addDoc(collection(db, collectionName), { ...adData, createdAt: serverTimestamp() });
             }
             setEditingAd(null);
-        } catch (e) {
+        } catch (e: any) {
             alert(`Error saving ${type} ad: ` + e.message);
         }
         setSaving(false);
     };
 
-    const deleteAd = async (adId, type) => {
+    const deleteAd = async (adId: string, type: 'banner' | 'carousel') => {
         if (!window.confirm(`Are you sure you want to delete this ${type} ad?`)) return;
         const collectionName = type === 'banner' ? 'bannerAds' : 'carouselAds';
         try {
             await deleteDoc(doc(db, collectionName, adId));
-        } catch (e) {
+        } catch (e: any) {
             alert(`Error deleting ${type} ad: ` + e.message);
         }
     };
@@ -485,7 +543,7 @@ function AdManager() {
                             </div>
                             <div style={{ display: "flex", gap: 8 }}>
                                 <button onClick={() => setEditingAd(ad)} style={{ padding: "7px 16px", background: "#f0f6ff", color: "#1a73e8", border: "1px solid #c7deff", borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>Edit</button>
-                                <button onClick={() => deleteAd(ad.id, adView)} style={{ padding: "7px 14px", background: "#fff0f0", color: "#dc2626", border: "1px solid #fecaca", borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>Delete</button>
+                                {ad.id && <button onClick={() => deleteAd(ad.id!, adView)} style={{ padding: "7px 14px", background: "#fff0f0", color: "#dc2626", border: "1px solid #fecaca", borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>Delete</button>}
                             </div>
                         </div>
                     ))}
@@ -495,7 +553,15 @@ function AdManager() {
     );
 }
 
-function AdForm({ ad, type, onSave, onCancel, saving }) {
+interface AdFormProps {
+    ad: Partial<Ad> | null;
+    type: 'banner' | 'carousel';
+    onSave: (ad: Partial<Ad>) => void;
+    onCancel: () => void;
+    saving: boolean;
+}
+
+function AdForm({ ad, type, onSave, onCancel, saving }: AdFormProps) {
     const [imageUrl, setImageUrl] = useState(ad?.imageUrl || "");
     const [linkUrl, setLinkUrl] = useState(ad?.linkUrl || "");
 
@@ -523,63 +589,65 @@ function AdForm({ ad, type, onSave, onCancel, saving }) {
 
 // ─── ADMIN PANEL ──────────────────────────────────────────────
 function AdminPanel() {
-  const [matches,setMatches] = useState([]);
+  const [matches,setMatches] = useState<Match[]>([]);
   const [showForm,setShowForm] = useState(false);
-  const [editing,setEditing]   = useState(null);
-  const [saving,setSaving]     = useState(false);
-  const [deleting,setDeleting] = useState(null);
-  const [search,setSearch]     = useState("");
+  const [editing,setEditing] = useState<Match | null>(null);
+  const [saving,setSaving] = useState(false);
+  const [deleting,setDeleting] = useState<string | null>(null);
+  const [search,setSearch] = useState("");
   const [showManager, setShowManager] = useState("matches"); // 'matches', 'pages', 'menu', 'ads'
-  const [pages, setPages] = useState([]);
-  const [editingPage, setEditingPage] = useState(null);
+  const [pages, setPages] = useState<Page[]>([]);
+  const [editingPage, setEditingPage] = useState<Page | null>(null);
   const [savingPage, setSavingPage] = useState(false);
-  const [deletingPage, setDeletingPage] = useState(null);
+  const [deletingPage, setDeletingPage] = useState<string | null>(null);
   const [visits, setVisits] = useState({ total: 0, today: 0 });
 
   useEffect(()=>{
     const q = query(collection(db,"matches"), orderBy("matchDate","asc"));
-    const unsub = onSnapshot(q, snap => setMatches(snap.docs.map(d=>({id:d.id,...d.data()}))));
+    const unsub = onSnapshot(q, snap => setMatches(snap.docs.map(d=>({id:d.id,...d.data()} as Match))));
     
     const qPages = query(collection(db, "pages"), orderBy("title", "asc"));
-    const unsubPages = onSnapshot(qPages, snap => setPages(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
+    const unsubPages = onSnapshot(qPages, snap => setPages(snap.docs.map(d => ({ id: d.id, ...d.data() } as Page))));
 
     const today = new Date().toISOString().split('T')[0];
-    const unsubTotal = onSnapshot(doc(db, "visits", "total"), (doc) => {
+    const unsubTotal = onSnapshot(doc(db, "visits", "total"), (doc: DocumentData) => {
         setVisits(v => ({ ...v, total: doc.exists() ? doc.data().count : 0 }));
     });
-    const unsubToday = onSnapshot(doc(db, "visits", today), (doc) => {
+    const unsubToday = onSnapshot(doc(db, "visits", today), (doc: DocumentData) => {
         setVisits(v => ({ ...v, today: doc.exists() ? doc.data().count : 0 }));
     });
-
 
     return () => { unsub(); unsubPages(); unsubTotal(); unsubToday(); };
   },[]);
 
-  const save = async (form) => {
+  const save = async (form: Match) => {
     setSaving(true);
     try {
-      const data = {
+      const data: any = {
         ...form,
         homeScore: form.homeScore !== "" ? Number(form.homeScore) : null,
         awayScore: form.awayScore !== "" ? Number(form.awayScore) : null,
         streams: form.streams.filter(s => s.url.trim()),
         updatedAt: serverTimestamp()
       };
-      if (editing) await updateDoc(doc(db,"matches",editing.id), data);
-      else         await addDoc(collection(db,"matches"), {...data, createdAt:serverTimestamp()});
+      if (editing) {
+        await updateDoc(doc(db,"matches",editing.id!), data);
+      } else {
+        await addDoc(collection(db,"matches"), {...data, createdAt:serverTimestamp()});
+      }
       setShowForm(false); setEditing(null);
-    } catch(e){ alert("Error: "+e.message); }
+    } catch(e: any){ alert("Error: "+e.message); }
     setSaving(false);
   };
 
-  const del = async (id) => {
+  const del = async (id: string) => {
     if (!window.confirm("Delete this match?")) return;
     setDeleting(id);
-    try { await deleteDoc(doc(db,"matches",id)); } catch(e){ alert(e.message); }
+    try { await deleteDoc(doc(db,"matches",id)); } catch(e: any){ alert(e.message); }
     setDeleting(null);
   };
 
-  const savePage = async (pageData) => {
+  const savePage = async (pageData: Page) => {
     setSavingPage(true);
     try {
       const { id, ...data } = pageData;
@@ -587,23 +655,22 @@ function AdminPanel() {
       const docRef = doc(db, "pages", slug);
       await setDoc(docRef, data, { merge: true });
       setEditingPage(null);
-    } catch (e) {
+    } catch (e: any) {
       alert("Error saving page: " + e.message);
     }
     setSavingPage(false);
   };
 
-  const deletePage = async (pageId) => {
+  const deletePage = async (pageId: string) => {
     if (!window.confirm("Are you sure you want to delete this page?")) return;
     setDeletingPage(pageId);
     try {
       await deleteDoc(doc(db, "pages", pageId));
-    } catch (e) {
+    } catch (e: any) {
       alert("Error deleting page: " + e.message);
     }
     setDeletingPage(null);
   };
-
 
   const filtered = matches.filter(m =>
     !search ||
@@ -621,7 +688,6 @@ function AdminPanel() {
   return (
     <div style={{ minHeight:"100vh", background:"#f0f2f5", fontFamily:"'Segoe UI',sans-serif" }}>
 
-      {/* Top Bar */}
       <div style={{ background:"#0f0f1a", color:"#fff", padding:"13px 20px", position:"sticky", top:0, zIndex:100, boxShadow:"0 2px 12px rgba(0,0,0,0.3)", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
         <div style={{ fontWeight:800, fontSize:18, letterSpacing:1 }}>
           <span style={{ color:"#e53e3e" }}>FALCON</span><span style={{ color:"#4da6ff" }}>SPORTS</span>
@@ -648,7 +714,6 @@ function AdminPanel() {
         
         {showManager === 'matches' && (
           <>
-            {/* Visitor Stats */}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12, marginBottom: 20 }}>
                 <div style={{ background: "#fff", borderRadius: 12, padding: "16px", boxShadow: "0 1px 6px rgba(0,0,0,0.06)", textAlign: "center" }}>
                     <div style={{ fontSize: 24, marginBottom: 4 }}>📈</div>
@@ -661,7 +726,7 @@ function AdminPanel() {
                     <div style={{ fontSize: 12, color: "#888", fontWeight: 600 }}>Today's Visits</div>
                 </div>
             </div>
-            {/* Match Stats */}
+
             <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:12, marginBottom:20 }}>
               {stats.map(s=>(
                 <div key={s.label} style={{ background:"#fff", borderRadius:12, padding:"16px", boxShadow:"0 1px 6px rgba(0,0,0,0.06)", textAlign:"center" }}>
@@ -672,7 +737,6 @@ function AdminPanel() {
               ))}
             </div>
 
-            {/* Form */}
             {showForm ? (
               <div style={{ background:"#fff", borderRadius:14, padding:"22px", boxShadow:"0 2px 12px rgba(0,0,0,0.08)", marginBottom:20 }}>
                 <h2 style={{ fontSize:16, fontWeight:800, color:"#222", marginBottom:14 }}>
@@ -703,7 +767,6 @@ function AdminPanel() {
               </div>
             )}
 
-            {/* Match List */}
             {filtered.map(m => {
               const so = statusOptions.find(s=>s.value===m.status)||statusOptions[0];
               const streamCount = m.streams?.filter(s=>s.url)?.length || (m.streamLink ? 1 : 0);
@@ -742,11 +805,11 @@ function AdminPanel() {
                       padding:"7px 16px", background:"#f0f6ff", color:"#1a73e8",
                       border:"1px solid #c7deff", borderRadius:8, fontWeight:700, fontSize:13, cursor:"pointer"
                     }}>Edit</button>
-                    <button onClick={()=>del(m.id)} disabled={deleting===m.id} style={{
+                    {m.id && <button onClick={()=>del(m.id!)} disabled={deleting===m.id} style={{
                       padding:"7px 14px", background:"#fff0f0", color:"#dc2626",
                       border:"1px solid #fecaca", borderRadius:8, fontWeight:700, fontSize:13,
                       cursor:"pointer", opacity:deleting===m.id?0.6:1
-                    }}>{deleting===m.id?"...":"Delete"}</button>
+                    }}>{deleting===m.id?"...":"Delete"}</button>}
                   </div>
                 </div>
               );
@@ -786,7 +849,7 @@ function AdminPanel() {
                     </div>
                     <div style={{ display: "flex", gap: 8 }}>
                        <button onClick={() => setEditingPage(p)} style={{ padding: "7px 16px", background: "#f0f6ff", color: "#1a73e8", border: "1px solid #c7deff", borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>Edit</button>
-                       <button onClick={() => deletePage(p.id)} disabled={deletingPage === p.id} style={{ padding: "7px 14px", background: "#fff0f0", color: "#dc2626", border: "1px solid #fecaca", borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: "pointer", opacity: deletingPage === p.id ? 0.6 : 1 }}>{deletingPage === p.id ? "..." : "Delete"}</button>
+                       {p.id && <button onClick={() => deletePage(p.id!)} disabled={deletingPage === p.id} style={{ padding: "7px 14px", background: "#fff0f0", color: "#dc2626", border: "1px solid #fecaca", borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: "pointer", opacity: deletingPage === p.id ? 0.6 : 1 }}>{deletingPage === p.id ? "..." : "Delete"}</button>}
                     </div>
                   </div>
                 ))}
@@ -810,7 +873,7 @@ function AdminPanel() {
 
 // ─── ROOT ─────────────────────────────────────────────────────
 export default function App() {
-  const [user,setUser] = useState(null);
+  const [user,setUser] = useState<any>(null);
   const [loading,setLoading] = useState(true);
 
   useEffect(()=>{
