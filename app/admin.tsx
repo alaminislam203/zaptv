@@ -11,7 +11,7 @@ import {
   getFirestore, collection, addDoc, updateDoc, deleteDoc,
   doc, onSnapshot, query, orderBy, serverTimestamp, setDoc, DocumentData
 } from "firebase/firestore";
-import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "firebase/auth";
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, User } from "firebase/auth";
 
 const firebaseConfig = {
   apiKey: "AIzaSyA3bna8DVXzCLUU3YQoXColTC0-8T4LoF0",
@@ -29,10 +29,12 @@ const db   = getFirestore(app);
 const auth = getAuth(app);
 
 // ─── TYPE DEFINITIONS ─────────────────────────────────────────
+type StreamType = "auto" | "hls" | "dash" | "youtube" | "iframe" | "mp4";
+
 interface Stream {
   label: string;
   url: string;
-  type: string;
+  type: StreamType;
 }
 
 interface Match {
@@ -67,6 +69,7 @@ interface Ad {
     id?: string;
     imageUrl: string;
     linkUrl: string;
+    createdAt?: any;
 }
 
 const emptyMatch: Match = {
@@ -85,7 +88,7 @@ const statusOptions = [
   { value: "live",     label: "🔴 Live",     color: "#ef4444" },
   { value: "finished", label: "✅ Finished", color: "#16a34a" },
 ];
-const streamTypes = ["auto","hls","dash","youtube","iframe","mp4"];
+const streamTypes: StreamType[] = ["auto","hls","dash","youtube","iframe","mp4"];
 
 const S: { [key: string]: CSSProperties } = {
   label: { display:"block", fontSize:11, fontWeight:700, color:"#666", marginBottom:4, marginTop:12, letterSpacing:0.4 },
@@ -292,8 +295,8 @@ function MatchForm({ initial, onSave, onCancel, saving }: MatchFormProps) {
 
 // ─── PAGE EDITOR ──────────────────────────────────────────────
 interface PageEditorProps {
-  page: Page | null;
-  onSave: (page: Page) => void;
+  page: Partial<Page> | null;
+  onSave: (page: Partial<Page>) => void;
   onCancel: () => void;
   saving: boolean;
 }
@@ -343,7 +346,7 @@ function PageEditor({ page, onSave, onCancel, saving }: PageEditorProps) {
 // ─── MENU MANAGER ──────────────────────────────────────────────
 function MenuManager() {
     const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
-    const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
+    const [editingItem, setEditingItem] = useState<Partial<MenuItem> | null>(null);
     const [saving, setSaving] = useState(false);
 
     useEffect(() => {
@@ -419,7 +422,7 @@ function MenuManager() {
 }
 
 interface MenuItemFormProps {
-    item: MenuItem | null;
+    item: Partial<MenuItem> | null;
     onSave: (item: Partial<MenuItem>) => void;
     onCancel: () => void;
     saving: boolean;
@@ -472,7 +475,7 @@ function AdManager() {
     const [adView, setAdView] = useState<'banner' | 'carousel'>('banner');
     const [bannerAds, setBannerAds] = useState<Ad[]>([]);
     const [carouselAds, setCarouselAds] = useState<Ad[]>([]);
-    const [editingAd, setEditingAd] = useState<Ad | null>(null);
+    const [editingAd, setEditingAd] = useState<Partial<Ad> | null>(null);
     const [saving, setSaving] = useState(false);
 
     useEffect(() => {
@@ -597,7 +600,7 @@ function AdminPanel() {
   const [search,setSearch] = useState("");
   const [showManager, setShowManager] = useState("matches"); // 'matches', 'pages', 'menu', 'ads'
   const [pages, setPages] = useState<Page[]>([]);
-  const [editingPage, setEditingPage] = useState<Page | null>(null);
+  const [editingPage, setEditingPage] = useState<Partial<Page> | null>(null);
   const [savingPage, setSavingPage] = useState(false);
   const [deletingPage, setDeletingPage] = useState<string | null>(null);
   const [visits, setVisits] = useState({ total: 0, today: 0 });
@@ -623,17 +626,18 @@ function AdminPanel() {
   const save = async (form: Match) => {
     setSaving(true);
     try {
-      const data: any = {
+      const data: Omit<Match, 'id'> & { updatedAt: any; createdAt?: any } = {
         ...form,
-        homeScore: form.homeScore !== "" ? Number(form.homeScore) : null,
-        awayScore: form.awayScore !== "" ? Number(form.awayScore) : null,
+        homeScore: form.homeScore !== "" ? Number(form.homeScore) : "",
+        awayScore: form.awayScore !== "" ? Number(form.awayScore) : "",
         streams: form.streams.filter(s => s.url.trim()),
         updatedAt: serverTimestamp()
       };
       if (editing) {
         await updateDoc(doc(db,"matches",editing.id!), data);
       } else {
-        await addDoc(collection(db,"matches"), {...data, createdAt:serverTimestamp()});
+        data.createdAt = serverTimestamp();
+        await addDoc(collection(db,"matches"), data);
       }
       setShowForm(false); setEditing(null);
     } catch(e: any){ alert("Error: "+e.message); }
@@ -647,11 +651,11 @@ function AdminPanel() {
     setDeleting(null);
   };
 
-  const savePage = async (pageData: Page) => {
+  const savePage = async (pageData: Partial<Page>) => {
     setSavingPage(true);
     try {
       const { id, ...data } = pageData;
-      const slug = id || data.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+      const slug = id || data.title?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || Date.now().toString();
       const docRef = doc(db, "pages", slug);
       await setDoc(docRef, data, { merge: true });
       setEditingPage(null);
@@ -873,7 +877,7 @@ function AdminPanel() {
 
 // ─── ROOT ─────────────────────────────────────────────────────
 export default function App() {
-  const [user,setUser] = useState<any>(null);
+  const [user,setUser] = useState<User | null>(null);
   const [loading,setLoading] = useState(true);
 
   useEffect(()=>{

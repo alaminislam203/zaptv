@@ -3,9 +3,9 @@
 // npm install firebase hls.js dashjs
 // ============================================================
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, CSSProperties } from "react";
 import { initializeApp, getApps, getApp } from "firebase/app";
-import { getFirestore, collection, onSnapshot, query, orderBy, doc, setDoc, increment } from "firebase/firestore";
+import { getFirestore, collection, onSnapshot, query, orderBy, doc, setDoc, increment, DocumentData } from "firebase/firestore";
 import VideoPlayer from "../components/VideoPlayer";
 import Page from "./page";
 
@@ -22,7 +22,61 @@ const firebaseConfig = {
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const db = getFirestore(app);
 
-const sportEmoji = {
+// ─── TYPE DEFINITIONS ─────────────────────────────────────────
+type StreamType = "auto" | "hls" | "dash" | "youtube" | "youtube-embed" | "iframe" | "mp4" | "unknown";
+
+interface Stream {
+  label: string;
+  url: string;
+  type?: StreamType;
+}
+
+interface Match {
+  id: string;
+  sport: string;
+  league: string;
+  homeTeam: string;
+  homeLogo: string;
+  awayTeam: string;
+  awayLogo: string;
+  matchDate: string;
+  status: "upcoming" | "live" | "finished";
+  homeScore?: number | string;
+  awayScore?: number | string;
+  streams: Stream[];
+  streamLink?: string;
+}
+
+interface PageData {
+  id: string;
+  title: string;
+  content: string;
+}
+
+interface MenuItem {
+  id: string;
+  label: string;
+  url: string;
+}
+
+interface Ad {
+  id: string;
+  type?: 'ad';
+  imageUrl: string;
+  linkUrl: string;
+  createdAt?: any;
+}
+
+interface SocialLink {
+    name: string;
+    color: string;
+    btn: string;
+    emoji: string;
+    link: string;
+    type?: undefined;
+}
+
+const sportEmoji: { [key: string]: string } = {
   football: "⚽", cricket: "🏏", basketball: "🏀",
   tennis: "🎾", baseball: "⚾", rugby: "🏉", hockey: "🏒"
 };
@@ -33,7 +87,7 @@ const statusOptions = [
   { value: "finished", label: "Finished", color: "#16a34a", bg: "#f0fdf4" },
 ];
 
-function formatDate(dateStr) {
+function formatDate(dateStr: string): string {
   if (!dateStr) return "";
   try {
     const d = new Date(dateStr);
@@ -55,9 +109,9 @@ function LiveBadge() {
 }
 
 // ─── Carousel Component ───────────────────────────────────
-function Carousel({ slides }) {
+function Carousel({ slides }: { slides: Ad[] }) {
     const [current, setCurrent] = useState(0);
-    const timeoutRef = useRef(null);
+    const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     const resetTimeout = () => {
         if (timeoutRef.current) {
@@ -72,7 +126,7 @@ function Carousel({ slides }) {
             5000
         );
         return () => {
-            resetTimeout();
+            if(timeoutRef.current) clearTimeout(timeoutRef.current)
         };
     }, [current, slides.length]);
 
@@ -105,39 +159,46 @@ function Carousel({ slides }) {
 
 
 // ─── MATCH CARD ───────────────────────────────────────────────
-function MatchCard({ match, onClick }) {
+function MatchCard({ match, onClick }: { match: Match; onClick: (match: Match) => void; }) {
   const isLive   = match.status === "live";
   const hasStream = match.streamLink || (match.streams?.length > 0);
   const sport    = (match.sport || "football").toLowerCase();
   const statusOpt = statusOptions.find(s => s.value === match.status) || statusOptions[0];
 
+  const cardStyle: CSSProperties = {
+    background:"#fff", borderRadius:14, marginBottom:10,
+    overflow:"hidden",
+    boxShadow: isLive
+      ? "0 0 0 2px #ef4444, 0 4px 16px rgba(239,68,68,0.15)"
+      : "0 1px 6px rgba(0,0,0,0.07)",
+    cursor: hasStream ? "pointer" : "default",
+    transition:"transform 0.15s, box-shadow 0.15s",
+  };
+
+  const handleMouseEnter = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (hasStream) {
+      e.currentTarget.style.transform = "translateY(-2px)";
+      e.currentTarget.style.boxShadow = isLive
+        ? "0 0 0 2px #ef4444, 0 8px 24px rgba(239,68,68,0.2)"
+        : "0 6px 20px rgba(0,0,0,0.12)";
+    }
+  };
+
+  const handleMouseLeave = (e: React.MouseEvent<HTMLDivElement>) => {
+    e.currentTarget.style.transform = "translateY(0)";
+    e.currentTarget.style.boxShadow = isLive
+      ? "0 0 0 2px #ef4444, 0 4px 16px rgba(239,68,68,0.15)"
+      : "0 1px 6px rgba(0,0,0,0.07)";
+  };
+  
+  const handleImgError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+      const target = e.target as HTMLImageElement;
+      target.style.display = 'none';
+  }
+
   return (
-    <div
-      onClick={() => hasStream && onClick(match)}
-      style={{
-        background:"#fff", borderRadius:14, marginBottom:10,
-        overflow:"hidden",
-        boxShadow: isLive
-          ? "0 0 0 2px #ef4444, 0 4px 16px rgba(239,68,68,0.15)"
-          : "0 1px 6px rgba(0,0,0,0.07)",
-        cursor: hasStream ? "pointer" : "default",
-        transition:"transform 0.15s, box-shadow 0.15s",
-      }}
-      onMouseEnter={e => {
-        if (hasStream) {
-          e.currentTarget.style.transform = "translateY(-2px)";
-          e.currentTarget.style.boxShadow = isLive
-            ? "0 0 0 2px #ef4444, 0 8px 24px rgba(239,68,68,0.2)"
-            : "0 6px 20px rgba(0,0,0,0.12)";
-        }
-      }}
-      onMouseLeave={e => {
-        e.currentTarget.style.transform = "translateY(0)";
-        e.currentTarget.style.boxShadow = isLive
-          ? "0 0 0 2px #ef4444, 0 4px 16px rgba(239,68,68,0.15)"
-          : "0 1px 6px rgba(0,0,0,0.07)";
-      }}
-    >
+    <div onClick={() => hasStream && onClick(match)} style={cardStyle} 
+      onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
       {/* League Bar */}
       <div style={{
         display:"flex", justifyContent:"space-between", alignItems:"center",
@@ -174,14 +235,14 @@ function MatchCard({ match, onClick }) {
           }}>
             {match.homeLogo
               ? <img src={match.homeLogo} alt="" style={{ width:"100%", height:"100%", objectFit:"contain" }}
-                  onError={e => e.target.style.display="none"} />
+                  onError={handleImgError} />
               : match.homeTeam?.[0] || "?"}
           </div>
           <span style={{ fontSize:12, fontWeight:600, textAlign:"center", color:"#1a1a1a", lineHeight:1.3, maxWidth:80 }}>
             {match.homeTeam}
           </span>
           {(isLive || match.status === "finished") && match.homeScore != null && (
-            <span style={{ fontSize:24, fontWeight:900, color:"#111" }}>{match.homeScore}</span>
+            <span style={{ fontSize:24, fontWeight:900, color:"#111" }}>{String(match.homeScore)}</span>
           )}
         </div>
 
@@ -211,14 +272,14 @@ function MatchCard({ match, onClick }) {
           }}>
             {match.awayLogo
               ? <img src={match.awayLogo} alt="" style={{ width:"100%", height:"100%", objectFit:"contain" }}
-                  onError={e => e.target.style.display="none"} />
+                  onError={handleImgError} />
               : match.awayTeam?.[0] || "?"}
           </div>
           <span style={{ fontSize:12, fontWeight:600, textAlign:"center", color:"#1a1a1a", lineHeight:1.3, maxWidth:80 }}>
             {match.awayTeam}
           </span>
           {(isLive || match.status === "finished") && match.awayScore != null && (
-            <span style={{ fontSize:24, fontWeight:900, color:"#111" }}>{match.awayScore}</span>
+            <span style={{ fontSize:24, fontWeight:900, color:"#111" }}>{String(match.awayScore)}</span>
           )}
         </div>
       </div>
@@ -241,11 +302,11 @@ function MatchCard({ match, onClick }) {
 }
 
 // ─── WATCH PAGE ───────────────────────────────────────────────
-function WatchPage({ match, onBack }) {
-  const streams = match.streams?.length
+function WatchPage({ match, onBack }: { match: Match, onBack: () => void }) {
+  const streams: Stream[] = match.streams?.length
     ? match.streams
     : match.streamLink
-    ? [{ url: match.streamLink, label: "Main Stream" }]
+    ? [{ url: match.streamLink, label: "Main Stream", type: 'auto' }]
     : [];
 
   return (
@@ -266,8 +327,8 @@ function WatchPage({ match, onBack }) {
         streams={streams}
         homeTeam={match.homeTeam}
         awayTeam={match.awayTeam}
-        homeScore={match.homeScore}
-        awayScore={match.awayScore}
+        homeScore={String(match.homeScore)}
+        awayScore={String(match.awayScore)}
         isLive={match.status === "live"}
       />
 
@@ -292,7 +353,7 @@ function WatchPage({ match, onBack }) {
         )}
         {match.status === "live" && match.homeScore != null && (
           <div style={{ marginTop:8, fontSize:22, fontWeight:900, color:"#ef4444" }}>
-            {match.homeScore} – {match.awayScore}
+            {String(match.homeScore)} – {String(match.awayScore)}
           </div>
         )}
       </div>
@@ -302,16 +363,16 @@ function WatchPage({ match, onBack }) {
 
 // ─── MAIN APP ─────────────────────────────────────────────────
 export default function FalconSports() {
-  const [matches, setMatches]   = useState([]);
-  const [pages, setPages] = useState([]);
-  const [menuItems, setMenuItems] = useState([]);
-  const [bannerAds, setBannerAds] = useState([]);
-  const [carouselAds, setCarouselAds] = useState([]);
+  const [matches, setMatches]   = useState<Match[]>([]);
+  const [pages, setPages] = useState<PageData[]>([]);
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  const [bannerAds, setBannerAds] = useState<Ad[]>([]);
+  const [carouselAds, setCarouselAds] = useState<Ad[]>([]);
   const [filter, setFilter]     = useState("all");
   const [loading, setLoading]   = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [watching, setWatching] = useState(null);
-  const [activePage, setActivePage] = useState(null);
+  const [watching, setWatching] = useState<Match | null>(null);
+  const [activePage, setActivePage] = useState<string | null>(null);
 
   useEffect(() => {
     const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
@@ -323,21 +384,21 @@ export default function FalconSports() {
 
     const q = query(collection(db, "matches"), orderBy("matchDate", "asc"));
     const unsub = onSnapshot(q, snap => {
-      setMatches(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      setMatches(snap.docs.map(d => ({ id: d.id, ...d.data() } as Match)));
       setLoading(false);
     }, () => setLoading(false));
 
     const qPages = query(collection(db, "pages"), orderBy("title", "asc"));
-    const unsubPages = onSnapshot(qPages, snap => setPages(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
+    const unsubPages = onSnapshot(qPages, snap => setPages(snap.docs.map(d => ({ id: d.id, ...d.data() } as PageData))));
 
     const qMenu = query(collection(db, "menu"), orderBy("label"));
-    const unsubMenu = onSnapshot(qMenu, snap => setMenuItems(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
+    const unsubMenu = onSnapshot(qMenu, snap => setMenuItems(snap.docs.map(d => ({ id: d.id, ...d.data() } as MenuItem))));
 
     const unsubBanner = onSnapshot(query(collection(db, "bannerAds")), snap => {
-        setBannerAds(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+        setBannerAds(snap.docs.map(d => ({ id: d.id, ...d.data() } as Ad)));
     });
     const unsubCarousel = onSnapshot(query(collection(db, "carouselAds"), orderBy("createdAt", "asc")), snap => {
-        setCarouselAds(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+        setCarouselAds(snap.docs.map(d => ({ id: d.id, ...d.data() } as Ad)));
     });
 
     return () => { unsub(); unsubPages(); unsubMenu(); unsubBanner(); unsubCarousel(); };
@@ -364,6 +425,12 @@ export default function FalconSports() {
 
   const liveCount = matches.filter(m => m.status === "live").length;
   const currentView = activePage ? 'page' : watching ? 'watching' : 'home';
+  
+  const socialAndAds: (SocialLink | Ad)[] = [
+    { name:"WhatsApp", color:"#25D366", btn:"Follow", emoji:"💬", link:"#" },
+    ...bannerAds.map(ad => ({ ...ad, type: 'ad' as const })),
+    { name:"Telegram", color:"#2CA5E0", btn:"Join",   emoji:"✈️", link:"#" },
+  ];
 
   return (
     <>
@@ -437,17 +504,13 @@ export default function FalconSports() {
         )}
 
         <div style={{ maxWidth:700, margin:"0 auto", padding:"14px 12px" }}>
-          {currentView === 'watching' && <WatchPage match={watching} onBack={handleBack} />}
-          {currentView === 'page' && <Page pageSlug={activePage} onBack={handleBack} />}
+          {currentView === 'watching' && watching && <WatchPage match={watching} onBack={handleBack} />}
+          {currentView === 'page' && activePage && <Page pageSlug={activePage} onBack={handleBack} />}
           {currentView === 'home' && (
             <>
             <Carousel slides={carouselAds} />
               {/* Social Banners & Ads */}
-              {[
-                { name:"WhatsApp", color:"#25D366", btn:"Follow", emoji:"💬", link:"#" },
-                ...bannerAds.map(ad => ({ type: 'ad', ...ad })),
-                { name:"Telegram", color:"#2CA5E0", btn:"Join",   emoji:"✈️", link:"#" },
-              ].map((s, i) => (
+              {socialAndAds.map((s, i) => (
                 <div key={i} style={{
                   background:"#fff", borderRadius:10, padding: s.type === 'ad' ? 0 : "11px 16px",
                   marginBottom:8, boxShadow:"0 1px 4px rgba(0,0,0,0.06)",
@@ -543,8 +606,8 @@ export default function FalconSports() {
                   textDecoration: "none",
                   transition: "color 0.2s"
                 }}
-                onMouseEnter={e => e.currentTarget.style.color = "#fff"}
-                onMouseLeave={e => e.currentTarget.style.color = "#cbd5e1"}
+                onMouseEnter={e => (e.currentTarget as HTMLAnchorElement).style.color = "#fff"}
+                onMouseLeave={e => (e.currentTarget as HTMLAnchorElement).style.color = "#cbd5e1"}
                 >{p.title}</a>
               ))}
             </div>
@@ -574,8 +637,8 @@ export default function FalconSports() {
                 fontSize: 14,
                 transition: "background 0.2s"
               }}
-              onMouseEnter={e => e.currentTarget.style.background = "#475569"}
-              onMouseLeave={e => e.currentTarget.style.background = "#334155"}
+              onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = "#475569"}
+              onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = "#334155"}
             >
               Back to Top
             </button>

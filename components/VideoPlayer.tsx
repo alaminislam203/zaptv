@@ -1,19 +1,21 @@
 // ============================================================
 // FALCON SPORTS — Universal Video Player
 // Supports: HLS (m3u8), DASH (mpd), YouTube, iframe, MP4/WebM
-//
-// Install dependencies:
-//   npm install hls.js dashjs
-//
-// Usage in SportsSite.jsx:
-//   import VideoPlayer from './VideoPlayer';
-//   <VideoPlayer url="https://example.com/stream.m3u8" title="Bayern vs Gladbach" />
 // ============================================================
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, CSSProperties } from "react";
+
+// ─── TYPE DEFINITIONS ─────────────────────────────────────────
+type StreamType = "auto" | "hls" | "dash" | "youtube" | "youtube-embed" | "iframe" | "mp4" | "unknown";
+
+interface Stream {
+  label: string;
+  url: string;
+  type?: StreamType;
+}
 
 // ─── STREAM TYPE DETECTOR ────────────────────────────────────
-function detectStreamType(url) {
+function detectStreamType(url: string): StreamType {
   if (!url) return "unknown";
   const u = url.toLowerCase();
 
@@ -27,12 +29,12 @@ function detectStreamType(url) {
 }
 
 // ─── YOUTUBE URL → EMBED ─────────────────────────────────────
-function toYouTubeEmbed(url) {
+function toYouTubeEmbed(url: string): string {
   let id = "";
   if (url.includes("youtu.be/")) {
-    id = url.split("youtu.be/")[1]?.split("?")[0];
+    id = url.split("youtu.be/")[1]?.split("?")[0] || "";
   } else if (url.includes("watch?v=")) {
-    id = url.split("watch?v=")[1]?.split("&")[0];
+    id = url.split("watch?v=")[1]?.split("&")[0] || "";
   } else if (url.includes("/embed/")) {
     return url; // already embed
   }
@@ -72,22 +74,24 @@ const SettingsIcon = () => (
 );
 
 // ─── HLS PLAYER ───────────────────────────────────────────────
-function HLSPlayer({ url, onError }) {
-  const videoRef = useRef(null);
-  const hlsRef = useRef(null);
+interface PlayerProps { url: string; onError?: (msg: string) => void; }
+
+function HLSPlayer({ url, onError }: PlayerProps) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const hlsRef = useRef<any>(null);
   const [playing, setPlaying] = useState(false);
-  const [muted, setMuted] = useState(false);
+  const [muted, setMuted] = useState(true);
   const [volume, setVolume] = useState(1);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [buffered, setBuffered] = useState(0);
   const [showControls, setShowControls] = useState(true);
   const [quality, setQuality] = useState(-1);
-  const [levels, setLevels] = useState([]);
+  const [levels, setLevels] = useState<any[]>([]);
   const [showQuality, setShowQuality] = useState(false);
   const [isLive, setIsLive] = useState(false);
   const [loading, setLoading] = useState(true);
-  const controlsTimer = useRef(null);
+  const controlsTimer = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -108,7 +112,7 @@ function HLSPlayer({ url, onError }) {
 
           hls.on(Hls.Events.MANIFEST_PARSED, (_, data) => {
             setLevels(data.levels);
-            setIsLive(hls.currentLevel === -1 || data.levels[0]?.details?.live);
+            setIsLive(!!(hls.currentLevel === -1 || data.levels[0]?.details?.live));
             setLoading(false);
             video.play().catch(() => {});
           });
@@ -123,21 +127,23 @@ function HLSPlayer({ url, onError }) {
             }
           });
         } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
-          // Native HLS (Safari/iOS)
           video.src = url;
-          video.play().catch(() => {});
-          setLoading(false);
+          video.addEventListener('loadedmetadata', () => {
+              setIsLive(video.duration === Infinity);
+              setLoading(false);
+              video.play().catch(()=>{});
+          });
         } else {
           onError?.("HLS not supported in this browser");
         }
-      } catch (e) {
+      } catch (e: any) {
         onError?.("Failed to load HLS.js: " + e.message);
       }
     };
 
     setupHLS();
     return () => { hlsRef.current?.destroy(); };
-  }, [url]);
+  }, [url, onError]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -173,18 +179,20 @@ function HLSPlayer({ url, onError }) {
   const toggleMute = () => {
     const v = videoRef.current;
     if (!v) return;
-    v.muted = !muted;
-    setMuted(!muted);
+    v.muted = !v.muted;
+    setMuted(v.muted);
   };
 
-  const handleVolume = (e) => {
+  const handleVolume = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if(!videoRef.current) return;
     const val = parseFloat(e.target.value);
     videoRef.current.volume = val;
     setVolume(val);
     setMuted(val === 0);
   };
 
-  const handleSeek = (e) => {
+  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if(!videoRef.current) return;
     const val = parseFloat(e.target.value);
     videoRef.current.currentTime = val;
     setCurrentTime(val);
@@ -196,7 +204,7 @@ function HLSPlayer({ url, onError }) {
     else container?.requestFullscreen();
   };
 
-  const setQualityLevel = (lvl) => {
+  const setQualityLevel = (lvl: number) => {
     if (hlsRef.current) {
       hlsRef.current.currentLevel = lvl;
       setQuality(lvl);
@@ -206,12 +214,12 @@ function HLSPlayer({ url, onError }) {
 
   const showControlsTemporarily = () => {
     setShowControls(true);
-    clearTimeout(controlsTimer.current);
+    if (controlsTimer.current) clearTimeout(controlsTimer.current);
     controlsTimer.current = setTimeout(() => setShowControls(false), 3000);
   };
 
-  const fmt = (s) => {
-    if (!s || isNaN(s)) return "0:00";
+  const fmt = (s: number) => {
+    if (!s || isNaN(s) || s === Infinity) return "0:00";
     const m = Math.floor(s / 60);
     const sec = Math.floor(s % 60).toString().padStart(2, "0");
     return `${m}:${sec}`;
@@ -224,97 +232,45 @@ function HLSPlayer({ url, onError }) {
       onClick={() => { togglePlay(); showControlsTemporarily(); }}>
 
       <video ref={videoRef} style={{ width: "100%", height: "100%", display: "block" }}
-        playsInline muted={muted} />
+        playsInline autoPlay muted={muted} />
 
-      {/* Loading Spinner */}
       {loading && (
-        <div style={{
-          position: "absolute", inset: 0, display: "flex",
-          alignItems: "center", justifyContent: "center",
-          background: "rgba(0,0,0,0.5)"
-        }}>
-          <div style={{
-            width: 48, height: 48, border: "4px solid rgba(255,255,255,0.2)",
-            borderTop: "4px solid #ef4444", borderRadius: "50%",
-            animation: "spin 0.8s linear infinite"
-          }} />
+        <div style={{...styles.overlay, background: "rgba(0,0,0,0.5)"}}>
+          <div style={styles.spinner} />
         </div>
       )}
 
-      {/* Controls Overlay */}
-      <div style={{
-        position: "absolute", bottom: 0, left: 0, right: 0,
-        background: "linear-gradient(transparent, rgba(0,0,0,0.85))",
-        padding: "32px 14px 12px",
-        opacity: showControls ? 1 : 0,
-        transition: "opacity 0.3s",
-        pointerEvents: showControls ? "auto" : "none"
-      }} onClick={e => e.stopPropagation()}>
+      <div style={{...styles.overlay, ...styles.controlsOverlay, opacity: showControls ? 1 : 0, pointerEvents: showControls ? "auto" : "none"}}
+           onClick={e => e.stopPropagation()}>
 
-        {/* Live Badge / Progress Bar */}
         {!isLive && duration > 0 && (
           <div style={{ position: "relative", marginBottom: 8 }}>
-            {/* Buffered */}
-            <div style={{
-              position: "absolute", top: "50%", transform: "translateY(-50%)",
-              height: 4, background: "rgba(255,255,255,0.2)", borderRadius: 2,
-              width: `${(buffered / duration) * 100}%`, pointerEvents: "none"
-            }} />
-            <input type="range" min={0} max={duration} step={0.5}
-              value={currentTime} onChange={handleSeek}
-              style={{ width: "100%", accentColor: "#ef4444", cursor: "pointer" }} />
+            <div style={{...styles.progressBar, width: `${(buffered / duration) * 100}%` }} />
+            <input type="range" min={0} max={duration} step={0.5} value={currentTime} onChange={handleSeek} style={styles.rangeInput} />
           </div>
         )}
 
         {isLive && (
           <div style={{ marginBottom: 8 }}>
-            <span style={{
-              background: "#ef4444", color: "#fff",
-              padding: "3px 10px", borderRadius: 4,
-              fontSize: 11, fontWeight: 800, letterSpacing: 1
-            }}>● LIVE</span>
+            <span style={styles.liveBadge}>● LIVE</span>
           </div>
         )}
 
-        {/* Controls Row */}
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <button onClick={togglePlay} style={ctrlBtn}>
-            {playing ? <PauseIcon /> : <PlayIcon />}
-          </button>
+          <button onClick={togglePlay} style={ctrlBtn}>{playing ? <PauseIcon /> : <PlayIcon />}</button>
+          <button onClick={toggleMute} style={ctrlBtn}>{muted ? <MuteIcon /> : <VolumeIcon />}</button>
+          <input type="range" min={0} max={1} step={0.05} value={muted ? 0 : volume} onChange={handleVolume} style={{...styles.rangeInput, width: 70}} />
 
-          <button onClick={toggleMute} style={ctrlBtn}>
-            {muted ? <MuteIcon /> : <VolumeIcon />}
-          </button>
-
-          <input type="range" min={0} max={1} step={0.05}
-            value={muted ? 0 : volume} onChange={handleVolume}
-            style={{ width: 70, accentColor: "#ef4444", cursor: "pointer" }} />
-
-          {!isLive && (
-            <span style={{ fontSize: 12, color: "#ccc", whiteSpace: "nowrap" }}>
-              {fmt(currentTime)} / {fmt(duration)}
-            </span>
-          )}
-
+          {!isLive && <span style={styles.timeLabel}>{fmt(currentTime)} / {fmt(duration)}</span>}
           <div style={{ flex: 1 }} />
 
-          {/* Quality Selector */}
           {levels.length > 0 && (
             <div style={{ position: "relative" }}>
-              <button onClick={() => setShowQuality(!showQuality)} style={ctrlBtn}>
-                <SettingsIcon />
-              </button>
+              <button onClick={() => setShowQuality(!showQuality)} style={ctrlBtn}><SettingsIcon /></button>
               {showQuality && (
-                <div style={{
-                  position: "absolute", bottom: "110%", right: 0,
-                  background: "rgba(0,0,0,0.9)", borderRadius: 8,
-                  overflow: "hidden", minWidth: 100,
-                  border: "1px solid rgba(255,255,255,0.1)"
-                }}>
-                  <div style={{ padding: "6px 12px", fontSize: 11, color: "#888", fontWeight: 700 }}>QUALITY</div>
-                  <div onClick={() => setQualityLevel(-1)} style={qualityItem(quality === -1)}>
-                    Auto
-                  </div>
+                <div style={styles.qualityMenu}>
+                  <div style={styles.qualityHeader}>QUALITY</div>
+                  <div onClick={() => setQualityLevel(-1)} style={qualityItem(quality === -1)}>Auto</div>
                   {levels.map((l, i) => (
                     <div key={i} onClick={() => setQualityLevel(i)} style={qualityItem(quality === i)}>
                       {l.height ? `${l.height}p` : `Level ${i}`}
@@ -324,10 +280,7 @@ function HLSPlayer({ url, onError }) {
               )}
             </div>
           )}
-
-          <button onClick={handleFullscreen} style={ctrlBtn}>
-            <FullscreenIcon />
-          </button>
+          <button onClick={handleFullscreen} style={ctrlBtn}><FullscreenIcon /></button>
         </div>
       </div>
     </div>
@@ -335,42 +288,44 @@ function HLSPlayer({ url, onError }) {
 }
 
 // ─── DASH PLAYER ─────────────────────────────────────────────
-function DASHPlayer({ url, onError }) {
-  const videoRef = useRef(null);
+function DASHPlayer({ url, onError }: PlayerProps) {
+  const videoRef = useRef<HTMLVideoElement>(null);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
     const video = videoRef.current;
     if (!video || !url) return;
 
+    let player: any;
     const setup = async () => {
       try {
         const dashjs = (await import("dashjs")).default;
-        const player = dashjs.MediaPlayer().create();
+        player = dashjs.MediaPlayer().create();
         player.initialize(video, url, true);
         player.on(dashjs.MediaPlayer.events.STREAM_INITIALIZED, () => setReady(true));
-        player.on(dashjs.MediaPlayer.events.ERROR, (e) => onError?.("DASH error: " + e.error?.code));
-        return () => player.destroy();
-      } catch (e) {
+        player.on(dashjs.MediaPlayer.events.ERROR, (e: any) => {
+            if (e.error && e.error.code) {
+                 onError?.(`DASH error: ${e.error.code} - ${e.error.message}`);
+            } else if (typeof e.error === 'string'){
+                 onError?.(`DASH error: ${e.error}`);
+            } else {
+                 onError?.('An unknown DASH error occurred.');
+            }
+        });
+      } catch (e: any) {
         onError?.("Failed to load dash.js: " + e.message);
       }
     };
 
     setup();
-  }, [url]);
+    return () => player?.destroy();
+  }, [url, onError]);
 
   return (
     <div style={{ position: "relative", background: "#000", width: "100%", aspectRatio: "16/9" }}>
       {!ready && (
-        <div style={{
-          position: "absolute", inset: 0, display: "flex",
-          alignItems: "center", justifyContent: "center", background: "#000"
-        }}>
-          <div style={{
-            width: 48, height: 48, border: "4px solid rgba(255,255,255,0.2)",
-            borderTop: "4px solid #ef4444", borderRadius: "50%",
-            animation: "spin 0.8s linear infinite"
-          }} />
+        <div style={styles.overlay}>
+          <div style={styles.spinner} />
         </div>
       )}
       <video ref={videoRef} controls playsInline
@@ -380,7 +335,7 @@ function DASHPlayer({ url, onError }) {
 }
 
 // ─── IFRAME / YOUTUBE PLAYER ─────────────────────────────────
-function IframePlayer({ url, type }) {
+function IframePlayer({ url, type }: { url: string; type: "youtube" | "iframe" }) {
   const embedUrl = type === "youtube" ? toYouTubeEmbed(url) : url;
   return (
     <div style={{ position: "relative", width: "100%", aspectRatio: "16/9", background: "#000" }}>
@@ -396,7 +351,7 @@ function IframePlayer({ url, type }) {
 }
 
 // ─── NATIVE VIDEO (MP4) ───────────────────────────────────────
-function MP4Player({ url }) {
+function MP4Player({ url }: { url: string }) {
   return (
     <div style={{ width: "100%", aspectRatio: "16/9", background: "#000" }}>
       <video controls playsInline autoPlay
@@ -409,13 +364,13 @@ function MP4Player({ url }) {
 }
 
 // ─── SHARED STYLES ────────────────────────────────────────────
-const ctrlBtn = {
+const ctrlBtn: CSSProperties = {
   background: "none", border: "none", color: "#fff",
   cursor: "pointer", display: "flex", alignItems: "center",
   padding: 4, borderRadius: 4, opacity: 0.9,
 };
 
-const qualityItem = (active) => ({
+const qualityItem = (active: boolean): CSSProperties => ({
   padding: "8px 16px", cursor: "pointer", fontSize: 13,
   color: active ? "#ef4444" : "#fff",
   fontWeight: active ? 700 : 400,
@@ -423,8 +378,26 @@ const qualityItem = (active) => ({
   transition: "background 0.15s",
 });
 
+const styles: { [key: string]: CSSProperties } = {
+    overlay: { position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" },
+    spinner: { width: 48, height: 48, border: "4px solid rgba(255,255,255,0.2)", borderTop: "4px solid #ef4444", borderRadius: "50%", animation: "spin 0.8s linear infinite" },
+    controlsOverlay: { background: "linear-gradient(transparent, rgba(0,0,0,0.85))", padding: "32px 14px 12px", transition: "opacity 0.3s" },
+    progressBar: { position: "absolute", top: "50%", transform: "translateY(-50%)", height: 4, background: "rgba(255,255,255,0.2)", borderRadius: 2, pointerEvents: "none" },
+    rangeInput: { width: "100%", accentColor: "#ef4444", cursor: "pointer", background: 'transparent' },
+    liveBadge: { background: "#ef4444", color: "#fff", padding: "3px 10px", borderRadius: 4, fontSize: 11, fontWeight: 800, letterSpacing: 1 },
+    timeLabel: { fontSize: 12, color: "#ccc", whiteSpace: "nowrap" },
+    qualityMenu: { position: "absolute", bottom: "110%", right: 0, background: "rgba(0,0,0,0.9)", borderRadius: 8, overflow: "hidden", minWidth: 100, border: "1px solid rgba(255,255,255,0.1)" },
+    qualityHeader: { padding: "6px 12px", fontSize: 11, color: "#888", fontWeight: 700 },
+};
+
+
 // ─── STREAM SELECTOR (Multiple Streams) ──────────────────────
-function StreamSelector({ streams, active, onChange }) {
+interface StreamSelectorProps {
+  streams: Stream[];
+  active: number;
+  onChange: (index: number) => void;
+}
+function StreamSelector({ streams, active, onChange }: StreamSelectorProps) {
   if (!streams || streams.length <= 1) return null;
   return (
     <div style={{
@@ -448,19 +421,17 @@ function StreamSelector({ streams, active, onChange }) {
 }
 
 // ─── MAIN UNIVERSAL PLAYER ───────────────────────────────────
-/**
- * VideoPlayer — Universal player for Falcon Sports
- *
- * Props:
- *   url (string)      — single stream URL
- *   streams (array)   — multiple streams: [{ label: "HD", url: "...", type?: "hls"|"dash"|"youtube"|"iframe"|"mp4" }]
- *   title (string)    — match title shown above player
- *   homeTeam (string)
- *   awayTeam (string)
- *   homeScore (number)
- *   awayScore (number)
- *   isLive (bool)
- */
+interface VideoPlayerProps {
+  url?: string;
+  streams?: Stream[];
+  title?: string;
+  homeTeam?: string;
+  awayTeam?: string;
+  homeScore?: string | number;
+  awayScore?: string | number;
+  isLive?: boolean;
+}
+
 export default function VideoPlayer({
   url,
   streams,
@@ -470,182 +441,92 @@ export default function VideoPlayer({
   homeScore,
   awayScore,
   isLive = false,
-}) {
+}: VideoPlayerProps) {
   const [activeStream, setActiveStream] = useState(0);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
 
-  // Normalize streams array
-  const streamList = streams?.length
-    ? streams
-    : url
-    ? [{ url, label: "Main" }]
-    : [];
-
+  const streamList: Stream[] = streams?.length ? streams : url ? [{ url, label: "Main" }] : [];
   const current = streamList[activeStream];
   const currentUrl = current?.url || "";
-  const detectedType = current?.type || detectStreamType(currentUrl);
+  const detectedType = current?.type && current.type !== 'auto' ? current.type : detectStreamType(currentUrl);
 
-  const handleError = (msg) => setError(msg);
-
-  const handleStreamChange = (idx) => {
-    setActiveStream(idx);
-    setError(null);
-  };
+  const handleError = (msg: string) => setError(msg);
+  const handleStreamChange = (idx: number) => { setActiveStream(idx); setError(null); };
 
   const renderPlayer = () => {
     if (!currentUrl) return (
-      <div style={{
-        aspectRatio: "16/9", background: "#111", display: "flex",
-        flexDirection: "column", alignItems: "center", justifyContent: "center",
-        color: "#666", gap: 10
-      }}>
+      <div style={{aspectRatio: "16/9", ...styles.overlay, flexDirection: "column", color: "#666", gap: 10}}>
         <span style={{ fontSize: 40 }}>📡</span>
         <span style={{ fontWeight: 600 }}>No stream available</span>
       </div>
     );
 
     if (error) return (
-      <div style={{
-        aspectRatio: "16/9", background: "#111", display: "flex",
-        flexDirection: "column", alignItems: "center", justifyContent: "center",
-        color: "#ef4444", gap: 10, padding: 20, textAlign: "center"
-      }}>
+      <div style={{aspectRatio: "16/9", ...styles.overlay, flexDirection: "column", color: "#ef4444", gap: 10, padding: 20, textAlign: "center"}}>
         <span style={{ fontSize: 36 }}>⚠️</span>
         <span style={{ fontWeight: 700, fontSize: 15 }}>Stream Error</span>
         <span style={{ fontSize: 13, color: "#888" }}>{error}</span>
-        <button onClick={() => setError(null)} style={{
-          marginTop: 8, padding: "8px 20px", background: "#ef4444",
-          color: "#fff", border: "none", borderRadius: 8,
-          cursor: "pointer", fontWeight: 700
-        }}>Retry</button>
+        <button onClick={() => setError(null)} style={{marginTop: 8, padding: "8px 20px", background: "#ef4444", color: "#fff", border: "none", borderRadius: 8, cursor: "pointer", fontWeight: 700}}>
+          Retry
+        </button>
       </div>
     );
 
     switch (detectedType) {
-      case "hls":
-        return <HLSPlayer url={currentUrl} onError={handleError} />;
-      case "dash":
-        return <DASHPlayer url={currentUrl} onError={handleError} />;
+      case "hls": return <HLSPlayer url={currentUrl} onError={handleError} />;
+      case "dash": return <DASHPlayer url={currentUrl} onError={handleError} />;
       case "youtube":
-      case "youtube-embed":
-        return <IframePlayer url={currentUrl} type="youtube" />;
-      case "iframe":
-        return <IframePlayer url={currentUrl} type="iframe" />;
-      case "mp4":
-        return <MP4Player url={currentUrl} />;
-      default:
-        // Try iframe as fallback
-        return <IframePlayer url={currentUrl} type="iframe" />;
+      case "youtube-embed": return <IframePlayer url={currentUrl} type="youtube" />;
+      case "iframe": return <IframePlayer url={currentUrl} type="iframe" />;
+      case "mp4": return <MP4Player url={currentUrl} />;
+      default: return <IframePlayer url={currentUrl} type="iframe" />;
     }
   };
 
   return (
     <>
       <style>{`
-        @keyframes spin {
-          to { transform: rotate(360deg); }
-        }
-        input[type=range] {
-          -webkit-appearance: none;
-          height: 4px;
-          border-radius: 2px;
-          outline: none;
-          background: rgba(255,255,255,0.25);
-        }
-        input[type=range]::-webkit-slider-thumb {
-          -webkit-appearance: none;
-          width: 14px; height: 14px;
-          border-radius: 50%;
-          background: #ef4444;
-          cursor: pointer;
-        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        input[type=range] { -webkit-appearance: none; height: 4px; border-radius: 2px; outline: none; background: rgba(255,255,255,0.25); }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%; background: #ef4444; cursor: pointer; }
       `}</style>
 
-      <div style={{
-        background: "#fff",
-        borderRadius: 14,
-        overflow: "hidden",
-        boxShadow: "0 2px 16px rgba(0,0,0,0.1)",
-        fontFamily: "'Segoe UI', sans-serif"
-      }}>
-        {/* Match Header */}
+      <div style={{background: "#fff", borderRadius: 14, overflow: "hidden", boxShadow: "0 2px 16px rgba(0,0,0,0.1)", fontFamily: "'Segoe UI', sans-serif"}}>
         {(homeTeam || awayTeam || title) && (
-          <div style={{
-            background: "#0f0f1a",
-            padding: "14px 16px",
-            display: "flex", alignItems: "center", justifyContent: "space-between",
-            gap: 10
-          }}>
+          <div style={{background: "#0f0f1a", padding: "14px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10}}>
             {homeTeam && awayTeam ? (
               <div style={{ display: "flex", alignItems: "center", gap: 10, flex: 1, justifyContent: "center" }}>
-                <span style={{ color: "#fff", fontWeight: 700, fontSize: 15, textAlign: "right", flex: 1 }}>
-                  {homeTeam}
-                </span>
-
+                <span style={{ color: "#fff", fontWeight: 700, fontSize: 15, textAlign: "right", flex: 1 }}>{homeTeam}</span>
                 {isLive && homeScore !== undefined ? (
-                  <div style={{
-                    background: "#ef4444", color: "#fff",
-                    padding: "4px 16px", borderRadius: 8,
-                    fontSize: 20, fontWeight: 900, letterSpacing: 2,
-                    whiteSpace: "nowrap", minWidth: 72, textAlign: "center"
-                  }}>
-                    {homeScore} – {awayScore}
+                  <div style={{background: "#ef4444", color: "#fff", padding: "4px 16px", borderRadius: 8, fontSize: 20, fontWeight: 900, letterSpacing: 2, whiteSpace: "nowrap", minWidth: 72, textAlign: "center"}}>
+                    {String(homeScore)} – {String(awayScore)}
                   </div>
                 ) : (
-                  <div style={{
-                    color: "#888", fontWeight: 700, fontSize: 13,
-                    padding: "4px 12px"
-                  }}>VS</div>
+                  <div style={{color: "#888", fontWeight: 700, fontSize: 13, padding: "4px 12px"}}>VS</div>
                 )}
-
-                <span style={{ color: "#fff", fontWeight: 700, fontSize: 15, textAlign: "left", flex: 1 }}>
-                  {awayTeam}
-                </span>
+                <span style={{ color: "#fff", fontWeight: 700, fontSize: 15, textAlign: "left", flex: 1 }}>{awayTeam}</span>
               </div>
             ) : (
               <span style={{ color: "#fff", fontWeight: 700, fontSize: 15 }}>{title}</span>
             )}
-
-            {isLive && (
-              <span style={{
-                background: "#ef4444", color: "#fff",
-                padding: "3px 10px", borderRadius: 4,
-                fontSize: 10, fontWeight: 800, letterSpacing: 1,
-                flexShrink: 0
-              }}>● LIVE</span>
-            )}
+            {isLive && <span style={{...styles.liveBadge, flexShrink: 0}}>● LIVE</span>}
           </div>
         )}
 
-        {/* Stream Selector */}
         {streamList.length > 1 && (
           <div style={{ padding: "8px 12px 0" }}>
-            <StreamSelector
-              streams={streamList}
-              active={activeStream}
-              onChange={handleStreamChange}
-            />
+            <StreamSelector streams={streamList} active={activeStream} onChange={handleStreamChange} />
           </div>
         )}
 
-        {/* Player */}
         {renderPlayer()}
 
-        {/* Stream Info Bar */}
         {currentUrl && !error && (
-          <div style={{
-            padding: "8px 14px",
-            background: "#fafafa",
-            borderTop: "1px solid #f0f0f0",
-            display: "flex", alignItems: "center", gap: 6
-          }}>
+          <div style={{padding: "8px 14px", background: "#fafafa", borderTop: "1px solid #f0f0f0", display: "flex", alignItems: "center", gap: 6}}>
             <span style={{
               fontSize: 10, fontWeight: 700, letterSpacing: 0.8,
-              background: detectedType === "hls" ? "#1a73e8" :
-                          detectedType === "dash" ? "#7c3aed" :
-                          detectedType === "youtube" ? "#ef4444" : "#16a34a",
-              color: "#fff",
-              padding: "2px 8px", borderRadius: 4
+              background: detectedType === "hls" ? "#1a73e8" : detectedType === "dash" ? "#7c3aed" : detectedType === "youtube" ? "#ef4444" : "#16a34a",
+              color: "#fff", padding: "2px 8px", borderRadius: 4
             }}>
               {detectedType.toUpperCase()}
             </span>
