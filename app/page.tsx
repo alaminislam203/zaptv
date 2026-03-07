@@ -1,12 +1,10 @@
-// ============================================================
-// FALCON SPORTS — Page Display
-// ============================================================
+'use client';
 
 import { useState, useEffect } from "react";
 import { initializeApp, getApps, getApp } from "firebase/app";
-import { getFirestore, doc, onSnapshot } from "firebase/firestore";
+import { getFirestore, collection, onSnapshot } from "firebase/firestore";
+import VideoPlayer from "../components/VideoPlayer";
 
-// 🔧 YOUR FIREBASE CONFIG
 const firebaseConfig = {
   apiKey: "AIzaSyA3bna8DVXzCLUU3YQoXColTC0-8T4LoF0",
   authDomain: "arenax-live-tv.firebaseapp.com",
@@ -19,56 +17,33 @@ const firebaseConfig = {
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const db = getFirestore(app);
 
-export default function Page({ pageSlug, onBack }) {
-  const [page, setPage] = useState({ title: "", content: "" });
-  const [loading, setLoading] = useState(true);
+export default function Home() {
+  const [channels, setChannels] = useState([]);
+  const [selectedChannel, setSelectedChannel] = useState(null);
 
   useEffect(() => {
-    if (!pageSlug) return;
-    const unsub = onSnapshot(doc(db, "pages", pageSlug), (doc) => {
-      if (doc.exists()) {
-        setPage(doc.data());
+    const unsub = onSnapshot(collection(db, "channels"), (snapshot) => {
+      const channelsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setChannels(channelsData);
+      if (channelsData.length > 0 && !selectedChannel) {
+        setSelectedChannel(channelsData[0]);
       }
-      setLoading(false);
     });
     return () => unsub();
-  }, [pageSlug]);
+  }, []);
 
   return (
-    <div style={{ animation: "slideUp 0.25s ease" }}>
-      <button onClick={onBack} style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 6,
-        background: "none",
-        border: "none",
-        color: "#1a73e8",
-        fontWeight: 700,
-        fontSize: 14,
-        cursor: "pointer",
-        padding: "10px 0",
-        marginBottom: 10,
-        fontFamily: "inherit"
-      }}>
-        <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-        </svg>
-        Back to Home
-      </button>
-      <div style={{
-        background: "#fff",
-        borderRadius: 12,
-        padding: "24px",
-        boxShadow: "0 1px 6px rgba(0,0,0,0.07)"
-      }}>
-        {loading ? (
-          <div style={{ textAlign: "center", padding: 40, color: "#bbb" }}>Loading...</div>
-        ) : (
-          <>
-            <h1 style={{ fontSize: 24, fontWeight: 800, marginBottom: 16 }}>{page.title}</h1>
-            <div dangerouslySetInnerHTML={{ __html: page.content }} />
-          </>
-        )}
+    <div>
+      {selectedChannel && <VideoPlayer src={selectedChannel.url} />}
+      <div>
+        <h2>Channels</h2>
+        <ul>
+          {channels.map(channel => (
+            <li key={channel.id} onClick={() => setSelectedChannel(channel)}>
+              {channel.name}
+            </li>
+          ))}
+        </ul>
       </div>
     </div>
   );
