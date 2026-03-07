@@ -3,7 +3,7 @@
 // Supports adding: HLS, DASH, YouTube, iframe, MP4 streams
 // ============================================================
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, CSSProperties } from "react";
 import { initializeApp, getApps } from "firebase/app";
 import {
   getFirestore, collection, addDoc, updateDoc, deleteDoc,
@@ -42,7 +42,7 @@ const statusOptions = [
 ];
 const streamTypes = ["auto","hls","dash","youtube","iframe","mp4"];
 
-const S = {
+const S: { [key: string]: CSSProperties } = {
   label: { display:"block", fontSize:11, fontWeight:700, color:"#666", marginBottom:4, marginTop:12, letterSpacing:0.4 },
   input: { width:"100%", padding:"9px 12px", border:"1.5px solid #e5e7eb", borderRadius:8, fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" },
   select: { width:"100%", padding:"9px 12px", border:"1.5px solid #e5e7eb", borderRadius:8, fontSize:13, fontFamily:"inherit", outline:"none", background:"#fff", boxSizing:"border-box", cursor:"pointer" },
