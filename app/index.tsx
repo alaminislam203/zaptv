@@ -6,8 +6,8 @@
 import { useState, useEffect, useRef, CSSProperties } from "react";
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getFirestore, collection, onSnapshot, query, orderBy, doc, setDoc, increment, DocumentData } from "firebase/firestore";
-import VideoPlayer from "../components/VideoPlayer";
-import CmsPage from "../app/CmsPage";
+import VideoPlayer from "@/components/VideoPlayer";
+import CmsPage from "@/app/CmsPage";
 
 // 🔧 YOUR FIREBASE CONFIG
 const firebaseConfig = {
