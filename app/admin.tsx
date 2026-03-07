@@ -90,10 +90,21 @@ function LoginPage() {
 }
 
 // ─── STREAM EDITOR ───────────────────────────────────────────
-function StreamEditor({ streams, onChange }) {
+interface Stream {
+  label: string;
+  url: string;
+  type: string;
+}
+
+interface StreamEditorProps {
+  streams: Stream[];
+  onChange: (streams: Stream[]) => void;
+}
+
+function StreamEditor({ streams, onChange }: StreamEditorProps) {
   const add = () => onChange([...streams, { label:`Stream ${streams.length+1}`, url:"", type:"auto" }]);
-  const remove = (i) => onChange(streams.filter((_,idx)=>idx!==i));
-  const update = (i, key, val) => {
+  const remove = (i: number) => onChange(streams.filter((_,idx)=>idx!==i));
+  const update = (i: number, key: keyof Stream, val: string) => {
     const updated = streams.map((s,idx) => idx===i ? {...s,[key]:val} : s);
     onChange(updated);
   };
