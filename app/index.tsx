@@ -7,7 +7,7 @@ import { useState, useEffect, useRef, CSSProperties } from "react";
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getFirestore, collection, onSnapshot, query, orderBy, doc, setDoc, increment, DocumentData } from "firebase/firestore";
 import VideoPlayer from "../components/VideoPlayer";
-import Page from "./page";
+import CmsPage from "./CmsPage";
 
 // 🔧 YOUR FIREBASE CONFIG
 const firebaseConfig = {
@@ -61,7 +61,6 @@ interface MenuItem {
 
 interface Ad {
   id: string;
-  type?: 'ad';
   imageUrl: string;
   linkUrl: string;
   createdAt?: any;
@@ -73,7 +72,6 @@ interface SocialLink {
     btn: string;
     emoji: string;
     link: string;
-    type?: undefined;
 }
 
 const sportEmoji: { [key: string]: string } = {
@@ -428,7 +426,7 @@ export default function FalconSports() {
   
   const socialAndAds: (SocialLink | Ad)[] = [
     { name:"WhatsApp", color:"#25D366", btn:"Follow", emoji:"💬", link:"#" },
-    ...bannerAds.map(ad => ({ ...ad, type: 'ad' as const })),
+    ...bannerAds,
     { name:"Telegram", color:"#2CA5E0", btn:"Join",   emoji:"✈️", link:"#" },
   ];
 
@@ -505,18 +503,18 @@ export default function FalconSports() {
 
         <div style={{ maxWidth:700, margin:"0 auto", padding:"14px 12px" }}>
           {currentView === 'watching' && watching && <WatchPage match={watching} onBack={handleBack} />}
-          {currentView === 'page' && activePage && <Page pageSlug={activePage} onBack={handleBack} />}
+          {currentView === 'page' && activePage && <CmsPage pageSlug={activePage} onBack={handleBack} />}
           {currentView === 'home' && (
             <>
             <Carousel slides={carouselAds} />
               {/* Social Banners & Ads */}
               {socialAndAds.map((s, i) => (
                 <div key={i} style={{
-                  background:"#fff", borderRadius:10, padding: s.type === 'ad' ? 0 : "11px 16px",
+                  background:"#fff", borderRadius:10, padding: 'imageUrl' in s ? 0 : "11px 16px",
                   marginBottom:8, boxShadow:"0 1px 4px rgba(0,0,0,0.06)",
                   display:"block", overflow: 'hidden'
                 }}>
-                    {s.type === 'ad' ? (
+                    {'imageUrl' in s ? (
                         <a href={s.linkUrl} target="_blank" rel="noopener noreferrer">
                             <img src={s.imageUrl} alt="Advertisement" style={{ width: '100%', display: 'block' }} />
                         </a>
